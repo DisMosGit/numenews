@@ -1,5 +1,9 @@
 # numenews
 
+[![coverage](https://img.shields.io/badge/coverage-99%25-brightgreen)](docs/coverage_report.md)
+![python](https://img.shields.io/badge/python-3.14%2B-blue)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
+
 **MCP server and one-shot CLI that reads the news numerologically.**
 
 numenews fetches news from several public APIs, extracts numbers, dates and names, computes

@@ -1479,11 +1479,11 @@
 - [x] Коммит: `docs(adr): vector, embeddings, cache` · `M` 📝
 
 ### 10.4. Покрытие тестами
-- [ ] Coverage: `numerology/` ≥ 95% · `M` 🧪
-- [ ] Coverage: `pipeline/` + `agents/` ≥ 80% · `M` 🧪
-- [ ] Coverage: `vector/` + `news/` ≥ 70% · `M` 🧪
-- [ ] Бейдж покрытия в README · `S`
-- [ ] Коммит: `test: coverage report` · `M`
+- [x] Coverage: `numerology/` ≥ 95% · `M` 🧪
+- [x] Coverage: `pipeline/` + `agents/` ≥ 80% · `M` 🧪
+- [x] Coverage: `vector/` + `news/` ≥ 70% · `M` 🧪
+- [x] Бейдж покрытия в README · `S`
+- [x] Коммит: `test: coverage report` · `M`
 
 ### 10.5. Финальная вычитка
 - [ ] Пройтись по `TODO` в коде · `M`

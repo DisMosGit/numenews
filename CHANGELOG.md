@@ -165,6 +165,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
   layer table in `docs/ARCHITECTURE.md`.
 
 ### Changed
+- `make test` now ends with `make coverage-check`, which enforces the per-layer coverage floors of
+  ROADMAP 10.4 (numerology ≥ 95 %, `pipeline/` + `agents/` ≥ 80 %, `vector/` + `news/` ≥ 70 %).
+  coverage.py has no per-path threshold, so each group gets its own `--fail-under` and
+  `[tool.coverage.report] fail_under` stays `0`. The measured numbers and the command behind them are
+  in the new `docs/coverage_report.md`, and the README carries a static coverage badge next to the
+  Python and license badges.
 - `make test-eval` builds and uses the isolated `.venv-eval`; `ragas` and its LangChain tree live
   there and never in `.venv`, `uv.lock` or `[project]`, and `make clean` removes that environment
   with the other caches.

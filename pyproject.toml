@@ -173,7 +173,8 @@ source = ["numenews"]
 
 [tool.coverage.report]
 show_missing = true
-# The per-layer floors (numerology 95%, agents/pipeline 80%, vector/news 70%) land
-# with their layers and are enforced in phase 10; a non-zero floor would fail
-# `make test` on the skeleton, which has nothing to cover yet.
+# `fail_under` stays 0: the floors of ROADMAP 10.4 are per layer (numerology 95%,
+# agents/pipeline 80%, vector/news 70%), and coverage.py has no per-path threshold.
+# `make coverage-check` (run at the end of `make test`) passes `--fail-under` once per
+# include group instead, so a global floor here would only be a second, blunter gate.
 fail_under = 0

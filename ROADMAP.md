@@ -54,12 +54,12 @@
 **DoD:** репозиторий создан, `.md` файлы на месте, `AGENTS.md` ссылается на `ROADMAP.md`.
 
 ### 0.2. uv + src-layout
-- [ ] Корневой `pyproject.toml` с `[project]` и dev-зависимостями · `S` 📝
-- [ ] Директория `src/numenews/` с пустым `__init__.py` · `S`
-- [ ] Подпакеты: `models/`, `numerology/`, `news/`, `embeddings/`, `vector/`, `agents/`, `mcp/`, `cli/` · `S`
-- [ ] Директории `tests/unit`, `tests/integration`, `tests/eval`, `docs/`, `docs/adr/`, `docs/agentic/` · `S`
-- [ ] `uv sync` работает без ошибок · `S`
-- [ ] Коммит: `chore: uv + src-layout skeleton` · `S`
+- [x] Корневой `pyproject.toml` с `[project]` и dev-зависимостями · `S` 📝
+- [x] Директория `src/numenews/` с пустым `__init__.py` · `S`
+- [x] Подпакеты: `models/`, `numerology/`, `news/`, `embeddings/`, `vector/`, `agents/`, `mcp/`, `cli/` · `S`
+- [x] Директории `tests/unit`, `tests/integration`, `tests/eval`, `docs/`, `docs/adr/`, `docs/agentic/` · `S`
+- [x] `uv sync` работает без ошибок · `S`
+- [x] Коммит: `chore: uv + src-layout skeleton` · `S`
 
 **DoD:** `uv sync` проходит, структура директорий на месте.
 

@@ -7,12 +7,45 @@ authors = [
     { name = "DisMosGit", email = "DisSurgu@ya.ru" }
 ]
 requires-python = ">=3.14"
-dependencies = []
 
-# The repository root is a workspace root, not an installable package:
-# only the members under packages/, apps/ and tools/ are built and installed.
-[tool.uv]
-package = false
+# Dependencies arrive with the phase that needs them, so every commit keeps the
+# environment honest about what the code actually imports:
+#
+#   Phase 0 (here)  pydantic, pydantic-settings, structlog, qdrant-client
+#                   (qdrant-client is already needed by the `qdrant_in_memory`
+#                   test fixture from phase 0.8)
+#   Phase 2         httpx, hishel, tenacity
+#   Phase 3         fastembed
+#   Phase 4         pydantic-ai
+#   Phase 6         mcp
+#   Phase 7         typer, rich
+#   Phase 9         ragas — see the note below; it stays out of the default sync
+#
+# `ragas` hard-depends on langchain, langchain-core, langchain-community and
+# langchain_openai, and AGENTS.md rules LangChain out: the eval harness must not
+# leak into the runtime environment. Phase 9 decides how to isolate it (the
+# intended shape is an opt-in dependency group installed only by `make test-eval`).
+dependencies = [
+    "pydantic>=2.11",
+    "pydantic-settings>=2.15",
+    "qdrant-client>=1.19",
+    "structlog>=26.1",
+]
+
+[project.urls]
+Repository = "https://github.com/DisMosGit/numenews"
+
+# Developer tools live in a dependency group rather than in `[project]`: they are
+# never imported by the package itself, and `uv sync` installs the group by default.
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pre-commit>=4.6.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.8",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]

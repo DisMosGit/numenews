@@ -74,5 +74,8 @@ inside each `Prefetch`.
 
 Phase 0: configuration (`config.py`), logging (`logging.py`), the package skeleton and the test
 scaffolding. Phase 1: the domain models (`models/`, frozen and strict) and the pure numerology layer
-(`numerology/`, 100% covered) with `docs/NUMEROLOGY.md` and ADR 0002. `ROADMAP.md` is the
-authoritative status; `docs/adr/` records the decisions.
+(`numerology/`, 100% covered) with `docs/NUMEROLOGY.md` and ADR 0002. Phase 2: the news layer
+(`news/`, 100% covered) — one `NewsSource` Protocol, five adapters (GDELT, NewsAPI, GNews,
+Mediastack, Currents), one `hishel`-cached `httpx` client with a `tenacity` retry policy, and
+`fetch_news` as the aggregating entry point, documented in `docs/NEWS_SOURCES.md`. `ROADMAP.md` is
+the authoritative status; `docs/adr/` records the decisions.

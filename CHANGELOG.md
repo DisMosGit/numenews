@@ -31,10 +31,25 @@ Versioning: [Semantic Versioning](https://semver.org/).
   unit and hypothesis property tests.
 - Documentation for the layer: a complete `docs/NUMEROLOGY.md` and ADR 0002 recording the scope
   (reduction, master numbers, gematria, date resonance, regex fallback) and its limits.
+- News layer (phases 2.1–2.8): the `Topic`/`DateRange` query models, the `NewsSource` Protocol and
+  the `NewsSourceError` hierarchy (`HTTPError`, `AuthError`, `RateLimitError`, `TransportError`,
+  `ParseError`), one `hishel`-cached `httpx` client with a `tenacity` retry policy, five adapters
+  (GDELT, NewsAPI, GNews, Mediastack, Currents) that map to `NewsItem` with a deterministic
+  `uuid5` id and a UTC date, and `fetch_news(topic, date_range)` over a `NewsAggregator` that
+  queries every configured source concurrently, filters the range once and de-duplicates on
+  `(title, source, date)`.
+- Configuration for the four optional news keys (`NEWSAPI_KEY`, `GNEWS_KEY`, `MEDIASTACK_KEY`,
+  `CURRENTS_KEY`); GDELT needs none, so the demo path still runs unconfigured.
 
 ### Changed
 - `docs/ARCHITECTURE.md`: the `numerology` layer may import `models` (the result types it returns),
-  and the "implemented so far" section now covers phases 0–1 (ADR 0002).
+  and the "implemented so far" section now covers phases 0–1 (ADR 0002); it now covers phase 2 as
+  well.
+- Dependencies: `httpx`, `hishel[httpx]` and `tenacity` join the runtime set, `respx` the dev group.
+- `.env.example` ships the four news keys uncommented and explains that a missing key means the
+  source is not queried at all; `README.md` and the package docstring track the implemented phases.
+- Documentation for the news layer: `docs/NEWS_SOURCES.md` records the five APIs, their free tiers
+  and request shapes, the cache design and what the layer deliberately leaves out.
 
 ### Deprecated
 -

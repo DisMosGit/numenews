@@ -131,11 +131,17 @@
 > `cli/__main__.py` и `mcp/__main__.py` переведены на `configure_logging()`/`get_logger()`.*
 
 ### 0.8. Первые тесты
-- [ ] `tests/conftest.py` с фикстурами (`event_loop`, `anyio_backend`, `tmp_cache_dir`) · `S`
-- [ ] `tests/unit/test_smoke.py` — `assert True` · `S` 🧪
-- [ ] `tests/integration/__init__.py` + фикстура Qdrant in-memory · `M` 🧪
-- [ ] `tests/eval/__init__.py` · `S`
-- [ ] Коммит: `test: pytest scaffolding` · `M` 🧪
+- [x] `tests/conftest.py` с фикстурами (`event_loop`, `anyio_backend`, `tmp_cache_dir`) · `S`
+      *`event_loop` удалён в `pytest-asyncio` ≥ 1.0, а плагин `anyio` не используется: вместо них
+      `asyncio_mode = "auto"` + `asyncio_default_fixture_loop_scope`, а асинхронный smoke-тест
+      доказывает, что корутины идут без маркера. Фикстуры: `settings` (герметичные настройки) и
+      `tmp_cache_dir`.*
+- [x] `tests/unit/test_smoke.py` — `assert True` · `S` 🧪
+      *Вместо пустышки — контрактные проверки: версия пакета, JSON в stdout у CLI, пустой stdout
+      у MCP, работа `asyncio_mode = "auto"`. Добавлены в 0.5 и расширены здесь.*
+- [x] `tests/integration/__init__.py` + фикстура Qdrant in-memory · `M` 🧪
+- [x] `tests/eval/__init__.py` · `S`
+- [x] Коммит: `test: pytest scaffolding` · `M` 🧪
 
 **DoD:** `make test` зелёный, фикстура `qdrant_in_memory` доступна.
 

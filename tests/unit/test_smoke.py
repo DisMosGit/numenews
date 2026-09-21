@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 
 import pytest
@@ -14,6 +15,13 @@ from numenews.mcp.__main__ import main as mcp_main
 def test_package_exposes_version() -> None:
     """The package imports and reports the released version."""
     assert numenews.__version__ == "0.1.0"
+
+
+async def test_asyncio_auto_mode_runs_coroutines() -> None:
+    """`asyncio_mode = "auto"` runs coroutine tests without an explicit marker."""
+    loop = asyncio.get_running_loop()
+
+    assert loop.is_running()
 
 
 def test_cli_placeholder_writes_json_to_stdout(capsys: pytest.CaptureFixture[str]) -> None:

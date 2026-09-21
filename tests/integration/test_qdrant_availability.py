@@ -1,8 +1,4 @@
-"""Integration smoke test: Qdrant runs in memory, without Docker.
-
-Phase 0.8 replaces the inline client with the shared ``qdrant_in_memory`` fixture; this test
-exists from the first Makefile commit so that ``make test-integration`` is a valid target.
-"""
+"""The `qdrant_in_memory` fixture: vector tests need no Docker."""
 
 from __future__ import annotations
 
@@ -11,10 +7,6 @@ from qdrant_client import QdrantClient
 
 
 @pytest.mark.integration
-def test_in_memory_client_starts_empty() -> None:
-    """A fresh in-memory Qdrant exposes no collections."""
-    client = QdrantClient(":memory:")
-    try:
-        assert client.get_collections().collections == []
-    finally:
-        client.close()
+def test_in_memory_client_starts_empty(qdrant_in_memory: QdrantClient) -> None:
+    """A fresh in-memory instance exposes no collections."""
+    assert qdrant_in_memory.get_collections().collections == []

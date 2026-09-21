@@ -281,12 +281,22 @@
 > пустой список символов дают `[]`.*
 
 ### 1.7. Публичный API модуля
-- [ ] `src/numenews/numerology/__init__.py` с `__all__` · `S`
-- [ ] `compute_numerology(text: str) -> NumerologyResult` — объединяет всё · `M` 🧪
-- [ ] Docstrings на публичных функциях · `S` 📝
-- [ ] Коммит: `feat(numerology): public api` · `M` 🧪
+- [x] `src/numenews/numerology/__init__.py` с `__all__` · `S`
+- [x] `compute_numerology(text: str) -> NumerologyResult` — объединяет всё · `M` 🧪
+- [x] Docstrings на публичных функциях · `S` 📝
+- [x] Коммит: `feat(numerology): public api` · `M` 🧪
 
 **DoD:** модуль импортируется, `compute_numerology("Sun rises")` возвращает результат.
+
+> *«Объединяет всё» прочитано как «собирает чтение текста»: `compute_numerology` = нормализация +
+> гематрия + редукция + проверка мастер-числа, а извлечение чисел/дат сознательно не входит — это
+> работа агента с `extract_*_regex` как фолбэком (4.2), и смешивать два разных вопроса в одном
+> результате не нужно. Функция живёт в `numerology/api.py`, пакетный `__init__.py` только
+> переэкспортирует поверхность через `__all__`. `breakdown` всегда начинается со строки
+> `gematria_simple = <сумма>`, затем идут шаги редукции; текст без букв даёт `gematria = value = 0`,
+> `is_master = False` и `breakdown = ("no letters to sum",)`. Тест `test_numerology_api.py`
+> подпроцессом проверяет и правило AGENTS.md: импорт `numenews.numerology` не тянет `news`, `vector`,
+> `agents`, `mcp`, `cli`, а `numenews.models` не импортирует ничего, кроме самого себя.*
 
 ### 1.8. Документация нумерологии
 - [ ] `docs/NUMEROLOGY.md` — редукция, мастер-числа, гематрия с примерами · `M` 📝

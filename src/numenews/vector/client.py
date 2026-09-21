@@ -21,6 +21,7 @@ from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedR
 from numenews.config import Settings
 from numenews.embeddings import Embedder, build_embedders
 from numenews.logging import get_logger
+from numenews.vector import collections
 from numenews.vector.errors import VectorStoreError
 
 logger = get_logger(__name__)
@@ -88,13 +89,21 @@ class VectorStore:
             VectorStoreError: when the request fails or the server answers with an error status.
         """
         try:
-            collections = self._client.get_collections().collections
+            existing = self._client.get_collections().collections
         except (ResponseHandlingException, UnexpectedResponse) as error:
             raise VectorStoreError(
                 f"Qdrant health check failed ({error}): start the server with `make dev` and "
                 "check QDRANT_URL in .env"
             ) from error
-        logger.debug("vector.health_check.ok", collections=len(collections))
+        logger.debug("vector.health_check.ok", collections=len(existing))
+
+    def ensure_collections(self) -> None:
+        """Create every collection this build defines, with its payload indexes.
+
+        Idempotent and cheap enough to call before every run: a collection that already exists is
+        only checked for, not recreated, and a payload index that exists is re-declared harmlessly.
+        """
+        collections.ensure_collections(self._client)
 
     def close(self) -> None:
         """Close the underlying client and release its connections."""

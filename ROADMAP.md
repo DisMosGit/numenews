@@ -549,14 +549,33 @@
 > localhost проксируется через proxychains, поэтому прогон с Docker делается с `env -u LD_PRELOAD`.*
 
 ### 3.3. Коллекция `news`
-- [ ] `create_news_collection()` с 768d COSINE · `M` 🧪
-- [ ] Payload-индексы: `date`, `source`, `numerology_value`, `master_number` · `M` 🧪
-- [ ] `upsert_news(items: Sequence[NewsItem])` · `M` 🧪
-- [ ] `search_news(query, filters, limit)` · `M` 🧪
-- [ ] Тест: upsert + search по семантике · `M` 🧪
-- [ ] Коммит: `feat(vector): news collection` · `M` 🧪
+- [x] `create_news_collection()` с 768d COSINE · `M` 🧪
+- [x] Payload-индексы: `date`, `source`, `numerology_value`, `master_number` · `M` 🧪
+- [x] `upsert_news(items: Sequence[NewsItem])` · `M` 🧪
+- [x] `search_news(query, filters, limit)` · `M` 🧪
+- [x] Тест: upsert + search по семантике · `M` 🧪
+- [x] Коммит: `feat(vector): news collection` · `M` 🧪
 
 **DoD:** payload-индексы созданы **до** ингеста, поиск с фильтром работает.
+
+> *Отклонения. `filters` — не сырой `qdrant_client.models.Filter`, а pydantic-модель `NewsFilter`
+> (`models/query.py`, frozen+strict: `date_from`, `date_to`, `source`, `numerology_value`,
+> `master_number` + проверка порядка дат): так Qdrant-типы остаются внутри `vector/`, а MCP-инструмент
+> 6.8 получает типизированный словарь фильтров. Перевод модели в `Filter` — чистая функция
+> `build_news_filter` (`vector/filters.py`), поэтому покрыт юнит-тестами без сервера.
+> Даты в payload — RFC 3339 (`2026-09-21T00:00:00Z`), потому что `DATETIME`-индекс индексирует
+> именно timestamp, а строгий `date` модели `NewsItem` такой строки не принимает: `news_from_payload`
+> срезает дату до `YYYY-MM-DD` перед `model_validate_json`. Верхняя граница диапазона — `< следующий
+> день 00:00:00Z`, чтобы включительный `date_to` не терял новости своего же дня. `master_number` —
+> производное поле payload (`item.numerology_value in {11,22,33}` через `numerology.is_master`), а не
+> поле модели: это вопрос к `numerology_value`, и ответ нужен фильтру. `None`-поля в payload не
+> пишутся вовсе (`exclude_none`), чтобы «ещё не посчитано» не стало индексируемым null.
+> Индексы нельзя проверить в local mode (Qdrant предупреждает, что они там не действуют), поэтому DoD
+> проверен на Docker-сервере: `tests/integration/test_vector_docker.py` сверяет `payload_schema` с
+> `NEWS_PAYLOAD_INDEXES`. В том же коммите появились `vector/collections.py`, `vector/payloads.py` и
+> `VectorStore.ensure_collections()`; `upsert_news` сам создаёт коллекцию до первой точки, а
+> `search_news` зовёт `require_collection` и падает `CollectionNotFoundError` вместо `ValueError`
+> local mode.*
 
 ### 3.4. Коллекция `numbers`
 - [ ] `create_numbers_collection()` с 384d COSINE · `M` 🧪

@@ -124,6 +124,10 @@ filterwarnings = [
     # the client's own compatibility probe then warns that it could not read the server version,
     # which is the outcome under test, not a problem to report.
     "ignore:Failed to obtain server version:UserWarning",
+    # The in-memory engine is a real Qdrant that declares payload indexes it cannot use; every
+    # collection creation of the in-memory tests warns once per index. The indexes themselves are
+    # asserted against the Docker server in tests/integration/test_vector_docker.py.
+    "ignore:Payload indexes have no effect in the local Qdrant:UserWarning",
 ]
 
 # -----------------------------------------------------------------------------

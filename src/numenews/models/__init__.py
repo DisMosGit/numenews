@@ -16,7 +16,7 @@ from numenews.models.ids import ForecastId, NewsId, PatternId
 from numenews.models.memory import NumberActivation
 from numenews.models.news import ExtractedNumbers, NewsItem
 from numenews.models.patterns import Pattern, PatternType
-from numenews.models.query import DateRange, Topic
+from numenews.models.query import DateRange, NewsFilter, Topic
 from numenews.models.results import MasterCheckResult, NumerologyResult
 
 __all__ = [
@@ -25,6 +25,7 @@ __all__ = [
     "Forecast",
     "ForecastId",
     "MasterCheckResult",
+    "NewsFilter",
     "NewsId",
     "NewsItem",
     "NumberActivation",

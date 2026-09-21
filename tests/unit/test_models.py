@@ -20,6 +20,7 @@ from numenews.models import (
     Forecast,
     ForecastId,
     MasterCheckResult,
+    NewsFilter,
     NewsId,
     NewsItem,
     NumberActivation,
@@ -235,3 +236,35 @@ def test_date_range_is_strict_in_python_mode_and_parses_json() -> None:
     restored = DateRange.model_validate_json('{"start": "2026-09-21", "end": "2026-09-22"}')
 
     assert restored == DateRange(start=date(2026, 9, 21), end=date(2026, 9, 22))
+
+
+def test_news_filter_defaults_to_no_narrowing() -> None:
+    """An all-default filter constrains nothing: `None` on every field means "any"."""
+    filters = NewsFilter()
+
+    assert filters.date_from is None
+    assert filters.date_to is None
+    assert filters.source is None
+    assert filters.numerology_value is None
+    assert filters.master_number is None
+
+
+def test_news_filter_rejects_a_reversed_window() -> None:
+    """A window whose start lies after its end is refused, as in `DateRange`."""
+    with pytest.raises(ValidationError):
+        NewsFilter(date_from=date(2026, 9, 22), date_to=date(2026, 9, 21))
+
+    one_day = date(2026, 9, 21)
+
+    assert NewsFilter(date_from=one_day, date_to=one_day).date_from == one_day
+
+
+def test_news_filter_is_frozen_and_strict() -> None:
+    """A filter is validated once and never coerced or mutated afterwards."""
+    with pytest.raises(ValidationError):
+        NewsFilter.model_validate({"numerology_value": "7"})
+
+    filters = NewsFilter(numerology_value=7)
+
+    with pytest.raises(ValidationError):
+        filters.numerology_value = 11  # type: ignore[misc]  # frozen model, mypy cannot see it

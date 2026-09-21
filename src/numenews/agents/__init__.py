@@ -16,7 +16,8 @@ from __future__ import annotations
 from numenews.agents.errors import AgentError, AgentExecutionError, LLMConfigurationError
 from numenews.agents.extract import ExtractNumbersAgent
 from numenews.agents.llm import build_llm_model
-from numenews.agents.schemas import ExtractionDraft
+from numenews.agents.pattern import PatternAgent, pattern_id
+from numenews.agents.schemas import ExtractionDraft, PatternDraft
 
 __all__ = [
     "AgentError",
@@ -24,5 +25,8 @@ __all__ = [
     "ExtractNumbersAgent",
     "ExtractionDraft",
     "LLMConfigurationError",
+    "PatternAgent",
+    "PatternDraft",
     "build_llm_model",
+    "pattern_id",
 ]

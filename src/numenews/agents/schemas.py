@@ -21,6 +21,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from numenews.models import PatternType
+
 
 class ExtractionDraft(BaseModel):
     """Numbers and symbols a model read out of one text.
@@ -34,3 +36,22 @@ class ExtractionDraft(BaseModel):
 
     numbers: list[int] = Field(default_factory=list)
     symbols: list[str] = Field(default_factory=list)
+
+
+class PatternDraft(BaseModel):
+    """A connection between news items, as the model sees it.
+
+    ``news_ids`` are UUID strings copied from the analysed items — a ``str`` and not
+    :class:`~numenews.models.NewsId`, for the validation-mode reason in the module docstring; the
+    agent parses each one and keeps only the ids it actually received. ``strength`` is the model's
+    confidence and is bounded here, so a value outside ``[0, 1]`` is rejected at the boundary rather
+    than stored. ``interpretation`` is written in Russian (see ``docs/PROMPTS.md``).
+    """
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    type: PatternType
+    numbers: list[int] = Field(default_factory=list)
+    news_ids: list[str]
+    strength: float = Field(ge=0.0, le=1.0)
+    interpretation: str

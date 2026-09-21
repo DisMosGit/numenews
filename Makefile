@@ -53,7 +53,7 @@ dev-down: ## Stop Qdrant, keep the volume
 
 # `run` and `mcp` are silenced: make would otherwise echo the recipe into stdout and break
 # the "stdout carries JSON (or JSON-RPC) and nothing else" contract.
-mcp: ## Start the MCP server over stdio (phase 6 placeholder)
+mcp: ## Start the MCP server over stdio (nine tools, Ctrl-D to stop)
 	@uv run python -m numenews.mcp
 
 run: ## Run the sample one-shot CLI command (phase 7 placeholder)

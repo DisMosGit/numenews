@@ -35,4 +35,51 @@ _This table is filled in as roadmap 6.2-6.10 land; each row links to the section
 
 ## Connecting a client
 
-Connection snippets for Claude Desktop and Cursor are added with roadmap 6.11.
+Both hosts launch the server as a child process and speak stdio. The command is the same one
+`make mcp` runs; `uv` resolves the project from the directory the host uses as the working
+directory, so no absolute path has to be committed.
+
+### Cursor
+
+The project-scoped config is committed as [`.cursor/mcp.json`](../.cursor/mcp.json):
+
+```json
+{
+  "mcpServers": {
+    "numenews": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "numenews.mcp"]
+    }
+  }
+}
+```
+
+### Claude Desktop
+
+Claude Desktop reads `claude_desktop_config.json` from the user's own configuration directory
+(`~/Library/Application Support/Claude/` on macOS, `%APPDATA%\Claude\` on Windows), so the entry is
+not part of this repository. Add it with the absolute path of your checkout:
+
+```json
+{
+  "mcpServers": {
+    "numenews": {
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/numenews", "python", "-m", "numenews.mcp"]
+    }
+  }
+}
+```
+
+Restart the host afterwards; both show the server's nine tools once the connection is up.
+
+### Without a GUI
+
+```bash
+make mcp                                     # the server, waiting on stdin
+uv run pytest tests/integration/test_mcp_stdio.py   # the same handshake, as a test
+uv run python -m numenews.mcp                # the same, by module
+```
+
+`tests/integration/test_mcp_stdio.py` is the automated stand-in for the roadmap's manual
+"open it in Claude Desktop" check.

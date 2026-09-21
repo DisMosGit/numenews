@@ -13,6 +13,9 @@ Each agent has three pieces:
 | `*_INSTRUCTIONS` | `f"{rules}\n\n{few_shot}"` — what an `Agent` is constructed with | the agent's `instructions` |
 | `build_*_prompt(...)` | the facts of one call, rendered | `Agent.run(...)` |
 
+There are four of them: `extract_numbers` (4.2), `find_patterns` (4.3), `build_forecast` (4.4) and
+`summarize_news` (5.5).
+
 Rules and facts are separate on purpose: the rules are constant and snapshot-tested, while the facts
 change per call. `tests/unit/test_agents_prompts.py` compares each rendered prompt with the exact
 text written there — the project has no snapshot library, so the literal is the snapshot.
@@ -38,9 +41,9 @@ provider choice is in [ADR 0004](adr/0004-pydantic-ai-choice.md).
 ## The model writes a draft, never a domain model
 
 Each agent declares a `pydantic_ai` `output_type` from `agents/schemas.py` — `ExtractionDraft`,
-`list[PatternDraft]`, `ForecastDraft` — and the agent turns it into `ExtractedNumbers`,
-`list[Pattern]` or `Forecast`. The draft holds only what a model can honestly know; everything else
-is computed by the layers that own it:
+`list[PatternDraft]`, `ForecastDraft`, `DigestDraft` — and the agent turns it into
+`ExtractedNumbers`, `list[Pattern]`, `Forecast` or `Digest`. The draft holds only what a model can
+honestly know; everything else is computed by the layers that own it:
 
 | Domain field | Whose it is |
 |---|---|
@@ -49,7 +52,8 @@ is computed by the layers that own it:
 | `Pattern.news_ids` | the input: ids the model may copy but not invent; unknown ones are dropped |
 | `Forecast.date`, `dominant_number`, `master_active` | `numenews.numerology`, through the pipeline (AGENTS.md keeps numerology out of the agents) |
 | `Forecast.patterns` | phase 4.3 or Qdrant |
-| `Pattern.interpretation`, `Forecast.forecast` / `advice` / `warnings` | the model |
+| `Digest.period_start`, `Digest.period_end`, `Digest.numbers` | ours: the period and the values are read off the items being summarised |
+| `Pattern.interpretation`, `Forecast.forecast` / `advice` / `warnings`, `Digest.summary` | the model |
 
 Draft fields are shaped like JSON — arrays and strings rather than tuples and `RootModel[UUID]`
 wrappers — because `pydantic-ai` validates tool arguments in Python mode, where a strict `tuple`
@@ -263,6 +267,51 @@ Output:
 Every sentence names the number or the activation it rests on, and no new number appears.
 ```
 
+## Summarize the news outside the window
+
+`SUMMARIZE_RULES` + `SUMMARIZE_FEW_SHOT` → `SUMMARIZE_INSTRUCTIONS`; facts through
+`build_digest_prompt(news)`. Output: `DigestDraft`. Added by roadmap 5.5: the sliding window keeps
+the recent days raw, and everything older is compressed into one digest per period.
+
+```
+Period: 2026-09-01 to 2026-09-07
+Items to summarise: 4
+
+News items to summarise:
+
+1. id: 00000000-0000-0000-0000-000000000001
+   date: 2026-09-01 · source: example.com · numerology_value: 11
+   title: Eleven ministers resign
+   numbers: 11
+   text: Eleven ministers resigned over the budget.
+```
+
+- The period is the range of the items' own days, so the model knows what it is compressing before
+  it reads a headline; the items are ordered oldest first.
+- A long stretch is cut to `DIGEST_ITEM_LIMIT = 50` items and `DIGEST_TEXT_LIMIT = 300` characters
+  per item, so one busy month is one bounded call. The *stored* digest still covers every older item
+  — the limit bounds the prompt, not the period (`docs/CONTEXT_MANAGEMENT.md`).
+- The period and the digest's `numbers` are **ours**: `digest_of(news, summary)` reads them off the
+  items, so the model cannot add a number to the memory by listing one that was not there.
+- `summary` may not be blank for the same reason as `forecast`: a memory that says nothing is a
+  failed run to retry.
+- The digest is stored and readable, but **no prompt contains one yet**. Wiring it into the pattern
+  or forecast prompt is a later, deliberate change of this file and its snapshot tests.
+
+```
+You compress a stretch of older news into one numerological digest. The window of recent days is
+kept in full elsewhere; this summary is what survives of the time before it.
+
+Write in Russian:
+- "summary": three to five sentences on what the period was about through its numbers — which
+  reduced values dominated, which master numbers returned, which symbols or themes recurred. Name
+  the numbers you rest on.
+- Take the numbers you are given as given — never compute, reduce or change one — and never mention
+  a number that does not occur in the input.
+- Do not list the items one by one and do not repeat a headline verbatim; say what the period was
+  like as a whole.
+```
+
 ## Changing a prompt
 
 1. Edit the constant or builder in `src/numenews/agents/prompts.py`.
@@ -280,6 +329,7 @@ Every sentence names the number or the activation it rests on, and no new number
 | `tests/unit/test_agents_extract.py` | merging, the regex fallback and `sources` |
 | `tests/unit/test_agents_pattern.py` | unknown ids dropped, deterministic ids, out-of-range `strength` rejected |
 | `tests/unit/test_agents_forecast.py` | every `Forecast` field, history rendering and blank prose rejected |
+| `tests/unit/test_agents_summarize.py` | the period and numbers built from the items, the prompt cap and order, blank summary rejected |
 
 No test reaches a real endpoint: `tests/conftest.py` sets `pydantic_ai.models.ALLOW_MODEL_REQUESTS =
 False`, and every agent receives a `TestModel`/`FunctionModel` written in

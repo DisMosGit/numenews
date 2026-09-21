@@ -1,9 +1,10 @@
 # Qdrant collections
 
-> Phase 3. `ROADMAP.md` is the authoritative status; this document records what the vector layer
-> actually stores and why. The decisions behind it are in [ADR 0003](adr/0003-local-embeddings.md).
+> Phases 3 and 5. `ROADMAP.md` is the authoritative status; this document records what the vector
+> layer actually stores and why. The decisions behind it are in
+> [ADR 0003](adr/0003-local-embeddings.md) and [ADR 0011](adr/0011-rag-pipeline-orchestration.md).
 
-Five collections live in Qdrant, all created by `VectorStore.ensure_collections()` (or by the first
+Six collections live in Qdrant, all created by `VectorStore.ensure_collections()` (or by the first
 write of a collection, which creates its own schema first — the payload indexes must exist **before**
 the first point, or Qdrant falls back to filtering after the HNSW walk):
 
@@ -14,6 +15,7 @@ the first point, or Qdrant falls back to filtering after the HNSW walk):
 | `patterns` | 768d COSINE | `type` keyword, `strength` float, `discovered_at` datetime |
 | `forecasts` | 768d COSINE | `date` datetime, `dominant_number` integer |
 | `number_history` | — (payload only) | `number` integer, `date` datetime |
+| `digests` | 768d COSINE | `period_start` datetime, `period_end` datetime |
 
 ## The payloads
 
@@ -105,6 +107,26 @@ re-save replaces the previous reading instead of adding a second:
 `get_forecast(day)` is a point lookup by that id: `None` means the day has not been read yet, while a
 missing collection means the store was never initialised. `vector/forecasts.py` keeps the two apart.
 
+### `digests`
+
+One point per summarised period, written by `save_digest` (roadmap 5.5):
+
+```json
+{
+  "period_start": "2026-09-01T00:00:00Z",
+  "period_end": "2026-09-07T00:00:00Z",
+  "summary": "Период прошёл под числом 11: ...",
+  "numbers": [11, 7]
+}
+```
+
+`Digest` has no id of its own: the period is the identity, so the point id is `uuid5` over
+`(period_start, period_end)` and re-summarising a range replaces its point. Both ends are RFC 3339
+days and are indexed as `DATETIME`, because "what did the first week of September look like" is a
+range query. The vector is built from `summary` (or, when it is blank, from the numbers), so a later
+semantic question about an earlier stretch can find the digest that answers it. Phase 5 stores and
+reads the digest; no prompt contains one yet (`docs/CONTEXT_MANAGEMENT.md`).
+
 ## Point ids
 
 Ids are derived, never random, so every write is an upsert and a repeated run is idempotent:
@@ -115,6 +137,19 @@ Ids are derived, never random, so every write is an upsert and a repeated run is
 | `numbers`, `number_history` | `uuid5(NAMESPACE_URL, "numenews:activation:<news_id>:<number>")` |
 | `patterns` | `PatternId` |
 | `forecasts` | `uuid5(NAMESPACE_URL, "numenews:forecast:<YYYY-MM-DD>")` |
+| `digests` | `uuid5(NAMESPACE_URL, "numenews:digest:<start>:<end>")` |
+
+## Reading the collections
+
+The pipeline's steps read three of them, and each has a read function rather than a raw query:
+
+| Function | Question |
+|---|---|
+| `get_news_items(store, ids)` | "show me the items these search results name" — the pattern step |
+| `read_news_range(store, date_from, date_to)` | "what was published in my window" — inclusive at both ends |
+| `get_activations(store, days, today=)` | "what was active recently" — the forecast step's memory |
+| `get_history(store, number, days, today=)` | "when was 11 active" — the exact question about one number |
+| `get_forecast(store, day)` / `get_digest(store, start, end)` | "have I already read this day / summarised this period" |
 
 ## Searching
 

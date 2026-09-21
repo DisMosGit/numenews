@@ -7,11 +7,12 @@ numerology (digit reduction, master numbers 11/22/33, gematria), finds patterns 
 vector search in Qdrant, and builds a daily forecast — while keeping every number activation as
 long-term memory.
 
-> **Status: Phase 4 — LLM agents.** The tooling, configuration, logging, the domain models, the pure
-> numerology layer, the five news sources behind one Protocol, the vector layer (the two local `bge`
-> models, the five Qdrant collections, semantic and hybrid search) and the three `pydantic-ai` agents
-> (extract numbers, find patterns, build the forecast) exist. The RAG pipeline, the MCP server and
-> the CLI land in phases 5–10. See
+> **Status: Phase 5 — RAG pipeline.** The tooling, configuration, logging, the domain models, the
+> pure numerology layer, the five news sources behind one Protocol, the vector layer (the two local
+> `bge` models, the six Qdrant collections, semantic and hybrid search), the four `pydantic-ai`
+> agents (extract numbers, find patterns, build the forecast, summarise old news) and the pipeline
+> that composes them (`ingest → analyze → forecast`, with the sliding window and the digest) exist.
+> The MCP server and the CLI land in phases 6–10. See
 > [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is done.
 
 ## Quick start
@@ -27,8 +28,8 @@ Qdrant's dashboard is then at <http://localhost:6333/dashboard>.
 
 ## Example output
 
-This is the shape `numenews today` will produce once the pipeline lands (Phase 7); stdout is
-always JSON, so it pipes straight into `jq`:
+This is the shape `numenews today` will produce once the CLI lands (Phase 7) — the pipeline that
+builds it already exists; stdout is always JSON, so it pipes straight into `jq`:
 
 ```json
 {
@@ -75,7 +76,8 @@ src/numenews/
 ├── news/           # GDELT, NewsAPI, GNews, Mediastack, Currents behind one Protocol
 ├── embeddings/     # fastembed wrapper
 ├── vector/         # Qdrant client, collections, hybrid search
-├── agents/         # pydantic-ai: extract, pattern, forecast
+├── agents/         # pydantic-ai: extract, pattern, forecast, summarize
+├── pipeline/       # the RAG chain, the sliding window, step timings
 ├── mcp/            # MCP server and 9 tools
 └── cli/            # one-shot Typer commands
 ```
@@ -101,9 +103,11 @@ make mcp           # start the MCP server (stdio)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers and data flow
 - [`docs/NUMEROLOGY.md`](docs/NUMEROLOGY.md) — terminology and rules
 - [`docs/NEWS_SOURCES.md`](docs/NEWS_SOURCES.md) — the five news APIs, their limits and the cache
-- [`docs/QDRANT_COLLECTIONS.md`](docs/QDRANT_COLLECTIONS.md) — the five collections, payloads and indexes
+- [`docs/QDRANT_COLLECTIONS.md`](docs/QDRANT_COLLECTIONS.md) — the six collections, payloads and indexes
 - [`docs/EMBEDDINGS.md`](docs/EMBEDDINGS.md) — the local models, the cache and why two of them
 - [`docs/PROMPTS.md`](docs/PROMPTS.md) — every agent prompt, verbatim, with its rationale
+- [`docs/RAG_PIPELINE.md`](docs/RAG_PIPELINE.md) — the chain, its degradation rules and its tests
+- [`docs/CONTEXT_MANAGEMENT.md`](docs/CONTEXT_MANAGEMENT.md) — the window, the history and the digest
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`AGENTS.md`](AGENTS.md) — how AI coding agents work in this repository
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commits, local workflow

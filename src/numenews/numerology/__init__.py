@@ -1,14 +1,15 @@
-"""Pure numerology: reduction, master numbers, gematria, date resonance, regex fallback.
+"""Pure numerology: reduction, master numbers, gematria, date resonance, dominant number, regex.
 
 The package is pure. It imports only the shared :mod:`numenews.models` vocabulary — never ``news``,
-``vector``, ``agents`` or ``mcp`` — and performs no I/O, so its invariants hold without any
-infrastructure and are checked with property-based tests. The only ambient value it reads is the
-current year, and even that is injectable (``extract_dates_regex(..., today=...)``).
+``vector``, ``agents``, ``pipeline`` or ``mcp`` — and performs no I/O, so its invariants hold
+without any infrastructure and are checked with property-based tests. The only ambient value it
+reads is the current year, and even that is injectable (``extract_dates_regex(..., today=...)``).
 
-:func:`compute_numerology` is the single entry point the layers above use; the rest of the surface
-is the pieces it is built from, re-exported here so a caller does not have to know the module
-layout. ``reduction``, ``master``, ``gematria``, ``resonance``, ``extraction`` and ``api`` stay
-importable for a caller that wants one piece on its own.
+:func:`compute_numerology` is the entry point for reading one text and :func:`dominant_number` for
+reading a set of reduced values; the rest of the surface is the pieces they are built from,
+re-exported here so a caller does not have to know the module layout. ``reduction``, ``master``,
+``gematria``, ``resonance``, ``dominant``, ``extraction`` and ``api`` stay importable for a caller
+that wants one piece on its own.
 """
 
 from __future__ import annotations

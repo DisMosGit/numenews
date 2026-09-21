@@ -2,7 +2,7 @@
 
 > **Phase 0 template.** The layer map, the boundary rules and the state model below are settled;
 > the data-flow diagram describes the *target* pipeline and is filled in as its steps land
-> (phases 2–5, of which 2, 3 and 4 are done). The full document is written in phase 10.1.
+> (phases 2–5, of which 2, 3, 4 and 5 are done). The full document is written in phase 10.1.
 
 ## One pipeline, two interfaces
 
@@ -20,18 +20,19 @@ command must be idempotent and resumable (AGENTS.md).
 
 | Layer | Package | May import | Responsibility |
 |---|---|---|---|
-| Pure logic | `numerology` | `models` | reduction, master numbers, gematria, date resonance, regex fallback |
+| Pure logic | `numerology` | `models` | reduction, master numbers, gematria, date resonance, dominant number, regex fallback |
 | Boundaries | `models` | nothing | Pydantic v2 types crossing every module boundary |
 | Adapters | `news`, `embeddings` | `models` | five news APIs behind one Protocol; local `fastembed` vectors |
 | Storage | `vector` | `models`, `embeddings`, `numerology` | Qdrant client, collections, payload indexes, hybrid search |
-| Reasoning | `agents` | `numerology`, `models` | `pydantic-ai` agents: extract, pattern, forecast |
+| Reasoning | `agents` | `numerology`, `models` | `pydantic-ai` agents: extract, pattern, forecast, summarize |
+| Composition | `pipeline` | everything above | the RAG chain, the sliding window, step timing and retries |
 | Interfaces | `mcp`, `cli` | everything above | tool and command surfaces, JSON serialization |
 
 Two rules keep this acyclic and testable:
 
-1. `numerology` is pure — no I/O, and never imports `news`, `vector`, `agents` or `mcp`; it depends
-   only on `models` for the types of its results (ADR 0002), so its invariants can be property-tested
-   without any infrastructure.
+1. `numerology` is pure — no I/O, and never imports `news`, `vector`, `agents`, `pipeline` or `mcp`;
+   it depends only on `models` for the types of its results (ADR 0002), so its invariants can be
+   property-tested without any infrastructure.
 2. State crosses boundaries as Pydantic models only — no dicts, no dataclasses, no free-form JSON
    from an LLM.
 
@@ -40,10 +41,14 @@ collections embed with, and `numerology` for `is_master`, which derives the filt
 `master_number` payload field. Both are leaves, so the graph stays acyclic and 11/22/33 stays defined
 once (ADR 0003).
 
+`pipeline` is the one layer that reads all of them, which is what makes the interfaces thin: it owns
+the order of the chain and nothing else — no numerology, no storage schema, no HTTP — and it is
+asynchronous while `vector` stays synchronous, bridged only by `asyncio.to_thread` (ADR 0011).
+
 `config` and `logging` sit below every layer: settings are validated once at start, and logs go to
 stderr so stdout stays machine-readable.
 
-## Data flow (target)
+## Data flow
 
 ```mermaid
 flowchart TD
@@ -55,11 +60,15 @@ flowchart TD
     F --> G[find_patterns: hybrid search + LLM]
     G --> H[build_forecast: LLM + number_history]
     H --> I[(Qdrant: patterns, forecasts, number_history)]
+    F --> K[summarize_news: older than the window]
+    K --> L[(Qdrant: digests)]
     I --> J[JSON to CLI stdout / MCP client]
 ```
 
-Context management: a sliding seven-day window feeds the agents, older items are summarised into a
-numerological digest, and `number_history` carries activations across sessions.
+All of it is driven by `numenews.pipeline`, which is the only layer that knows this order. Context
+management: a sliding seven-day window feeds the agents, older items are summarised into a
+numerological digest, and `number_history` carries activations across sessions — see
+[`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md).
 
 ## State
 
@@ -70,6 +79,7 @@ numerological digest, and `number_history` carries activations across sessions.
 | `patterns` | 768d | `type`, `strength`, `discovered_at` |
 | `forecasts` | 768d | `date`, `dominant_number` |
 | `number_history` | — (payload only) | `number`, `date` |
+| `digests` | 768d | `period_start`, `period_end` |
 
 Payload indexes are created **before** ingest: with an index Qdrant pre-filters inside the HNSW
 walk, without one it degrades to post-filtering. In multi-stage (hybrid) queries the filter belongs
@@ -95,5 +105,9 @@ paths (`search_news`, `hybrid_search_news`, `find_similar_patterns`, `get_histor
 `agents/` builds any OpenAI-compatible chat model from `Settings`, runs the three `pydantic-ai`
 agents (`ExtractNumbersAgent` with its regex fallback, `PatternAgent`, `ForecastAgent`), and turns
 each model answer into a domain model through the draft schemas of `agents/schemas.py`; the prompts
-and the `agents/` tests are documented in `docs/PROMPTS.md` with ADR 0004. `ROADMAP.md` is the
-authoritative status; `docs/adr/` records the decisions.
+and the `agents/` tests are documented in `docs/PROMPTS.md` with ADR 0004. Phase 5: the composition
+layer — `pipeline/` owns the chain (`ingest → analyze → forecast`, plus the opt-in `summarize`), the
+seven-day sliding window and the step timings, bridges the async pipeline to the synchronous vector
+layer with `asyncio.to_thread`, and adds the sixth collection `digests` for the summary of the news
+the window leaves behind; documented in `docs/RAG_PIPELINE.md` and `docs/CONTEXT_MANAGEMENT.md` with
+ADR 0011. `ROADMAP.md` is the authoritative status; `docs/adr/` records the decisions.

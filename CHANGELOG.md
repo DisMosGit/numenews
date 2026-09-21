@@ -64,14 +64,34 @@ Versioning: [Semantic Versioning](https://semver.org/).
   is documented verbatim in the new `docs/PROMPTS.md` and snapshot-tested with literal expectations.
 - ADR 0004 records the runtime choice (`pydantic-ai-slim[openai]` 2.x, chat completions), the draft
   boundary and the offline testing strategy (`TestModel`/`FunctionModel`, `ALLOW_MODEL_REQUESTS` off).
+- RAG pipeline (phases 5.1–5.6): `numenews.pipeline` — the `Pipeline` orchestrator over an injectable
+  vector store, four agents, a news fetcher and a `Clock`, with `ingest` (fetch → extract → compute →
+  embed/upsert, idempotent by `news_id` so a repeated run makes no model call), `analyze` (items by
+  id → `PatternAgent` → `save_pattern`), `forecast` (storage short-circuit, the seven-day window, the
+  day's dominant number, the activations of that day's numbers, `ForecastAgent`, `save_forecast`) and
+  `summarize` (older-than-window compression). Every step logs one `pipeline.step` line, records a
+  `Timing` for the returned `PipelineRun`, retries an `AgentError` once and then raises
+  `PipelineRetryError`; blocking vector calls go through `asyncio.to_thread` (ADR 0003).
+- Pure numerology rule `dominant_number(values)` with the `DominantResult` model: the most frequent
+  reduced value of a day's news, ties to the larger one, `0` for an empty set — the rule that decides
+  `Forecast.dominant_number`, with `reduce_date(day)` as the no-news fallback.
+- `SummarizeAgent` (roadmap 5.5) and the `Digest` model: the prose of a period, with the period and
+  its reduced values read off the items rather than asked of the model.
+- The sixth collection `digests` (768d COSINE, `period_start`/`period_end` `DATETIME` indexes,
+  period-derived point id) with `save_digest`/`get_digest`, plus the vector reads the pipeline needs:
+  `get_news_items(ids)`, `read_news_range(date_from, date_to)` and `get_activations(days, today=)`.
+- Documentation for the layer: `docs/RAG_PIPELINE.md` (the chain, the API, degradation, testing) and
+  `docs/CONTEXT_MANAGEMENT.md` (the window, the history, the digest and what it costs), with ADR 0011
+  recording the new layer, the new collection and the day's-number rule.
 
 ### Changed
 - Dependencies: `pydantic-ai-slim[openai]` joins the runtime set in phase 4 — the `pydantic-ai`
   meta-package would pull the anthropic, google, logfire, evals, mcp and web extras the agents do not
   use.
 - `docs/ARCHITECTURE.md`: the `numerology` layer may import `models` (the result types it returns),
-  the "implemented so far" section now covers phases 0–4, and the `vector` layer may import
-  `models`, `embeddings` and `numerology` (ADR 0003).
+  the "implemented so far" section now covers phases 0–5, the state table lists the sixth collection,
+  the data-flow diagram is the real chain, and the new `pipeline` layer is documented between
+  "Reasoning" and "Interfaces" (ADR 0011).
 - Dependencies: `httpx`, `hishel[httpx]` and `tenacity` join the runtime set, `respx` the dev group;
   `fastembed` joins the runtime set in phase 3, bringing ONNX Runtime and the Hugging Face hub client
   with it.

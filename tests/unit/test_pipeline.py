@@ -22,6 +22,7 @@ from numenews.pipeline import (
     PipelineRetryError,
     PipelineRun,
     StepTimer,
+    SystemClock,
     Timing,
 )
 from numenews.pipeline.steps import ATTEMPTS, retrying
@@ -94,8 +95,21 @@ def test_the_constructor_keeps_the_collaborators_it_was_given() -> None:
     assert pipeline.forecast_agent is forecaster
     assert pipeline.summarizer is not None
     assert pipeline.fetcher is not None
+    assert pipeline.settings is not None
     assert pipeline.window_days == 7
     assert pipeline.summary_limit == 50
+
+
+def test_the_default_clock_reads_the_real_wall_and_monotonic_clocks() -> None:
+    """`SystemClock` is what production uses, so it must answer both of the layer's questions."""
+    clock = SystemClock()
+
+    first = clock.monotonic()
+    now = clock.now()
+
+    assert now.tzinfo is UTC
+    assert abs(now.timestamp() - datetime.now(UTC).timestamp()) < 5
+    assert clock.monotonic() >= first
 
 
 def test_closing_the_pipeline_closes_the_store() -> None:

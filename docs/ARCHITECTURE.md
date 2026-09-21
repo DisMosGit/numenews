@@ -2,7 +2,7 @@
 
 > **Phase 0 template.** The layer map, the boundary rules and the state model below are settled;
 > the data-flow diagram describes the *target* pipeline and is filled in as its steps land
-> (phases 2–5, of which 2 and 3 are done). The full document is written in phase 10.1.
+> (phases 2–5, of which 2, 3 and 4 are done). The full document is written in phase 10.1.
 
 ## One pipeline, two interfaces
 
@@ -91,5 +91,9 @@ vector layer — `embeddings/` wraps the two local `bge` models behind an `Embed
 (downloaded once into `.cache/fastembed`, never at import), and `vector/` owns the Qdrant connection,
 the five collections with their payload indexes, the model↔payload conversion and the four search
 paths (`search_news`, `hybrid_search_news`, `find_similar_patterns`, `get_history`), documented in
-`docs/QDRANT_COLLECTIONS.md` and `docs/EMBEDDINGS.md` with ADR 0003. `ROADMAP.md` is the
+`docs/QDRANT_COLLECTIONS.md` and `docs/EMBEDDINGS.md` with ADR 0003. Phase 4: the reasoning layer —
+`agents/` builds any OpenAI-compatible chat model from `Settings`, runs the three `pydantic-ai`
+agents (`ExtractNumbersAgent` with its regex fallback, `PatternAgent`, `ForecastAgent`), and turns
+each model answer into a domain model through the draft schemas of `agents/schemas.py`; the prompts
+and the `agents/` tests are documented in `docs/PROMPTS.md` with ADR 0004. `ROADMAP.md` is the
 authoritative status; `docs/adr/` records the decisions.

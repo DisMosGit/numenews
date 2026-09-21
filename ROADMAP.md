@@ -698,53 +698,129 @@
 > **Результат фазы:** каждый агент возвращает валидированную Pydantic-модель.
 
 ### 4.1. LLM-клиент
-- [ ] `build_llm_model()` — OpenAI-совместимый клиент из `Settings` · `M` 🧪
-- [ ] Поддержка OpenRouter / локального Ollama через `base_url` · `S`
-- [ ] Тест: модель инициализируется, конфиг валиден · `S` 🧪
-- [ ] Коммит: `feat(agents): llm client` · `S` 🧪
+- [x] `build_llm_model()` — OpenAI-совместимый клиент из `Settings` · `M` 🧪
+- [x] Поддержка OpenRouter / локального Ollama через `base_url` · `S`
+- [x] Тест: модель инициализируется, конфиг валиден · `S` 🧪
+- [x] Коммит: `feat(agents): llm client` · `S` 🧪
 
 **DoD:** `build_llm_model()` работает с любым OpenAI-совместимым эндпоинтом.
 
+> *Отклонения. Зависимость — `pydantic-ai-slim[openai]>=2.46` (в `uv.lock` 2.46.0), а не
+> `pydantic-ai`: метапакет жёстко тянет extras `anthropic`, `google`, `logfire`, `evals`, `mcp` и
+> `web`, из которых агентам не нужен ни один. «v1.x» из `.docs/plan.md` устарел — актуальна ветка
+> 2.x, выбор зафиксирован в ADR 0004. Возвращается `OpenAIChatModel` с `OpenAIProvider`, а не
+> голая строка `"openai:"`: она резолвится в Responses API, которого нет ни у OpenRouter, ни у
+> Ollama, ни у vLLM. Ключа нет и `base_url` нет — `LLMConfigurationError` **до** первого запроса,
+> а не отложенный отказ провайдера: иначе `OpenAIProvider` читал бы `os.environ` в обход
+> `Settings`, и тест зависел бы от машины; при заданном `base_url` без ключа уходит плейсхолдер
+> (локальному серверу ключ не нужен, но OpenAI SDK не собирает клиент без него). Живого запроса к
+> эндпоинту в этой среде нет — ни `.env`, ни ключа, как и у новостных API в phase 2; DoD проверен
+> конструированием модели для OpenAI, OpenRouter и Ollama. Тем же коммитом
+> `tests/conftest.py` выставляет `pydantic_ai.models.ALLOW_MODEL_REQUESTS = False`: случайный
+> реальный вызов падает, а не уходит в сеть.*
+
 ### 4.2. ExtractNumbersAgent
-- [ ] `ExtractNumbersAgent` на `pydantic_ai.Agent` · `M` 🤖 🧪
-- [ ] `output_type=ExtractedNumbers` · `S`
-- [ ] Промпт: извлечь числа, даты, имена, символы · `M` 📝
-- [ ] Fallback на regex при ошибке LLM · `M` 🧪
-- [ ] Тест: мок LLM возвращает валидный JSON · `M` 🧪
-- [ ] Коммит: `feat(agents): extract numbers agent` · `M` 🤖 🧪
+- [x] `ExtractNumbersAgent` на `pydantic_ai.Agent` · `M` 🤖 🧪
+- [x] `output_type=ExtractedNumbers` · `S`
+- [x] Промпт: извлечь числа, даты, имена, символы · `M` 📝
+- [x] Fallback на regex при ошибке LLM · `M` 🧪
+- [x] Тест: мок LLM возвращает валидный JSON · `M` 🧪
+- [x] Коммит: `feat(agents): extract numbers agent` · `M` 🤖 🧪
 
 **DoD:** при ошибке LLM используется `extract_numbers_regex`.
 
+> *Отклонения. `output_type` — `ExtractionDraft` (`numbers`, `symbols`), а не `ExtractedNumbers`:
+> `sources` — наша провенанс-метка («чем добыто»), а не то, что модель может знать о себе; метод
+> возвращает доменную `ExtractedNumbers` с заполненными `sources`. Промпт просит числа (включая
+> цифры дат и числительные словами) и символы, но не даты и не имена: у модели 1.1 нет для них
+> полей, а расширение модели тянет за собой payload коллекции `news` (3.3). `sources` читается по
+> докстрингу 1.1 как «стратегии, которые внесли вклад»: `("llm",)` — regex не добавил ничего
+> нового, `("llm", "regex")` — добавил, `("regex",)` — модель не ответила; все три случая
+> закреплены тестами. Regex-проход идёт **всегда** (числа дедуплицируются: 3.4 выводит point id из
+> пары `(news_id, number)`), модель идёт первой, и всё вместе даёт деградацию до
+> `extract_numbers_regex` при любом `pydantic_ai.exceptions.AgentRunError` — это и
+> `UnexpectedModelBehavior` (невалидный вывод после ретраев), и `ModelAPIError` (транспорт). В лог
+> уходит длина текста, а не текст.*
+
 ### 4.3. PatternAgent
-- [ ] `PatternAgent` с `output_type=list[Pattern]` · `M` 🤖 🧪
-- [ ] Промпт: найти повторения, мастер-числа, резонансы, скрытые связи · `M` 📝
-- [ ] Валидация `strength ∈ [0, 1]` через Pydantic · `S` 🧪
-- [ ] Тест: мок LLM возвращает паттерн · `M` 🧪
-- [ ] Коммит: `feat(agents): pattern agent` · `M` 🤖 🧪
+- [x] `PatternAgent` с `output_type=list[Pattern]` · `M` 🤖 🧪
+- [x] Промпт: найти повторения, мастер-числа, резонансы, скрытые связи · `M` 📝
+- [x] Валидация `strength ∈ [0, 1]` через Pydantic · `S` 🧪
+- [x] Тест: мок LLM возвращает паттерн · `M` 🧪
+- [x] Коммит: `feat(agents): pattern agent` · `M` 🤖 🧪
 
 **DoD:** агент возвращает `list[Pattern]`, Pydantic отбрасывает невалидные.
 
+> *Отклонения. `output_type` — `list[PatternDraft]`: `id` и `discovered_at` модели знать неоткуда,
+> а `news_ids` в драфте — строки UUID, потому что `pydantic-ai` валидирует аргументы tool-вызова в
+> Python-режиме, где строгий `NewsId` (`RootModel[UUID]`) отвергает `str`; агент возвращает
+> `list[Pattern]`. `PatternId` выводится детерминированно — `uuid5(NAMESPACE_URL, type|numbers|
+> news_ids)`, тот же приём, что `news.items.news_id` (2.3), — поэтому повторный анализ тех же
+> новостей перезаписывает ту же точку Qdrant (3.5), а `discovered_at` остаётся `None` под
+> `save_pattern`. Придуманные или испорченные моделью id отбрасываются, драфт без единого
+> известного id — тоже. «Pydantic отбрасывает невалидные» прочитано как «отвергает»: `strength`
+> вне `[0, 1]` не зажимается, а проходит через ретраи вывода и заканчивается
+> `AgentExecutionError`; пустой список новостей даёт `[]` без вызова модели.*
+
 ### 4.4. ForecastAgent
-- [ ] `ForecastAgent` с `output_type=Forecast` · `M` 🤖 🧪
-- [ ] Промпт: учесть мастер-числа, историю, семантику · `M` 📝
-- [ ] Инъекция `number_history` в контекст промпта · `M` 🧪
-- [ ] Тест: агент получает историю и возвращает прогноз · `M` 🧪
-- [ ] Коммит: `feat(agents): forecast agent` · `M` 🤖 🧪
+- [x] `ForecastAgent` с `output_type=Forecast` · `M` 🤖 🧪
+- [x] Промпт: учесть мастер-числа, историю, семантику · `M` 📝
+- [x] Инъекция `number_history` в контекст промпта · `M` 🧪
+- [x] Тест: агент получает историю и возвращает прогноз · `M` 🧪
+- [x] Коммит: `feat(agents): forecast agent` · `M` 🤖 🧪
 
 **DoD:** прогноз содержит все поля `Forecast` (date, dominant_number, forecast, advice, warnings).
 
+> *Отклонения. `output_type` — `ForecastDraft` (`forecast`, `advice`, `warnings`): `date`,
+> `dominant_number` и `master_active` считает `numerology/`, `patterns` приходят из 4.3 или из
+> Qdrant, а AGENTS.md запрещает нумерологию в агентах; метод возвращает полный `Forecast`, то есть
+> DoD выполнен на возвращаемом объекте. История — аргумент `Sequence[NumberActivation]`, а не
+> чтение Qdrant: слой рассуждений остаётся без хранилища, реальное 30-дневное окно подключает 8.3.
+> `format_history` уже сейчас рендерит активации новыми первыми с тем же порядком, что
+> `get_history` (3.7), и явной строкой на пустое окно. Пустые `forecast`/`advice` отвергаются
+> (`min_length=1`): «прогноз», который ничего не говорит, — это ретрай, а не результат. Проза
+> генерируется по-русски (решение пользователя), инструкции — по-английски.*
+
 ### 4.5. Промпты в отдельном модуле
-- [ ] `agents/prompts.py` с константами · `S` 📝
-- [ ] Few-shot примеры для каждого агента · `M` 📝
-- [ ] Тесты на формат промпта (snapshot) · `M` 🧪
-- [ ] Коммит: `feat(agents): prompts module` · `M` 📝
+- [x] `agents/prompts.py` с константами · `S` 📝
+- [x] Few-shot примеры для каждого агента · `M` 📝
+- [x] Тесты на формат промпта (snapshot) · `M` 🧪
+- [x] Коммит: `feat(agents): prompts module` · `M` 📝
+
+> *Уточнения. Модуль появляется уже в 4.2 — каждому агенту нужен блок инструкций; 4.5 доводит его
+> до конечного вида: `*_RULES` + `*_FEW_SHOT` складываются в `*_INSTRUCTIONS`, который и получает
+> `Agent`, а `build_*_prompt` рендерит факты одного вызова. Библиотеку снапшотов не заводим:
+> снапшот — это литерал в `tests/unit/test_agents_prompts.py`, плюс отдельный тест парсит
+> JSON-ответ каждого few-shot примера и валидирует его драфт-схемой, чтобы пример не описывал
+> форму, которую Pydantic отвергнет. `RUF001/002/003` выключены для `prompts.py` и его тестов: там
+> намеренно соседствуют латиница и кириллица — так же, как в `gematria.py` (1.4), — и правило
+> видит в осмысленном двуязычном тексте «случайные конфузаблы».*
 
 ### 4.6. Документация агентов
-- [ ] `docs/PROMPTS.md` — все промпты с обоснованием · `M` 📝
-- [ ] ADR `0004-pydantic-ai-choice.md` — почему `pydantic-ai` · `M` 📝
-- [ ] Коммит: `docs: prompts + ADR` · `M` 📝
+- [x] `docs/PROMPTS.md` — все промпты с обоснованием · `M` 📝
+- [x] ADR `0004-pydantic-ai-choice.md` — почему `pydantic-ai` · `M` 📝
+- [x] Коммит: `docs: prompts + ADR` · `M` 📝
 
 **✅ Phase 4 завершена, когда:** каждый агент возвращает валидную Pydantic-модель, тесты изолированы от реального LLM.
+
+> **Итог phase 4 (2026-09-21).** Задачи 4.1–4.6 закрыты. `agents/` — 100% инструкций и ветвей
+> (188 инструкций, 18 ветвей), весь набор тестов — 407 прошедших и 7 пропущенных Docker-тестов
+> Qdrant (как и в phase 3, контейнер здесь недостижим без `env -u LD_PRELOAD`); `ruff check`,
+> `ruff format --check`, `mypy --strict` и `pre-commit run --all-files` зелёные. Три агента
+> возвращают доменные модели: `ExtractNumbersAgent.extract` → `ExtractedNumbers` с `sources`,
+> `PatternAgent.find_patterns` → `list[Pattern]` с детерминированными id,
+> `ForecastAgent.forecast` → `Forecast` со всеми полями. Тесты изолированы от реального LLM:
+> `TestModel`/`FunctionModel` из `tests/unit/agent_fakes.py` и `ALLOW_MODEL_REQUESTS = False` в
+> `tests/conftest.py`, ни одного сетевого вызова.
+>
+> **Отклонения** отмечены по задачам выше и сведены в ADR 0004: `pydantic-ai-slim[openai]` 2.46
+> вместо метапакета, `OpenAIChatModel` + `OpenAIProvider` вместо строки `"openai:"`,
+> draft-схемы (`ExtractionDraft`, `PatternDraft`, `ForecastDraft`) вместо доменных моделей в
+> `output_type`, числа и символы вместо «чисел, дат и имён» в промпте 4.2, детерминированный
+> `PatternId` в 4.3, `ForecastDraft` и история-аргумент в 4.4, вынесение few-shot примеров и
+> snapshot-тестов в 4.5. Живого прогона на реальной LLM нет — в репозитории нет `.env` и ключа
+> (та же ситуация, что с пятью новостными API в phase 2); DoD 4.1 проверен конструированием
+> модели для OpenAI, OpenRouter и Ollama, а не запросом.
 
 ---
 

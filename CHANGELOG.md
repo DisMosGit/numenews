@@ -54,10 +54,23 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Documentation for the vector layer: `docs/QDRANT_COLLECTIONS.md` (payload schemas, point ids,
   search examples, the local-mode caveat) and `docs/EMBEDDINGS.md` (models, cache, lazy loading,
   threading), with ADR 0003 recording the local-embeddings and layer decisions.
+- Reasoning layer (phases 4.1–4.5): `numenews.agents` — `build_llm_model` over any OpenAI-compatible
+  chat endpoint (OpenAI, OpenRouter, Ollama) from `Settings`, the three `pydantic-ai` agents
+  (`ExtractNumbersAgent` with the regex fallback of phase 1.6 and `sources` provenance,
+  `PatternAgent` with content-derived `uuid5` pattern ids and filtering of ids the model invented,
+  `ForecastAgent` with history injection), the draft output schemas that keep identity and
+  numerology out of the model's hands, the `AgentError` hierarchy, and the prompt module
+  (`*_RULES` + `*_FEW_SHOT` → `*_INSTRUCTIONS`, English instructions with Russian prose output) that
+  is documented verbatim in the new `docs/PROMPTS.md` and snapshot-tested with literal expectations.
+- ADR 0004 records the runtime choice (`pydantic-ai-slim[openai]` 2.x, chat completions), the draft
+  boundary and the offline testing strategy (`TestModel`/`FunctionModel`, `ALLOW_MODEL_REQUESTS` off).
 
 ### Changed
+- Dependencies: `pydantic-ai-slim[openai]` joins the runtime set in phase 4 — the `pydantic-ai`
+  meta-package would pull the anthropic, google, logfire, evals, mcp and web extras the agents do not
+  use.
 - `docs/ARCHITECTURE.md`: the `numerology` layer may import `models` (the result types it returns),
-  the "implemented so far" section now covers phases 0–2, and the `vector` layer may import
+  the "implemented so far" section now covers phases 0–4, and the `vector` layer may import
   `models`, `embeddings` and `numerology` (ADR 0003).
 - Dependencies: `httpx`, `hishel[httpx]` and `tenacity` join the runtime set, `respx` the dev group;
   `fastembed` joins the runtime set in phase 3, bringing ONNX Runtime and the Hugging Face hub client

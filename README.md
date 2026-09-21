@@ -7,10 +7,11 @@ numerology (digit reduction, master numbers 11/22/33, gematria), finds patterns 
 vector search in Qdrant, and builds a daily forecast — while keeping every number activation as
 long-term memory.
 
-> **Status: Phase 3 — embeddings + Qdrant.** The tooling, configuration, logging, the domain models,
-> the pure numerology layer, the five news sources behind one Protocol and the vector layer exist:
-> the two local `bge` models, the five Qdrant collections with their payload indexes, and semantic
-> plus hybrid search over them. The agents, MCP server and CLI land in phases 4–10. See
+> **Status: Phase 4 — LLM agents.** The tooling, configuration, logging, the domain models, the pure
+> numerology layer, the five news sources behind one Protocol, the vector layer (the two local `bge`
+> models, the five Qdrant collections, semantic and hybrid search) and the three `pydantic-ai` agents
+> (extract numbers, find patterns, build the forecast) exist. The RAG pipeline, the MCP server and
+> the CLI land in phases 5–10. See
 > [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is done.
 
 ## Quick start
@@ -102,6 +103,7 @@ make mcp           # start the MCP server (stdio)
 - [`docs/NEWS_SOURCES.md`](docs/NEWS_SOURCES.md) — the five news APIs, their limits and the cache
 - [`docs/QDRANT_COLLECTIONS.md`](docs/QDRANT_COLLECTIONS.md) — the five collections, payloads and indexes
 - [`docs/EMBEDDINGS.md`](docs/EMBEDDINGS.md) — the local models, the cache and why two of them
+- [`docs/PROMPTS.md`](docs/PROMPTS.md) — every agent prompt, verbatim, with its rationale
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`AGENTS.md`](AGENTS.md) — how AI coding agents work in this repository
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commits, local workflow

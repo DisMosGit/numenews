@@ -137,8 +137,9 @@ async def build_forecast(day: date, ctx: Context[AppContext]) -> Forecast:
 
     A day that was already read answers from Qdrant without running a model. Otherwise the reading
     is assembled from the last seven days of stored news (their dominant number, whether a master
-    number is active, and the patterns among them) plus the recent activations of exactly those
-    numbers, and then written back. Needs Qdrant and an LLM endpoint.
+    number is active, and the patterns among them) plus the activations of exactly those numbers
+    over the pipeline's thirty-day memory window, and then written back. Needs Qdrant and an LLM
+    endpoint.
     """
     with tool_errors():
         pipeline = await context_of(ctx).pipeline()

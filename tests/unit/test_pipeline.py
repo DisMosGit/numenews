@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from numenews.agents import AgentExecutionError
 from numenews.pipeline import (
+    DEFAULT_HISTORY_DAYS,
     DEFAULT_WINDOW_DAYS,
     Pipeline,
     PipelineError,
@@ -65,6 +66,17 @@ def test_a_window_without_days_is_refused() -> None:
         orchestration_pipeline(window_days=0)
 
 
+def test_the_default_history_window_is_thirty_days() -> None:
+    """ROADMAP 8.3 names the memory window; it is wider than the news window on purpose."""
+    assert _pipeline().history_days == DEFAULT_HISTORY_DAYS == 30
+
+
+def test_a_history_window_without_days_is_refused() -> None:
+    """Memory of no days is no memory; the caller asked for something impossible."""
+    with pytest.raises(PipelineError, match="history_days"):
+        orchestration_pipeline(history_days=0)
+
+
 def test_a_summary_limit_without_room_is_refused() -> None:
     """A digest that may summarise nothing would silently never be written."""
     with pytest.raises(PipelineError, match="summary_limit"):
@@ -97,6 +109,7 @@ def test_the_constructor_keeps_the_collaborators_it_was_given() -> None:
     assert pipeline.fetcher is not None
     assert pipeline.settings is not None
     assert pipeline.window_days == 7
+    assert pipeline.history_days == 30
     assert pipeline.summary_limit == 50
 
 

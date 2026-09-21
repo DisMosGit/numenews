@@ -37,6 +37,11 @@ from numenews.vector import VectorStore
 #: names seven: the day being read plus the six before it.
 DEFAULT_WINDOW_DAYS = 7
 
+#: How far back the forecast's memory reaches, when the caller does not say. Roadmap 8.3 names
+#: thirty: the news window is what the reading is *about*, the memory window is the evidence it may
+#: cite, and the two are deliberately different lengths.
+DEFAULT_HISTORY_DAYS = 30
+
 #: What the news step calls when no fetcher is injected: a coroutine taking ``(topic, date_range)``.
 type NewsFetcher = Callable[[Topic, DateRange], Awaitable[list[NewsItem]]]
 
@@ -59,11 +64,15 @@ class Pipeline:
         clock: The only source of wall-clock and monotonic readings. Defaults to
             :class:`~numenews.pipeline.clock.SystemClock`.
         window_days: Length of the sliding window in calendar days, ending on the day being read.
+        history_days: How far back the forecast's memory of number activations reaches, in calendar
+            days (``number_history``, phase 8.3). Independent of ``window_days``: the window says
+            what the reading is about, the memory says what it may cite.
         summary_limit: How many old items one digest summarises at most.
 
     Raises:
-        PipelineError: when ``window_days`` or ``summary_limit`` is less than one — a window with
-            no days would make every reading blind, which is a call-site bug, not a data condition.
+        PipelineError: when ``window_days``, ``history_days`` or ``summary_limit`` is less than one
+            — a window with no days would make every reading blind, which is a call-site bug, not a
+            data condition.
     """
 
     def __init__(
@@ -78,10 +87,13 @@ class Pipeline:
         fetcher: NewsFetcher | None = None,
         clock: Clock | None = None,
         window_days: int = DEFAULT_WINDOW_DAYS,
+        history_days: int = DEFAULT_HISTORY_DAYS,
         summary_limit: int = 50,
     ) -> None:
         if window_days < 1:
             raise PipelineError(f"window_days must be at least 1, got {window_days}")
+        if history_days < 1:
+            raise PipelineError(f"history_days must be at least 1, got {history_days}")
         if summary_limit < 1:
             raise PipelineError(f"summary_limit must be at least 1, got {summary_limit}")
         self._settings = settings if settings is not None else get_settings()
@@ -99,6 +111,7 @@ class Pipeline:
         self._fetcher = fetcher if fetcher is not None else fetch_news
         self._clock = clock if clock is not None else SystemClock()
         self._window_days = window_days
+        self._history_days = history_days
         self._summary_limit = summary_limit
 
     @property
@@ -145,6 +158,11 @@ class Pipeline:
     def window_days(self) -> int:
         """Length of the sliding window, in calendar days, ending on the day being read."""
         return self._window_days
+
+    @property
+    def history_days(self) -> int:
+        """How far back the forecast's memory of number activations reaches, in calendar days."""
+        return self._history_days
 
     @property
     def summary_limit(self) -> int:

@@ -9,7 +9,7 @@ that with three mechanisms of different granularity:
 | Mechanism | Horizon | Where it lives | Who reads it |
 |---|---|---|---|
 | The sliding window | the day and the six before it | Qdrant `news` | the pattern and forecast steps |
-| The activation history | the same window, by number | Qdrant `number_history` | the forecast step |
+| The activation history | the last 30 days, by number | Qdrant `number_history` | the forecast step and `numenews history` |
 | The digest | everything older | Qdrant `digests` | a caller, and a later phase's prompt |
 
 ## The sliding window
@@ -34,15 +34,27 @@ the only place those readings happen: every step takes its dates from the pipeli
 ## The activation history
 
 `number_history` is the exact log of which number occurred in which article on which day (phase 3.7,
-roadmap phase 8). The forecast step reads the window back with `get_activations(store, days,
-today=)` — the read *without* a number, because a day's reading is interested in whatever was active
-— and then keeps only the activations whose number appears in the day's own news. The prompt
-therefore carries evidence for *this* reading: a 7 from last week does not appear in a reading about
-an 11.
+roadmap phase 8). Every ingest appends one row per `(news item, number)` pair — the number, the
+publication day, the item's id, the sentence the number was read in and the item's own reduced value
+(phase 8.1). The point id is derived from the pair, so re-ingesting an article overwrites its rows
+instead of appending duplicates.
 
-The window is deliberately short (seven days) for the forecast. Roadmap 8.3 extends the read to the
-30-day window the `ForecastAgent` was built for; the agent already accepts the history as an
-argument, so that change is a parameter, not a refactor.
+Two reads answer two questions:
+
+- `get_history(store, number, days, today=)` — "when was 11 active": the rows of one number, newest
+  first. `numenews history --number 11` prints exactly that, and folds the same rows into `by_day`
+  with `activation_frequency` (phase 8.2): one bucket per calendar day, counting activation rows.
+- `get_activations(store, days, today=)` — "what was active recently": the same window without a
+  number, which is the read the forecast step needs.
+
+The forecast reads the window back and then keeps only the activations whose number appears in the
+day's own news. The prompt therefore carries evidence for *this* reading: a 7 from last week does not
+appear in a reading about an 11.
+
+That window is the pipeline's `history_days` — thirty days by default, and deliberately wider than
+the seven-day news `window_days`: the news says what the day is about, the memory says what numbers
+like these did over the past month. The two are independent parameters, so a caller can widen or
+narrow the memory without changing what the reading is about.
 
 ## The digest
 

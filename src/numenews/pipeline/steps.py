@@ -320,8 +320,9 @@ async def forecast(
     * the day's ``dominant_number`` and ``master_active`` from the pure rule of
       ``numerology.dominant_number``, with ``reduce_date(day)`` as the fallback for a day with no
       news, because a reading always has a number to rest on;
-    * the recent activations of exactly the numbers this day's news carries, so the memory shown to
-      the model is evidence for these items and not an unrelated 7 from last week.
+    * the recent activations of exactly the numbers this day's news carries, read over the memory
+      window (``history_days``, thirty days by default) so the memory shown to the model is evidence
+      for these items and not an unrelated 7 from last week.
 
     ``analyze`` is re-run rather than reading patterns back by time: ``discovered_at`` records when
     a connection was written, not which day it belongs to, and the deterministic ``PatternId``
@@ -363,7 +364,7 @@ async def forecast(
         analysis = await analyze(pipeline, tuple(item.id for item in items))
         patterns = analysis.patterns
 
-    history = await _day_history(pipeline, items, window_days=pipeline.window_days, today=end)
+    history = await _day_history(pipeline, items, days=pipeline.history_days, today=end)
 
     with StepTimer(pipeline.clock, "write") as write_timer:
         reading = await retrying(
@@ -467,22 +468,25 @@ async def _day_history(
     pipeline: Pipeline,
     items: Sequence[NewsItem],
     *,
-    window_days: int,
+    days: int,
     today: date,
 ) -> list[NumberActivation]:
     """Return the recent activations of the numbers this day's news carries, newest first.
 
     Only the numbers of the day are kept: the memory in the prompt is evidence for this reading, and
-    an unrelated 7 from last week is not. A day whose news states no number at all asks nothing of
-    the history collection, so an empty or uninitialised one cannot fail a reading it does not feed;
-    a missing collection is read as "nothing was ever activated", which is what it means here.
+    an unrelated 7 from last week is not. ``days`` is the memory window of roadmap 8.3
+    (``history_days``), deliberately wider than the seven-day news window the items came from: the
+    news says what the day is about, the memory says what numbers like these did before. A day whose
+    news states no number at all asks nothing of the history collection, so an empty or
+    uninitialised one cannot fail a reading it does not feed; a missing collection is read as
+    "nothing was ever activated", which is what it means here.
     """
     numbers = {number for item in items for number in item.numbers}
     if not numbers:
         return []
     try:
         activations = await pipeline.run_blocking(
-            lambda: get_activations(pipeline.store, window_days, today=today)
+            lambda: get_activations(pipeline.store, days, today=today)
         )
     except CollectionNotFoundError:
         return []

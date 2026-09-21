@@ -4,8 +4,8 @@ The agent writes text; everything else in a :class:`~numenews.models.Forecast` i
 layers that own it — the date and its numerological values come from ``numenews.numerology`` through
 the pipeline (AGENTS.md keeps numerology out of the agents), and the patterns come from phase 4.3 or
 from Qdrant. The recent activations are an input too: the pipeline reads them from
-``number_history`` and hands them over, so this layer stays free of storage (phase 8.3 wires the
-30-day read).
+``number_history`` over its memory window (``history_days``, thirty days by default — phase 8.3) and
+hands them over, so this layer stays free of storage.
 """
 
 from __future__ import annotations
@@ -62,7 +62,8 @@ class ForecastAgent:
             dominant_number: The day's reduced number, from ``numerology``.
             master_active: Whether a master number (11, 22 or 33) participates in the day.
             patterns: The patterns the reading should rest on (phase 4.3 or Qdrant).
-            history: Recent number activations, newest first (``number_history``, phase 3.7).
+            history: Recent number activations, newest first, as the pipeline's memory window read
+                them (``number_history``, phase 3.7; window of phase 8.3).
 
         Returns:
             A :class:`~numenews.models.Forecast` carrying the given facts and the model's prose.

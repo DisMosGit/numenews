@@ -226,7 +226,9 @@ Number activations of the recent past:
   `HISTORY_CONTEXT_LIMIT = 160` characters), newest first and at equal dates by `news_id`
   descending — the order of `VectorStore.get_history` (phase 3.7), so the same history always
   produces the same prompt. `format_history([])` writes
-  `No number activations were recorded for this window.` Phase 8.3 feeds the real 30-day window in.
+  `No number activations were recorded for this window.` The pipeline feeds it the activations of
+  the day's numbers read over `Pipeline.history_days` — thirty days by default (phase 8.3), wider
+  than the seven-day news window the items come from.
 - `forecast` and `advice` may not be blank: `ForecastDraft` rejects an empty string, so a reading
   that says nothing is a failed run to retry, not a result.
 

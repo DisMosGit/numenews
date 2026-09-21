@@ -75,8 +75,9 @@ skips that for a caller that just ran it — and the reading rests on:
   with `reduce_date(day)` as the fallback for a day with no news, because a reading always has a
   number to rest on;
 - `master_active`, true when that dominant value is a master number;
-- the recent activations of exactly the numbers *this* day's news carries, so the memory in the
-  prompt is evidence for this reading and not an unrelated 7 from last week.
+- the recent activations of exactly the numbers *this* day's news carries, read over the memory
+  window (`Pipeline.history_days`, thirty days by default — phase 8.3), so the memory in the prompt
+  is evidence for this reading and not an unrelated 7 from last week.
 
 **Summarize is opt-in.** `Pipeline.summarize` ingests a range and compresses everything older than
 the window into one digest. An ingest run never pays for it; see

@@ -20,7 +20,12 @@ from __future__ import annotations
 from numenews.pipeline.clock import Clock, SystemClock
 from numenews.pipeline.context import build_digest, partition, window_start
 from numenews.pipeline.errors import PipelineError, PipelineRetryError
-from numenews.pipeline.pipeline import DEFAULT_WINDOW_DAYS, NewsFetcher, Pipeline
+from numenews.pipeline.pipeline import (
+    DEFAULT_HISTORY_DAYS,
+    DEFAULT_WINDOW_DAYS,
+    NewsFetcher,
+    Pipeline,
+)
 from numenews.pipeline.steps import (
     activate,
     context_snippet,
@@ -30,6 +35,7 @@ from numenews.pipeline.steps import (
 from numenews.pipeline.timings import PipelineRun, StepTimer, Timing
 
 __all__ = [
+    "DEFAULT_HISTORY_DAYS",
     "DEFAULT_WINDOW_DAYS",
     "Clock",
     "NewsFetcher",

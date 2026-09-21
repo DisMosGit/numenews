@@ -10,7 +10,7 @@ surfaces after one retry instead of storing a fabricated reading.
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from uuid import NAMESPACE_URL, uuid4, uuid5
 
 import pytest
@@ -222,6 +222,47 @@ async def test_the_history_shown_to_the_model_is_the_day_s_numbers(
     assert "Eleven ministers resigned." in prompt
     assert "Seven ships left the port." not in prompt
     assert vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count == 2
+
+
+async def test_the_memory_window_reaches_thirty_days(vector_store: VectorStore) -> None:
+    """Roadmap 8.3: the reading may cite an activation of four weeks ago, but not one of six."""
+    item = _item(11)
+    upsert_news(vector_store, [item])
+    recent = NumberActivation(
+        number=11,
+        date=DAY - timedelta(days=20),
+        news_id=NewsId(uuid4()),
+        context="Eleven ministers resigned three weeks ago.",
+    )
+    stale = NumberActivation(
+        number=11,
+        date=DAY - timedelta(days=40),
+        news_id=NewsId(uuid4()),
+        context="Eleven ministers resigned six weeks ago.",
+    )
+    await asyncio.to_thread(record_activation, vector_store, recent)
+    await asyncio.to_thread(record_activation, vector_store, stale)
+    model, recorder = recording(
+        forecast="День под знаком одиннадцати.",
+        advice="Слушайте интуицию.",
+        warnings=[],
+    )
+    pipeline, _, _ = _pipeline(vector_store, patterns=[_draft([item])])
+    pipeline = Pipeline(
+        store=vector_store,
+        extract=pipeline.extract,
+        patterns=pipeline.patterns,
+        forecast_agent=ForecastAgent(model),
+        summarizer=summarize_agent()[0],
+        fetcher=fetcher_returning([]),
+        clock=FrozenClock(now=NOW),
+    )
+
+    await pipeline.forecast(DAY)
+
+    prompt = user_text(recorder.calls[0])
+    assert "three weeks ago" in prompt
+    assert "six weeks ago" not in prompt
 
 
 async def test_a_failing_forecast_agent_stores_nothing_and_surfaces(

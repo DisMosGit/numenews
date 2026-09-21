@@ -170,8 +170,8 @@ async def build_forecast(day: date) -> Forecast
 
 Returns the numerological reading for a calendar day and saves it. A day already read answers from
 Qdrant without running a model; otherwise the reading is assembled from the last seven days of stored
-news (dominant number, whether a master number is active, the patterns among them) plus the recent
-activations of exactly those numbers.
+news (dominant number, whether a master number is active, the patterns among them) plus the
+activations of exactly those numbers over the pipeline's thirty-day memory window (phase 8.3).
 
 ```json
 {"day": "2026-09-21"}

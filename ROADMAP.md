@@ -1347,10 +1347,10 @@
 - [x] Коммит: `feat(memory): read history` · `M` 🧪
 
 ### 8.3. Инъекция в промпт прогноза
-- [ ] `ForecastAgent` получает историю последних 30 дней · `M` 🧪
-- [ ] Форматирование истории в промпт · `M` 📝
-- [ ] Тест: прогноз учитывает историю (snapshot промпта) · `M` 🧪
-- [ ] Коммит: `feat(memory): inject history into forecast` · `M` 🧪
+- [x] `ForecastAgent` получает историю последних 30 дней · `M` 🧪
+- [x] Форматирование истории в промпт · `M` 📝
+- [x] Тест: прогноз учитывает историю (snapshot промпта) · `M` 🧪
+- [x] Коммит: `feat(memory): inject history into forecast` · `M` 🧪
 
 ### 8.4. Документация памяти
 - [ ] `docs/CONTEXT_MANAGEMENT.md` — расширить разделом про `number_history` · `M` 📝

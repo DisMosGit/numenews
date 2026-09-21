@@ -1,0 +1,61 @@
+{
+  "pagination": { "limit": 100, "offset": 0, "count": 4, "total": 4 },
+  "data": [
+    {
+      "author": "Jane Doe",
+      "title": "The eleventh hour budget",
+      "description": "Talks ran to the 11th hour.",
+      "url": "https://www.example.com/budget",
+      "source": "Example News",
+      "image": null,
+      "category": "politics",
+      "language": "en",
+      "country": "us",
+      "published_at": "2026-09-21T14:30:00+00:00"
+    },
+    {
+      "author": null,
+      "title": "A headline with no description",
+      "description": null,
+      "url": "https://news.example.net/headline",
+      "source": null,
+      "image": null,
+      "category": "general",
+      "language": "en",
+      "country": "gb",
+      "published_at": "2026-09-20T06:00:00+00:00"
+    },
+    {
+      "author": null,
+      "title": null,
+      "description": "An entry without a title.",
+      "url": "https://news.example.net/no-title",
+      "source": "Example Net",
+      "category": "general",
+      "language": "en",
+      "country": "gb",
+      "published_at": "2026-09-20T07:00:00+00:00"
+    },
+    {
+      "author": null,
+      "title": "An entry with a broken date",
+      "description": "The date is a word.",
+      "url": "https://news.example.net/bad-date",
+      "source": "Example Net",
+      "category": "general",
+      "language": "en",
+      "country": "gb",
+      "published_at": "yesterday"
+    },
+    {
+      "author": null,
+      "title": "An entry without a timestamp field",
+      "description": "No published_at field.",
+      "url": "https://news.example.net/no-timestamp",
+      "source": "Example Net",
+      "category": "general",
+      "language": "en",
+      "country": "gb"
+    }
+  ]
+}

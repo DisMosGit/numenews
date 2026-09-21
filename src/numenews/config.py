@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     # produces a result from the feeds that are available.
     newsapi_key: SecretStr | None = None
     gnews_key: SecretStr | None = None
+    mediastack_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

@@ -25,6 +25,7 @@ SETTINGS_ENV_VARS = (
     "CACHE_DIR",
     "NEWSAPI_KEY",
     "GNEWS_KEY",
+    "MEDIASTACK_KEY",
 )
 
 
@@ -57,6 +58,7 @@ def test_defaults() -> None:
     assert settings.cache_dir == Path(".cache/hishel")
     assert settings.newsapi_key is None
     assert settings.gnews_key is None
+    assert settings.mediastack_key is None
 
 
 def test_environment_variable_overrides_default(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -66,6 +68,7 @@ def test_environment_variable_overrides_default(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("QDRANT_API_KEY", "secret-key")
     monkeypatch.setenv("NEWSAPI_KEY", "newsapi-secret")
     monkeypatch.setenv("GNEWS_KEY", "gnews-secret")
+    monkeypatch.setenv("MEDIASTACK_KEY", "mediastack-secret")
 
     settings = Settings()
 
@@ -78,6 +81,8 @@ def test_environment_variable_overrides_default(monkeypatch: pytest.MonkeyPatch)
     assert settings.newsapi_key.get_secret_value() == "newsapi-secret"
     assert settings.gnews_key is not None
     assert settings.gnews_key.get_secret_value() == "gnews-secret"
+    assert settings.mediastack_key is not None
+    assert settings.mediastack_key.get_secret_value() == "mediastack-secret"
 
 
 def test_dotenv_is_read(tmp_path: Path) -> None:

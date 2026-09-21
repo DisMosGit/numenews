@@ -420,9 +420,18 @@
 > датами, `max=10` — потолок бесплатного плана. Ключ — в заголовке `X-Api-Key`.*
 
 ### 2.6. Mediastack adapter
-- [ ] `MediastackSource(NewsSource)` · `M` 🧪
-- [ ] Чтение `MEDIASTACK_KEY` · `S`
-- [ ] Коммит: `feat(news): mediastack adapter` · `M` 🧪
+- [x] `MediastackSource(NewsSource)` · `M` 🧪
+- [x] Чтение `MEDIASTACK_KEY` · `S`
+- [x] Коммит: `feat(news): mediastack adapter` · `M` 🧪
+
+> *Отклонения. `access_key` — единственная форма авторизации по документации, поэтому ключ
+> уезжает в query-строке; в лог он не попадает (`get_response` логирует эндпоинт без параметров),
+> но оказывается внутри хешированного ключа кэша — это отмечено в модуле и в `docs`.
+> Диапазон дат уходит как `date=YYYY-MM-DD,YYYY-MM-DD`, хотя исторические запросы документированы
+> только со Standard-плана: реализуется документированный контракт, а `function_access_restricted`
+> на free-плане деградирует как обычная ошибка источника (оговорено в `docs/NEWS_SOURCES.md`).
+> `published_at` приходит с офсетом `+00:00` и разбирается `fromisoformat`; издатель — плоская
+> строка `source`.*
 
 ### 2.7. Currents API adapter
 - [ ] `CurrentsSource(NewsSource)` · `M` 🧪

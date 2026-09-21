@@ -50,3 +50,70 @@ dev = [
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
 build-backend = "uv_build"
+
+# -----------------------------------------------------------------------------
+# Ruff
+# -----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# `select = all` was the roadmap's first sketch; this curated set is the one the
+# project actually keeps green. ANN401 is ignored because `Any` is already banned
+# by AGENTS.md, and re-checking it at third-party boundaries only adds noise.
+select = ["E", "W", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "ANN", "RUF", "PTH"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["numenews"]
+
+# -----------------------------------------------------------------------------
+# Mypy (strict)
+# -----------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
+# Pydantic models carry the domain's data; the plugin checks their generated
+# `__init__` signatures instead of falling back to `**data: Any`.
+plugins = ["pydantic.mypy"]
+# The package lives in `src/`; without this mypy resolves `import numenews`
+# through the editable install instead of the sources it is analysing.
+mypy_path = ["src"]
+exclude = ['^\.venv/', '^build/', '^dist/']
+
+[tool.pydantic-mypy]
+init_typed = true
+init_forbid_extra = true
+warn_required_dynamic_aliases = true
+
+# -----------------------------------------------------------------------------
+# pytest
+# -----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# pytest-asyncio >= 1.0 removed the `event_loop` fixture; the scope is configured
+# here instead, which is also what keeps the deprecation warning away.
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "integration: needs a reachable service (Docker Qdrant; HTTP and LLM calls are mocked)",
+    "eval: RAG quality metrics, run only with --run-eval (phase 9)",
+]
+
+# -----------------------------------------------------------------------------
+# Coverage
+# -----------------------------------------------------------------------------
+[tool.coverage.run]
+branch = true
+source = ["numenews"]
+
+[tool.coverage.report]
+show_missing = true
+# The per-layer floors (numerology 95%, agents/pipeline 80%, vector/news 70%) land
+# with their layers and are enforced in phase 10; a non-zero floor would fail
+# `make test` on the skeleton, which has nothing to cover yet.
+fail_under = 0

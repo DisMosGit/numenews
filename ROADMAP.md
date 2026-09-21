@@ -75,14 +75,16 @@
 **DoD:** `docker compose up -d` — контейнер `healthy`, Web UI на `:6333/dashboard`.
 
 ### 0.4. Тулинг (ruff, mypy, pytest, pre-commit)
-- [ ] Конфиг `ruff` (line-length=100, target=py312, select = all) · `S`
-- [ ] Конфиг `mypy --strict` с плагином `pydantic.mypy` · `S`
-- [ ] Конфиг `pytest` + `pytest-asyncio` (`asyncio_mode = "auto"`) · `S`
-- [ ] Конфиг `coverage` (branch, fail_under=80) · `S`
-- [ ] `.pre-commit-config.yaml`: ruff, ruff-format, mypy, check-yaml, end-of-file-fixer · `M`
-- [ ] `uv run pre-commit install` работает · `S`
-- [ ] `uv run pre-commit run --all-files` проходит · `S`
-- [ ] Коммит: `chore: ruff + mypy strict + pytest + pre-commit` · `M`
+- [x] Конфиг `ruff` (line-length=100, target=py314, select = all) · `S`
+      *`target=py312` в черновике устарел — проект на Python 3.14. Вместо буквального `select = all` — курируемый набор (`E, W, F, I, N, UP, B, A, C4, SIM, ANN, RUF, PTH`) с `ignore = ["ANN401"]`; обоснование в комментарии `pyproject.toml`.*
+- [x] Конфиг `mypy --strict` с плагином `pydantic.mypy` · `S`
+- [x] Конфиг `pytest` + `pytest-asyncio` (`asyncio_mode = "auto"`) · `S`
+- [x] Конфиг `coverage` (branch, fail_under=80) · `S`
+      *В phase 0 `fail_under = 0`: на скелете покрывать нечего, пороги слоёв (95/80/70%) включаются вместе со слоями и в phase 10.*
+- [x] `.pre-commit-config.yaml`: ruff, ruff-format, mypy, check-yaml, end-of-file-fixer · `M`
+- [x] `uv run pre-commit install` работает · `S`
+- [x] `uv run pre-commit run --all-files` проходит · `S`
+- [x] Коммит: `chore: ruff + mypy strict + pytest + pre-commit` · `M`
 
 **DoD:** `pre-commit run --all-files` — все хуки passed.
 

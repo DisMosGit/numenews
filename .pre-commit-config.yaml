@@ -1,4 +1,4 @@
-# pre-commit hooks for PlantKeeper.
+# pre-commit hooks for numenews.
 #
 #   uv run pre-commit install          # install the git hook
 #   uv run pre-commit run --all-files  # run everything once

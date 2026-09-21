@@ -1263,9 +1263,19 @@
 > `tests/integration/test_mcp_stdio.py` через `python -m numenews.mcp`.*
 
 ### 7.9. Smoke-тесты CLI
-- [ ] `typer.testing.CliRunner` для всех команд · `M` 🧪
-- [ ] Тест: `numenews today` возвращает exit code 0 + JSON · `M` 🧪
-- [ ] Коммит: `test(cli): smoke tests` · `M` 🧪
+- [x] `typer.testing.CliRunner` для всех команд · `M` 🧪
+- [x] Тест: `numenews today` возвращает exit code 0 + JSON · `M` 🧪
+- [x] Коммит: `test(cli): smoke tests` · `M` 🧪
+
+> *Уточнения. Матрица `_SMOKE_CASES` прогоняет `today`, `forecast`, `history`, `search` (обе
+> коллекции) и `patterns` через настоящий `CliRunner` на in-memory Qdrant с фейковыми эмбеддерами и
+> скриптованными агентами; «ровно один документ» проверяется `JSONDecoder().raw_decode` — после
+> документа допустим только перевод строки, который добавляет `print_json`. `mcp` в матрицу не входит
+> сознательно: его stdout — JSON-RPC, а не результат команды; его контракт проверяет
+> `test_cli_main.py` (подмена `serve_mcp`) и `test_mcp_stdio.py` (настоящий subprocess). Отдельный
+> тест фиксирует DoD фазы: `numenews today` даёт exit code 0 и целое `dominant_number`. Файлы тестов:
+> `tests/unit/test_cli_main.py` (парсер, `--version`, `mcp`), `tests/unit/test_cli_output.py`,
+> `tests/unit/test_cli_dates.py` и `tests/integration/test_cli.py`.*
 
 ### 7.10. Документация CLI
 - [ ] `docs/USER_FLOW.md` — все команды + примеры JSON · `M` 📝

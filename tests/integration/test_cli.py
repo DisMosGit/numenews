@@ -14,6 +14,7 @@ scripted agents) rather than the store afterwards.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import uuid4
@@ -592,3 +593,75 @@ def test_patterns_refuses_a_strength_outside_the_unit_interval(
 
     assert result.exit_code == 2
     assert result.stdout == ""
+
+
+def _seed_history(store: VectorStore) -> None:
+    """Give the store one recorded activation, so ``history`` has a collection to read."""
+    record_activation(store, _activation(11, day=datetime.now(UTC).date()))
+
+
+def _seed_news(store: VectorStore) -> None:
+    """Give the store one news item, so ``search`` has a collection to search."""
+    upsert_news(store, [_item("budget deal signed")])
+
+
+def _seed_patterns(store: VectorStore) -> None:
+    """Give the store one pattern, so ``patterns`` and ``search`` have a collection to read."""
+    save_pattern(store, _pattern("strong resonance", strength=0.8))
+
+
+#: Every command that answers with one JSON document, with the smallest seed each one needs. ``mcp``
+#: is absent on purpose: its stdout is the JSON-RPC wire, not a command result (ADR 0005).
+_SMOKE_CASES = [
+    pytest.param(["today"], None, id="today"),
+    pytest.param(["forecast"], None, id="forecast"),
+    pytest.param(["history", "--number", "11"], _seed_history, id="history"),
+    pytest.param(["search", "-q", "budget"], _seed_news, id="search-news"),
+    pytest.param(
+        ["search", "-q", "резонанс", "--collection", "patterns"],
+        _seed_patterns,
+        id="search-patterns",
+    ),
+    pytest.param(["patterns"], _seed_patterns, id="patterns"),
+]
+
+
+@pytest.mark.parametrize(("argv", "seed"), _SMOKE_CASES)
+def test_every_command_answers_with_one_json_document(
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+    fake_base_embedder: FakeEmbedder,
+    fake_small_embedder: FakeEmbedder,
+    argv: list[str],
+    seed: Callable[[VectorStore], None] | None,
+) -> None:
+    """ROADMAP 7.9: each command exits 0 and writes exactly one JSON document to stdout.
+
+    The store is built per case because a run closes its context; the decoder check is what makes
+    "exactly one" precise — nothing may follow the document but the newline ``print_json`` adds.
+    """
+    store = VectorStore.in_memory(base=fake_base_embedder, small=fake_small_embedder)
+    if seed is not None:
+        seed(store)
+    pipeline, _, _ = _pipeline(store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, argv)
+
+    assert result.exit_code == 0, result.stderr
+    document, end = json.JSONDecoder().raw_decode(result.stdout)
+    assert result.stdout[end:].strip() == ""
+    assert document
+
+
+def test_today_returns_exit_code_zero_and_the_dominant_number(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The phase DoD in test form: ``jq .dominant_number`` has an integer to read."""
+    pipeline, _, _ = _pipeline(vector_store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, ["today"])
+
+    assert result.exit_code == 0, result.stderr
+    assert isinstance(json.loads(result.stdout)["dominant_number"], int)

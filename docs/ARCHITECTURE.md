@@ -71,8 +71,9 @@ flowchart TD
 ```
 
 All of it is driven by `numenews.pipeline`, which is the only layer that knows this order. Context
-management: a sliding seven-day window feeds the agents, older items are summarised into a
-numerological digest, and `number_history` carries activations across sessions — see
+management: a sliding seven-day window feeds the agents, their reading may cite the last thirty days
+of number activations from `number_history`, older items are summarised into a numerological digest,
+and that log carries activations across sessions — see
 [`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md).
 
 ## State
@@ -125,4 +126,10 @@ one JSON document per command on stdout and logs on stderr, a `--date` grammar o
 relative days, an `ErrorReport` for expected failures, and the exact `read_patterns` read of the
 `patterns` collection; it reuses the MCP server's `AppContext` as its container and proxies
 `numenews mcp` into `numenews.mcp.main`; documented in `docs/USER_FLOW.md` with ADR 0005 and 0006.
+Phase 8: long-term memory — `number_history` is the exact log of number activations, written on every
+ingest (each row carries the item's reduced value) and read back by `get_history`/`get_activations`;
+`activation_frequency` folds a read into a per-day series that `numenews history` prints as `by_day`;
+and the forecast step cites the activations of the day's numbers over `Pipeline.history_days` (30
+days by default, independent of the seven-day news window); documented in `docs/CONTEXT_MANAGEMENT.md`
+with ADR 0012.
 `ROADMAP.md` is the authoritative status; `docs/adr/` records the decisions.

@@ -7,14 +7,15 @@ numerology (digit reduction, master numbers 11/22/33, gematria), finds patterns 
 vector search in Qdrant, and builds a daily forecast — while keeping every number activation as
 long-term memory.
 
-> **Status: Phase 7 — one-shot CLI.** The tooling, configuration, logging, the domain models, the
-> pure numerology layer, the five news sources behind one Protocol, the vector layer (the two local
-> `bge` models, the six Qdrant collections, semantic and hybrid search), the four `pydantic-ai`
+> **Status: Phase 8 — long-term memory.** The tooling, configuration, logging, the domain models,
+> the pure numerology layer, the five news sources behind one Protocol, the vector layer (the two
+> local `bge` models, the six Qdrant collections, semantic and hybrid search), the four `pydantic-ai`
 > agents (extract numbers, find patterns, build the forecast, summarise old news), the pipeline that
 > composes them (`ingest → analyze → forecast`, with the sliding window and the digest), the MCP
-> server with its nine tools, and the one-shot CLI (`today`, `forecast`, `history`, `search`,
-> `patterns`, `mcp`) exist. See [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is
-> done.
+> server with its nine tools, the one-shot CLI (`today`, `forecast`, `history`, `search`, `patterns`,
+> `mcp`), and the long-term memory of number activations (`number_history`, its per-day frequency and
+> the forecast's thirty-day memory window) exist. See [`ROADMAP.md`](ROADMAP.md) for the
+> phase-by-phase plan and what is done.
 
 ## Quick start
 

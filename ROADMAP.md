@@ -1353,10 +1353,42 @@
 - [x] Коммит: `feat(memory): inject history into forecast` · `M` 🧪
 
 ### 8.4. Документация памяти
-- [ ] `docs/CONTEXT_MANAGEMENT.md` — расширить разделом про `number_history` · `M` 📝
-- [ ] Коммит: `docs: number history` · `S` 📝
+- [x] `docs/CONTEXT_MANAGEMENT.md` — расширить разделом про `number_history` · `M` 📝
+- [x] Коммит: `docs: number history` · `S` 📝
 
 **✅ Phase 8 завершена, когда:** после двух запусков `numenews today` история активаций растёт.
+
+> **Итог phase 8 (2026-09-21).** Задачи 8.1–8.4 закрыты. Большая часть памяти была собрана
+> раньше — 3.7 завела `number_history`, 5.2 писала строку на ингест, 5.4 читала активации, 6.10 и
+> 7.5 отдали чтение наружу, — поэтому 8.1–8.3 закрывали то, что эти задачи оставили открытым:
+> `NumberActivation.numerology_value` (8.1), `activation_frequency` → `DayActivationCount` и
+> `HistoryResult.by_day` (8.2), `Pipeline.history_days` = 30 дней (8.3). Весь `make test` — 677
+> тестов, 8 пропущенных Docker-тестов Qdrant (контейнер здесь достижим только без `LD_PRELOAD`,
+> как в фазах 3–7), суммарное покрытие 99%; `ruff check`, `ruff format --check`, `mypy --strict` и
+> `pre-commit run --all-files` зелёные.
+>
+> DoD фазы проверен двумя способами. Автоматически —
+> `tests/integration/test_pipeline_ingest.py::test_a_second_batch_grows_the_history`: первая партия
+> пишет свои активации, вторая в тот же store добавляет свои поверх, `number_history` растёт
+> 1 → 2, а `get_activations(days=30)` видит оба дня. Живьём против поднятого Docker Qdrant
+> (`numenews-qdrant`, healthy): до двух запусков в `number_history` было **16** строк, после —
+> **35**. Первый `env -u LD_PRELOAD OPENAI_BASE_URL=http://127.0.0.1:9/v1 uv run numenews today`
+> получил от GDELT **429** (общий IP-троттл, `fetched=0`) и не записал ничего, второй ответил
+> (`fetched=72 stored=72 activations=19`) — память переживает процессы и растёт от запуска к
+> запуску. Живьём проверен и новый вывод: `numenews history --number 11` печатает
+> `numerology_value` и `by_day` с реального Qdrant.
+>
+> **Отклонения** отмечены по задачам и в ADR 0012. `numerology_value` — необязательное поле
+> `NumberActivation` (денормализация ради чтения без join в `news`), без payload-индекса:
+> фильтров по нему пока нет. Агрегация — чистая `activation_frequency` в `vector/history.py`, а не
+> в `agents/`: `agents` не имеет права импортировать `vector`, а `models` остаётся слоем типов;
+> наружу её отдаёт только CLI (`HistoryResult.by_day`), MCP `get_history` остаётся
+> `list[NumberActivation]` по контракту 6.10, а формат промпта не менялся — 8.3 просит окно, а не
+> новую разметку, поэтому снапшоты `docs/PROMPTS.md` стабильны. `history_days` — параметр
+> `Pipeline` со значением по умолчанию 30, независимый от `window_days` (7): окно новостей
+> говорит, о чём чтение, окно памяти — на что оно может ссылаться. Заведён ADR 0012 (решения фазы
+> не были видны в коде; `docs/adr/0001` дополнен), а в `docs/RAG_PIPELINE.md` поправлен устаревший
+> пример `Pipeline.from_settings()`.
 
 ---
 

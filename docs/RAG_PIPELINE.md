@@ -31,7 +31,7 @@ flowchart TD
 ```python
 from numenews.pipeline import Pipeline
 
-with Pipeline.from_settings() as pipeline:  # or Pipeline(store=..., clock=..., ...)
+with Pipeline() as pipeline:  # or Pipeline(store=..., clock=..., history_days=...)
     run = await pipeline.ingest(Topic(query="politics"), DateRange(start, end))
     analysis = await pipeline.analyze(tuple(item.id for item in run.news))
     reading = await pipeline.forecast(date(2026, 9, 21))

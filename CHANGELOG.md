@@ -125,6 +125,14 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Documentation for the CLI: `docs/USER_FLOW.md` (every command, its options, example JSON, exit codes
   and `jq` recipes), ADR 0005 (the JSON-only stdout contract and how a failure is reported) and
   ADR 0006 (why one-shot, and the `AppContext` the CLI shares with the MCP server).
+- Long-term memory (phases 8.1–8.4): `number_history` is documented and closed as the exact log of
+  number activations — one row per `(news item, number)` pair, written on every ingest, idempotent by
+  its derived point id, and now carrying the item's own reduced value so a history read needs no
+  second lookup. `activation_frequency` folds a read into per-day buckets (`DayActivationCount`),
+  which `numenews history` prints as `by_day`, and the forecast step cites the day's numbers over
+  `Pipeline.history_days`, thirty days by default and independent of the seven-day news window.
+  Documented in `docs/CONTEXT_MANAGEMENT.md`, `docs/QDRANT_COLLECTIONS.md`, `docs/MCP_TOOLS.md` and
+  `docs/USER_FLOW.md`, with ADR 0012.
 
 ### Changed
 - Dependencies: `typer>=0.27.2` joins the runtime set in phase 7 — the CLI framework, which brings
@@ -135,6 +143,9 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - `README.md`, `AGENTS.md` and the package docstring track phase 7; `make run` runs `numenews today`
   (it needs Qdrant and an LLM endpoint) and the stale `master_number_active` example became the real
   `master_active` field.
+- `README.md`, `src/numenews/__init__.py` and the "Implemented so far" section of
+  `docs/ARCHITECTURE.md` track phase 8; `Pipeline` gains `history_days`, and `NumberActivation` gains
+  its optional `numerology_value`, which the MCP `get_history` output schema now includes.
 - `README.md`, `AGENTS.md` and the package docstring track phase 6; `make mcp` no longer says
   "placeholder", and `docs/EMBEDDINGS.md`/`docs/NEWS_SOURCES.md` were corrected where they described
   the MCP layer as unbuilt.

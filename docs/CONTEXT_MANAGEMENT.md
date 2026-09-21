@@ -1,7 +1,8 @@
 # Context management
 
-> Phase 5.5. `ROADMAP.md` is the authoritative status; this document records how much of the past the
-> agents see, what is compressed instead, and what is deliberately not wired into a prompt yet.
+> Phases 5.5 and 8.4. `ROADMAP.md` is the authoritative status; this document records how much of the
+> past the agents see, what is compressed instead, and what is deliberately not wired into a prompt
+> yet.
 
 An installation that runs every day accumulates more news than any prompt can hold. numenews answers
 that with three mechanisms of different granularity:

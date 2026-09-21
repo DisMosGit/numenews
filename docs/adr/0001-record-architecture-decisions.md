@@ -32,8 +32,9 @@ Every architecturally significant decision is recorded as an Architecture Decisi
 reserves the numbers: 0002 numerology scope (1.8), 0003 local embeddings (3.9), 0004
 `pydantic-ai` (4.6), 0005 JSON-only output and 0006 one-shot vs REPL (7.10), 0007 Qdrant hybrid
 search, 0008 `fastembed` vs OpenAI embeddings and 0009 `hishel` caching (10.3), 0010 the MCP
-server (6.12). 0011 records the RAG pipeline of phase 5, which the roadmap did not reserve a number
-for; the phase that needs one takes the next free number and records it here.
+server (6.12). 0011 records the RAG pipeline of phase 5 and 0012 the long-term memory of phase 8,
+neither of which the roadmap reserved a number for; the phase that needs one takes the next free
+number and records it here.
 
 ## Consequences
 

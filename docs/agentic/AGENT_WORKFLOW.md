@@ -45,3 +45,12 @@ package is `numenews` (not `numerology_news`) and the binary is `numenews` (not 
 - Re-run the verification commands yourself; do not trust a summary that claims they passed.
 - Check the failure paths: an LLM or news API being down, an empty collection, a duplicate ingest —
   graceful degradation is part of the design, not a nice-to-have.
+
+## See also
+
+- [`CONVENTIONS.md`](CONVENTIONS.md) — the code conventions this workflow assumes.
+- [`GUARDRAILS.md`](GUARDRAILS.md) — what an agent must not do, and what to do instead.
+- [`PROMPTING_PLAYBOOK.md`](PROMPTING_PLAYBOOK.md) — reusable prompts for planning, implementing,
+  reviewing, writing an ADR and diagnosing a failing check.
+- [`EVAL_OF_AGENT.md`](EVAL_OF_AGENT.md) — how agent-generated work is reviewed, with a checklist.
+- [`TOOLING.md`](TOOLING.md) — the tool surface, the Makefile targets and the two environments.

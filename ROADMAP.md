@@ -1465,12 +1465,12 @@
 - [x] Коммит: `docs: full documentation` · `L` 📝
 
 ### 10.2. Agentic-документация
-- [ ] `docs/agentic/CONVENTIONS.md` — стиль кода, нейминг · `M` 📝
-- [ ] `docs/agentic/GUARDRAILS.md` — что агенту запрещено · `M` 📝
-- [ ] `docs/agentic/PROMPTING_PLAYBOOK.md` — переиспользуемые промпты · `M` 📝
-- [ ] `docs/agentic/EVAL_OF_AGENT.md` — как ревьюим агентскую генерацию · `M` 📝
-- [ ] `docs/agentic/TOOLING.md` — какие IDE используем · `M` 📝
-- [ ] Коммит: `docs(agentic): workflow and guardrails` · `L` 📝
+- [x] `docs/agentic/CONVENTIONS.md` — стиль кода, нейминг · `M` 📝
+- [x] `docs/agentic/GUARDRAILS.md` — что агенту запрещено · `M` 📝
+- [x] `docs/agentic/PROMPTING_PLAYBOOK.md` — переиспользуемые промпты · `M` 📝
+- [x] `docs/agentic/EVAL_OF_AGENT.md` — как ревьюим агентскую генерацию · `M` 📝
+- [x] `docs/agentic/TOOLING.md` — какие IDE используем · `M` 📝
+- [x] Коммит: `docs(agentic): workflow and guardrails` · `L` 📝
 
 ### 10.3. ADR
 - [x] ADR `0007-qdrant-hybrid-search.md` · `M` 📝

@@ -71,7 +71,7 @@ make clean      # stop Qdrant, drop volumes
 - No `print()` — use `structlog` (JSON to stderr).
 - CLI stdout is JSON only.
 
-Import rules (enforced by `import-linter`):
+Import rules:
 
 ```
 numerology ← depends on nothing
@@ -83,6 +83,16 @@ agents     ← depends on numerology + models
 mcp        ← depends on all
 cli        ← depends on all
 ```
+
+No `import-linter` is installed or configured. The guard is the subprocess/AST tests in
+`tests/unit/test_numerology_api.py`
+(`test_numerology_does_not_import_the_layers_above_it`,
+`test_models_depend_on_nothing_beyond_the_package_root`), together with the layer table in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the rule in [`AGENTS.md`](AGENTS.md). The naming
+and layering conventions that go with them are in
+[`docs/agentic/CONVENTIONS.md`](docs/agentic/CONVENTIONS.md), and the prohibitions an agent must
+respect when touching a layer are in
+[`docs/agentic/GUARDRAILS.md`](docs/agentic/GUARDRAILS.md).
 
 ## Tests
 

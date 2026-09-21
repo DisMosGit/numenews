@@ -155,6 +155,14 @@ Versioning: [Semantic Versioning](https://semver.org/).
   `docs/GLOSSARY.md` (shared vocabulary) and `docs/FAQ.md` (the recurring questions) are new. The
   README status line, its documentation index and its command notes track v0.1.0, and
   `docs/EMBEDDINGS.md`/`docker-compose.yml` were corrected where they still counted five collections.
+- Agentic documentation (`docs/agentic/`): `CONVENTIONS.md` (naming, typing, docstrings, Pydantic v2,
+  errors, async and commits), `GUARDRAILS.md` (fifteen prohibitions with the reason, the owner and
+  what to do instead), `PROMPTING_PLAYBOOK.md` (five paste-ready prompts and the anti-patterns),
+  `EVAL_OF_AGENT.md` (how agent output is reviewed, with the evidence rule and a checklist) and
+  `TOOLING.md` (the Makefile, the two environments, the MCP config and the agent harness), linked
+  from the existing `AGENT_WORKFLOW.md`. `CONTRIBUTING.md` no longer claims the import rules are
+  "enforced by `import-linter`" — the real guard is `tests/unit/test_numerology_api.py` plus the
+  layer table in `docs/ARCHITECTURE.md`.
 
 ### Changed
 - `make test-eval` builds and uses the isolated `.venv-eval`; `ragas` and its LangChain tree live

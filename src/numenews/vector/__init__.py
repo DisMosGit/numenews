@@ -39,7 +39,7 @@ from numenews.vector.news import (
     upsert_news,
 )
 from numenews.vector.numbers import upsert_number_patterns
-from numenews.vector.patterns import find_similar_patterns, save_pattern
+from numenews.vector.patterns import find_similar_patterns, read_patterns, save_pattern
 
 __all__ = [
     "DIGESTS_COLLECTION",
@@ -68,6 +68,7 @@ __all__ = [
     "get_news_items",
     "hybrid_search_news",
     "read_news_range",
+    "read_patterns",
     "record_activation",
     "require_collection",
     "save_digest",

@@ -1234,8 +1234,20 @@
 > двух литералов проверяет mypy на вызове `commands.search`.*
 
 ### 7.7. Команда `patterns`
-- [ ] `numenews patterns --type resonance --min-strength 0.7` · `S` 🧪
-- [ ] Коммит: `feat(cli): patterns command` · `S` 🧪
+- [x] `numenews patterns --type resonance --min-strength 0.7` · `S` 🧪
+- [x] Коммит: `feat(cli): patterns command` · `S` 🧪
+
+> *Отклонение. Коллекция `patterns` до этой задачи только писалась, поэтому в `vector/patterns.py`
+> добавлена читающая функция `read_patterns(store, *, pattern_type, min_strength, limit)` — именно её
+> обещал комментарий к `PATTERNS_PAYLOAD_INDEXES` («strength is a float so phase 7 can ask for the
+> strong patterns without scanning the collection»). Это `scroll` с payload-фильтром по `type` и
+> `strength`, без эмбеддинга; Qdrant не умеет сортировать в `scroll`, поэтому порядок — strength по
+> убыванию, затем `discovered_at` по убыванию, затем id — наводится в Python после чтения всех
+> совпадений, и только потом применяется `limit`. `ValueError` на `limit < 1` и `min_strength` вне
+> `[0, 1]`, `CollectionNotFoundError` до первого чтения. CLI печатает `PatternsResult` (фильтры
+> эхом + список), `--type` — те же пять значений `PatternType`, `--limit` 1–200, по умолчанию 50. Как
+> и у `search`, PEP 695-алиас `PatternType` в сигнатуре Typer не разворачивается, поэтому литерал
+> выписан рядом.*
 
 ### 7.8. Команда `mcp`
 - [ ] `numenews mcp --transport stdio` · `S` 🧪

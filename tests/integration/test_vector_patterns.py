@@ -19,6 +19,7 @@ from numenews.vector import (
     CollectionNotFoundError,
     VectorStore,
     find_similar_patterns,
+    read_patterns,
     save_pattern,
 )
 from numenews.vector.payloads import pattern_embedding_text
@@ -146,3 +147,77 @@ def test_a_non_positive_limit_is_refused(vector_store: VectorStore) -> None:
     """`limit` is a count; zero would ask the engine for nothing sensible."""
     with pytest.raises(ValueError, match="limit must be positive"):
         find_similar_patterns(vector_store, "anything", limit=0)
+
+
+def test_read_patterns_returns_everything_unfiltered(vector_store: VectorStore) -> None:
+    """The exact read of roadmap 7.7 with no arguments lists the collection."""
+    save_pattern(vector_store, _pattern("first"))
+    save_pattern(vector_store, _pattern("second"))
+
+    assert {pattern.interpretation for pattern in read_patterns(vector_store)} == {
+        "first",
+        "second",
+    }
+
+
+def test_read_patterns_filters_by_type(vector_store: VectorStore) -> None:
+    """``--type`` narrows to one of the five kinds through the indexed payload field."""
+    save_pattern(vector_store, _pattern("master money", kind="master"))
+    save_pattern(vector_store, _pattern("dates resonate", kind="resonance"))
+
+    found = read_patterns(vector_store, pattern_type="master")
+
+    assert [pattern.interpretation for pattern in found] == ["master money"]
+
+
+def test_read_patterns_filters_by_min_strength(vector_store: VectorStore) -> None:
+    """``--min-strength`` keeps only the patterns at or above the bound."""
+    save_pattern(vector_store, _pattern("strong", strength=0.8))
+    save_pattern(vector_store, _pattern("weak", strength=0.4))
+
+    found = read_patterns(vector_store, min_strength=0.7)
+
+    assert [pattern.interpretation for pattern in found] == ["strong"]
+
+
+def test_read_patterns_orders_by_strength_then_newest(vector_store: VectorStore) -> None:
+    """Strength is the primary key; discovery time breaks its ties, newest first."""
+    older = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
+    newer = datetime(2026, 9, 21, 12, 0, tzinfo=UTC)
+    save_pattern(vector_store, _pattern("weak new", strength=0.2, discovered_at=newer))
+    save_pattern(vector_store, _pattern("strong old", strength=0.9, discovered_at=older))
+    save_pattern(vector_store, _pattern("strong new", strength=0.9, discovered_at=newer))
+
+    found = read_patterns(vector_store)
+
+    assert [pattern.interpretation for pattern in found] == [
+        "strong new",
+        "strong old",
+        "weak new",
+    ]
+
+
+def test_read_patterns_honours_the_limit(vector_store: VectorStore) -> None:
+    """The limit cuts after the ordering, so it keeps the strongest ones."""
+    save_pattern(vector_store, _pattern("strong", strength=0.9))
+    save_pattern(vector_store, _pattern("weak", strength=0.1))
+
+    found = read_patterns(vector_store, limit=1)
+
+    assert [pattern.interpretation for pattern in found] == ["strong"]
+
+
+def test_read_patterns_without_the_collection_raises(vector_store: VectorStore) -> None:
+    """A read before any write explains the missing setup, as the other reads do."""
+    with pytest.raises(CollectionNotFoundError, match="ensure_collections"):
+        read_patterns(vector_store)
+
+
+def test_read_patterns_refuses_bad_arguments(vector_store: VectorStore) -> None:
+    """A non-positive limit and an out-of-range strength are call-site bugs, not empty results."""
+    save_pattern(vector_store, _pattern())
+
+    with pytest.raises(ValueError, match="limit must be positive"):
+        read_patterns(vector_store, limit=0)
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        read_patterns(vector_store, min_strength=1.5)

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from numenews.models import NumberActivation
+from numenews.models import NumberActivation, Pattern, PatternType
 
 
 class VersionInfo(BaseModel):
@@ -54,4 +54,19 @@ class ErrorReport(BaseModel):
     kind: str
 
 
-__all__ = ["ErrorReport", "HistoryResult", "VersionInfo"]
+class PatternsResult(BaseModel):
+    """The stored patterns that matched, with the filters that selected them.
+
+    ``patterns`` is already ordered by ``strength`` descending and then by discovery time, as
+    :func:`numenews.vector.read_patterns` returns it. The filters are echoed back for the same
+    reason :class:`HistoryResult` echoes its arguments: the answer should carry its question.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    pattern_type: PatternType | None = None
+    min_strength: float | None = None
+    patterns: tuple[Pattern, ...] = ()
+
+
+__all__ = ["ErrorReport", "HistoryResult", "PatternsResult", "VersionInfo"]

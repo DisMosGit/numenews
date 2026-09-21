@@ -33,6 +33,7 @@ from numenews.models import (
     NumberActivation,
     Pattern,
     PatternId,
+    PatternType,
     Topic,
 )
 from numenews.news.errors import NewsSourceError
@@ -497,6 +498,97 @@ def test_search_refuses_an_unknown_collection(
     _install(monkeypatch, AppContext(settings, store=vector_store))
 
     result = runner.invoke(app, ["search", "-q", "budget", "--collection", "numbers"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+
+
+def _pattern(
+    interpretation: str,
+    *,
+    kind: PatternType = "resonance",
+    strength: float = 0.5,
+) -> Pattern:
+    """Return a valid pattern with a fresh id, for seeding the collection."""
+    return Pattern(
+        id=PatternId(uuid4()),
+        type=kind,
+        numbers=(11,),
+        news_ids=(NewsId(uuid4()),),
+        strength=strength,
+        interpretation=interpretation,
+    )
+
+
+def test_patterns_filters_by_type_and_strength(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ROADMAP 7.7: ``--type`` and ``--min-strength`` select through the indexed fields."""
+    save_pattern(vector_store, _pattern("strong resonance", strength=0.8))
+    save_pattern(vector_store, _pattern("strong repetition", kind="repetition", strength=0.9))
+    save_pattern(vector_store, _pattern("weak resonance", strength=0.4))
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(
+        app,
+        ["patterns", "--type", "resonance", "--min-strength", "0.7"],
+    )
+
+    assert result.exit_code == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["pattern_type"] == "resonance"
+    assert payload["min_strength"] == 0.7
+    assert [pattern["interpretation"] for pattern in payload["patterns"]] == ["strong resonance"]
+
+
+def test_patterns_lists_everything_strongest_first(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no filters the command lists the collection, strongest first."""
+    save_pattern(vector_store, _pattern("weak", strength=0.2))
+    save_pattern(vector_store, _pattern("strong", strength=0.9))
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["patterns"])
+
+    assert result.exit_code == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["pattern_type"] is None
+    assert payload["min_strength"] is None
+    assert [pattern["interpretation"] for pattern in payload["patterns"]] == ["strong", "weak"]
+
+
+def test_patterns_reports_a_missing_collection(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A store without a stored pattern says so instead of crashing."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["patterns"])
+
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["kind"] == "CollectionNotFoundError"
+
+
+def test_patterns_refuses_an_unknown_type(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The five pattern kinds are the contract; anything else is a usage error."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["patterns", "--type", "cosmic"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+
+
+def test_patterns_refuses_a_strength_outside_the_unit_interval(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``strength`` lives in ``[0, 1]``; 1.5 is a usage error, not a filter."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["patterns", "--min-strength", "1.5"])
 
     assert result.exit_code == 2
     assert result.stdout == ""

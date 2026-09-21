@@ -237,3 +237,43 @@ def search(
         ctx,
         lambda context: commands.search(context, query=query, collection=collection, limit=limit),
     )
+
+
+@app.command()
+def patterns(
+    ctx: typer.Context,
+    pattern_type: Annotated[
+        # Spelled out instead of using ``PatternType`` for the same reason as ``--collection``:
+        # Typer does not resolve a PEP 695 alias, and ``commands.patterns`` takes the domain alias.
+        Literal["resonance", "repetition", "master", "symbol", "hidden"] | None,
+        typer.Option("--type", help="Keep only patterns of this kind."),
+    ] = None,
+    min_strength: Annotated[
+        float | None,
+        typer.Option(
+            "--min-strength",
+            min=0.0,
+            max=1.0,
+            help="Keep only patterns at least this strong (0 to 1).",
+        ),
+    ] = None,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", min=1, max=200, help="Maximum number of patterns."),
+    ] = 50,
+) -> None:
+    """List the patterns already stored, strongest first, optionally filtered.
+
+    A pattern is stored by an ``analyze`` step or by the MCP ``save_pattern`` tool; this command
+    reads those back by the two indexed fields — ``--type`` and ``--min-strength`` — instead of
+    searching them by meaning (that is ``search --collection patterns``). Needs Qdrant only.
+    """
+    run_command(
+        ctx,
+        lambda context: commands.patterns(
+            context,
+            pattern_type=pattern_type,
+            min_strength=min_strength,
+            limit=limit,
+        ),
+    )

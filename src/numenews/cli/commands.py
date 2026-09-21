@@ -18,12 +18,17 @@ import asyncio
 from collections.abc import Sequence
 
 from numenews.cli.dates import parse_day
-from numenews.cli.schemas import HistoryResult
+from numenews.cli.schemas import HistoryResult, PatternsResult
 from numenews.mcp.context import AppContext
 from numenews.mcp.schemas import CollectionName, CollectionQueryResult
-from numenews.models import DateRange, Forecast, NewsItem, Pattern, Topic
+from numenews.models import DateRange, Forecast, NewsItem, Pattern, PatternType, Topic
 from numenews.pipeline import window_start
-from numenews.vector import find_similar_patterns, get_history, hybrid_search_news
+from numenews.vector import (
+    find_similar_patterns,
+    get_history,
+    hybrid_search_news,
+    read_patterns,
+)
 
 
 async def today(context: AppContext, *, topic: str) -> Forecast:
@@ -126,4 +131,41 @@ async def search(
     return CollectionQueryResult(collection=collection, query=query, items=tuple(items))
 
 
-__all__ = ["forecast", "history", "search", "today"]
+async def patterns(
+    context: AppContext,
+    *,
+    pattern_type: PatternType | None,
+    min_strength: float | None,
+    limit: int,
+) -> PatternsResult:
+    """Return the stored patterns the filters allow, strongest and newest first.
+
+    Unlike :func:`search`, this is not a similarity question: it lists what the pipeline (or the MCP
+    ``save_pattern`` tool) already found, narrowed by the two indexed payload fields of roadmap 7.7,
+    so it needs Qdrant only and embeds nothing.
+
+    Args:
+        context: The application context; its store is built on first use.
+        pattern_type: Keep only patterns of this kind; ``None`` keeps every kind.
+        min_strength: Keep only patterns at least this strong; ``None`` keeps all.
+        limit: Maximum number of patterns to return.
+
+    Returns:
+        The matching patterns, with the filters that selected them.
+    """
+    store = await context.store()
+    found = await asyncio.to_thread(
+        read_patterns,
+        store,
+        pattern_type=pattern_type,
+        min_strength=min_strength,
+        limit=limit,
+    )
+    return PatternsResult(
+        pattern_type=pattern_type,
+        min_strength=min_strength,
+        patterns=tuple(found),
+    )
+
+
+__all__ = ["forecast", "history", "patterns", "search", "today"]

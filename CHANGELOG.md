@@ -6,6 +6,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-09-21
+
 ### Added
 - Project skeleton (phase 0): `src/` layout with the eight subpackages, the `uv` environment
   (`uv.lock`, Python 3.14) and `uv_build` packaging.

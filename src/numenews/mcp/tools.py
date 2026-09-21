@@ -26,7 +26,7 @@ from mcp.server.mcpserver import Context
 from numenews.mcp.context import AppContext
 from numenews.mcp.errors import tool_errors
 from numenews.mcp.schemas import DateRangeInput
-from numenews.models import NewsItem, Topic
+from numenews.models import ExtractedNumbers, NewsItem, Topic
 
 
 def context_of(ctx: Context[AppContext]) -> AppContext:
@@ -56,8 +56,21 @@ async def fetch_news(
         return await aggregator.fetch_all(Topic(query=topic), date_range.to_domain())
 
 
+async def extract_numbers(text: str, ctx: Context[AppContext]) -> ExtractedNumbers:
+    """Read the numbers, dates and symbols out of a text with the extraction agent.
+
+    The model's reading is combined with the deterministic regex pass, so a mention the model
+    formats differently ("eleven" beside "11") is still found, and a model that cannot answer at all
+    degrades to the regex reading instead of failing. ``sources`` says which strategies contributed.
+    Needs an LLM endpoint (``OPENAI_API_KEY`` or ``OPENAI_BASE_URL``).
+    """
+    with tool_errors():
+        reader = await context_of(ctx).extract()
+        return await reader.extract(text)
+
+
 #: Every tool the server registers, in roadmap order.
-TOOLS: tuple[Callable[..., object], ...] = (fetch_news,)
+TOOLS: tuple[Callable[..., object], ...] = (fetch_news, extract_numbers)
 
 
-__all__ = ["TOOLS", "context_of", "fetch_news"]
+__all__ = ["TOOLS", "context_of", "extract_numbers", "fetch_news"]

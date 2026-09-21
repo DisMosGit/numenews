@@ -25,6 +25,7 @@ from numenews.config import Settings
 from numenews.mcp import AppContext, build_server
 from numenews.news import NewsAggregator
 
+from ..unit.pipeline_fakes import extract_agent
 from .conftest import news_fixture
 
 pytestmark = pytest.mark.integration
@@ -84,3 +85,30 @@ async def test_fetch_news_reports_an_unconfigured_feed_as_a_tool_error(
     assert result.is_error is True
     assert result.structured_content is None
     assert "no news sources are configured" in text_of(result)
+
+
+async def test_extract_numbers_returns_the_agents_reading(settings: Settings) -> None:
+    """ROADMAP 6.3: the tool reaches ``ExtractNumbersAgent`` and returns its structured reading."""
+    extract, counter = extract_agent([11], symbols=["☀"])
+    context = AppContext(settings, extract=extract)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool(
+            "extract_numbers", {"text": "The 11th hour deal was signed at 7"}
+        )
+
+    assert result.is_error is False
+    assert counter.calls == 1
+    assert result.structured_content is not None
+    assert sorted(result.structured_content["numbers"]) == [7, 11]
+    assert result.structured_content["symbols"] == ["☀"]
+    assert "llm" in result.structured_content["sources"]
+
+
+async def test_extract_numbers_reports_a_missing_llm_endpoint(settings: Settings) -> None:
+    """An unconfigured LLM is an expected failure, and the message says what to set."""
+    async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
+        result = await client.call_tool("extract_numbers", {"text": "eleven ministers resigned"})
+
+    assert result.is_error is True
+    assert "No LLM endpoint configured" in text_of(result)

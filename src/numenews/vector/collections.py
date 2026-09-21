@@ -32,6 +32,7 @@ NEWS_COLLECTION = "news"
 NUMBERS_COLLECTION = "numbers"
 PATTERNS_COLLECTION = "patterns"
 FORECASTS_COLLECTION = "forecasts"
+NUMBER_HISTORY_COLLECTION = "number_history"
 
 #: Payload fields of ``news`` that get an index, in creation order. ``master_number`` is derived
 #: from ``numerology_value`` by ``payloads.news_payload``: a filter on it must not have to fetch
@@ -67,6 +68,14 @@ FORECASTS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
     "dominant_number": PayloadSchemaType.INTEGER,
 }
 
+#: Payload fields of ``number_history``. The collection has no vectors: it answers "when was 11
+#: activated" exactly, while ``numbers`` answers "which activations read like this" semantically.
+#: Storing both means a semantic search never has to be trusted for a date.
+NUMBER_HISTORY_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
+    "number": PayloadSchemaType.INTEGER,
+    "date": PayloadSchemaType.DATETIME,
+}
+
 
 def create_news_collection(client: QdrantClient) -> None:
     """Create the 768d ``news`` collection and its payload indexes, unless it is already there."""
@@ -92,6 +101,16 @@ def create_forecasts_collection(client: QdrantClient) -> None:
     _create_indexes(client, FORECASTS_COLLECTION, FORECASTS_PAYLOAD_INDEXES)
 
 
+def create_number_history_collection(client: QdrantClient) -> None:
+    """Create the payload-only ``number_history`` collection and its indexes.
+
+    ``dimension=None`` is deliberate: the collection stores activations to be read back exactly, so
+    there is nothing to embed and no vector to keep in sync with a model version.
+    """
+    _create_collection(client, NUMBER_HISTORY_COLLECTION, None)
+    _create_indexes(client, NUMBER_HISTORY_COLLECTION, NUMBER_HISTORY_PAYLOAD_INDEXES)
+
+
 def ensure_collections(client: QdrantClient) -> None:
     """Create every collection of the vector layer with its payload indexes; safe to re-run."""
     for create in COLLECTION_CREATORS:
@@ -110,14 +129,14 @@ def require_collection(client: QdrantClient, name: str) -> None:
         )
 
 
-def _create_collection(client: QdrantClient, name: str, dimension: int) -> None:
-    """Create one collection with a single unnamed cosine vector, if it is missing."""
+def _create_collection(client: QdrantClient, name: str, dimension: int | None) -> None:
+    """Create one collection, with one unnamed cosine vector unless ``dimension`` is ``None``."""
     if client.collection_exists(name):
         return
-    client.create_collection(
-        name,
-        vectors_config=VectorParams(size=dimension, distance=Distance.COSINE),
+    vectors = (
+        VectorParams(size=dimension, distance=Distance.COSINE) if dimension is not None else None
     )
+    client.create_collection(name, vectors_config=vectors)
     logger.info("vector.collection.created", collection=name, dimension=dimension)
 
 
@@ -138,4 +157,5 @@ COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (
     create_numbers_collection,
     create_patterns_collection,
     create_forecasts_collection,
+    create_number_history_collection,
 )

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from datetime import date
+from datetime import UTC, date, datetime, time
 from uuid import NAMESPACE_URL, uuid5
 
 from numenews.models import Forecast, NewsItem, NumberActivation, Pattern
@@ -104,6 +104,15 @@ def activation_point_id(activation: NumberActivation) -> str:
 def iso_day(day: date) -> str:
     """Return the RFC 3339 UTC start of ``day``, the only shape a ``DATETIME`` index accepts."""
     return f"{day.isoformat()}T00:00:00Z"
+
+
+def day_start(day: date) -> datetime:
+    """Return the UTC midnight that opens ``day``, which is what a filter compares a date against.
+
+    The same instant :func:`iso_day` writes: payloads carry the string form, filters carry the
+    ``datetime`` Qdrant's own model stores, and both come from here so they cannot drift.
+    """
+    return datetime.combine(day, time.min, tzinfo=UTC)
 
 
 def pattern_payload(pattern: Pattern) -> dict[str, object]:

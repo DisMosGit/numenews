@@ -624,11 +624,23 @@
 > числам, которые и так фильтруются по индексу.*
 
 ### 3.7. Коллекция `number_history`
-- [ ] Создание без вектора (payload-only) · `M` 🧪
-- [ ] Payload-индексы: `number`, `date` · `M` 🧪
-- [ ] `record_activation(number, date, news_id, context)` · `M` 🧪
-- [ ] `get_history(number, days)` · `M` 🧪
-- [ ] Коммит: `feat(vector): number history` · `M` 🧪
+- [x] Создание без вектора (payload-only) · `M` 🧪
+- [x] Payload-индексы: `number`, `date` · `M` 🧪
+- [x] `record_activation(number, date, news_id, context)` · `M` 🧪
+- [x] `get_history(number, days)` · `M` 🧪
+- [x] Коммит: `feat(vector): number history` · `M` 🧪
+
+> *Отклонения. `record_activation` принимает `NumberActivation`, а не четыре аргумента: модель несёт
+> ровно эти четыре поля, и вызывающий (5.2) держит её в руках. `get_history(number, days)` получил
+> keyword-only `today: date | None = None` — тем же приёмом, что `extract_dates_regex` в 1.6: окно
+> «последние `days` дней» заканчивается сегодня и включает его, а тесты и повторные прогоны передают
+> дату явно и не зависят от часов. Порядок результата — новые первыми, при равной дате по `news_id`
+> по убыванию, чтобы вывод был детерминирован; `days < 1` кидает `ValueError`; чтение идёт
+> `scroll`-страницами до исчерпания, без молчаливого усечения. Коллекция без вектора: `_create_collection`
+> получил `dimension: int | None`, и `create_number_history_collection` передаёт `None`. Payload тот же,
+> что у `numbers` (общие `activation_*` в `payloads.py`), поэтому одно и то же событие читается и
+> семантически (3.4), и точно (здесь). Даты фильтров и payload теперь берутся из одного `day_start`/
+> `iso_day` — раньше границу дня считал приватный `filters._day_start`.*
 
 ### 3.8. Гибридный поиск
 - [ ] `hybrid_search_news(query, filter_, limit)` — dense + filter · `M` 🧪

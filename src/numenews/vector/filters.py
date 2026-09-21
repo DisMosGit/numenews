@@ -13,11 +13,12 @@ are written in.
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import timedelta
 
 from qdrant_client.models import Condition, DatetimeRange, FieldCondition, Filter, MatchValue
 
 from numenews.models import NewsFilter
+from numenews.vector.payloads import day_start
 
 
 def build_news_filter(filters: NewsFilter | None) -> Filter:
@@ -30,9 +31,9 @@ def build_news_filter(filters: NewsFilter | None) -> Filter:
             FieldCondition(
                 key="date",
                 range=DatetimeRange(
-                    gte=_day_start(filters.date_from) if filters.date_from is not None else None,
+                    gte=day_start(filters.date_from) if filters.date_from is not None else None,
                     lt=(
-                        _day_start(filters.date_to + timedelta(days=1))
+                        day_start(filters.date_to + timedelta(days=1))
                         if filters.date_to is not None
                         else None
                     ),
@@ -52,8 +53,3 @@ def build_news_filter(filters: NewsFilter | None) -> Filter:
     if not conditions:
         return Filter()
     return Filter(must=conditions)
-
-
-def _day_start(day: date) -> datetime:
-    """Return the UTC midnight that opens ``day``, the value the ``date`` index is compared to."""
-    return datetime.combine(day, time.min, tzinfo=UTC)

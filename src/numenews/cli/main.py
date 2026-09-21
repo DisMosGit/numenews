@@ -24,7 +24,14 @@ import numenews
 from numenews.cli.output import print_json
 from numenews.cli.schemas import NotImplementedReport, VersionInfo
 from numenews.config import Settings, get_settings
-from numenews.logging import configure_logging
+from numenews.logging import (
+    bind_request_context,
+    configure_logging,
+    get_logger,
+    new_request_id,
+)
+
+logger = get_logger("numenews.cli")
 
 app = typer.Typer(
     name="numenews",
@@ -86,6 +93,8 @@ def main(
 ) -> None:
     """Read the news numerologically, once per invocation."""
     configure_logging()
+    bind_request_context(request_id=new_request_id())
+    logger.info("cli.invoked", pretty=pretty)
     ctx.obj = CliState(settings=get_settings(), pretty=pretty)
 
 

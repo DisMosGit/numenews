@@ -1159,14 +1159,23 @@
 > установленный `numenews` идут через один `app`.*
 
 ### 7.2. JSON-вывод
-- [ ] `cli/output.py` — `print_json(model)` через `model_dump_json(indent=2)` · `S` 🧪
-- [ ] Все команды пишут **только** JSON в stdout · `S`
-- [ ] Логи в stderr через `structlog` · `S` 🧪
-- [ ] `--pretty` флаг (по умолчанию True) · `S`
-- [ ] Тест: вывод парсится `json.loads` · `M` 🧪
-- [ ] Коммит: `feat(cli): json output` · `M` 🧪
+- [x] `cli/output.py` — `print_json(model)` через `model_dump_json(indent=2)` · `S` 🧪
+- [x] Все команды пишут **только** JSON в stdout · `S`
+- [x] Логи в stderr через `structlog` · `S` 🧪
+- [x] `--pretty` флаг (по умолчанию True) · `S`
+- [x] Тест: вывод парсится `json.loads` · `M` 🧪
+- [x] Коммит: `feat(cli): json output` · `M` 🧪
 
 **DoD:** stdout — валидный JSON, можно пайпить в `jq`.
+
+> *Уточнения. `--pretty/--no-pretty` — опция группы, а не команды (`numenews --no-pretty today`):
+> это рендер одного и того же результата, и `CliState` проносит её в команду. `print_json` пишет
+> через `sys.stdout.write`, а не `print()` (CONTRIBUTING его запрещает), и всегда завершает документ
+> переводом строки. В callback'е группы добавлены `configure_logging()`, `bind_request_context` с
+> `new_request_id()` и одна запись `cli.invoked` в stderr — так у каждого запуска есть correlation id,
+> который виден и в логах шагов пайплайна. `ErrorReport` заведён здесь же, но его обработка
+> (`run_command`) появляется в 7.3 вместе с первой настоящей командой: обрабатывать ошибку до того,
+> как есть чему упасть, нечего.*
 
 ### 7.3. Команда `today`
 - [ ] `numenews today --topic politics` · `M` 🧪

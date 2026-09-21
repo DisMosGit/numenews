@@ -45,3 +45,13 @@ def test_no_pretty_writes_a_single_line() -> None:
 
     assert result.exit_code == 0
     assert result.stdout.count("\n") == 1
+
+
+def test_logs_go_to_stderr_and_stdout_stays_json() -> None:
+    """ROADMAP 7.2: the payload parses as JSON while the progress line lands on stderr."""
+    result = runner.invoke(app, ["today"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)["status"] == "not_implemented"
+    assert "cli.invoked" in result.stderr
+    assert "cli.invoked" not in result.stdout

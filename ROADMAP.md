@@ -1178,9 +1178,20 @@
 > как есть чему упасть, нечего.*
 
 ### 7.3. Команда `today`
-- [ ] `numenews today --topic politics` · `M` 🧪
-- [ ] Pipeline: ingest + analyze + forecast на сегодня · `M` 🧪
-- [ ] Коммит: `feat(cli): today command` · `M` 🧪
+- [x] `numenews today --topic politics` · `M` 🧪
+- [x] Pipeline: ingest + analyze + forecast на сегодня · `M` 🧪
+- [x] Коммит: `feat(cli): today command` · `M` 🧪
+
+> *Уточнения. `today` = `Pipeline.ingest` по скользящему окну (`window_start(day, window_days)` …
+> `day`, день и окно берутся у `pipeline.clock`/`pipeline.window_days`) + `Pipeline.forecast(day)`.
+> Отдельный `analyze` не вызывается: шаг forecast сам пересобирает паттерны окна
+> (`rerun_analysis=True`), и второй вызов стоил бы ещё одного прогона модели на тех же новостях.
+> `--topic` по умолчанию `politics` — иначе DoD `numenews today | jq .dominant_number` требовал бы
+> аргумента. `run_command` — единственное место, где живёт политика отказов: ожидаемое доменное
+> исключение (`DOMAIN_ERRORS` из `mcp/errors.py`, ровно как у MCP-инструментов) печатается как
+> `ErrorReport` в stdout и завершает процесс кодом 1; всё остальное остаётся громким (traceback в
+> stderr, пустой stdout). `build_context(settings)` — шов для тестов: CLI переиспользует
+> `mcp.context.AppContext`, а не заводит второй контейнер.*
 
 ### 7.4. Команда `forecast`
 - [ ] `numenews forecast --date 2026-09-22` · `M` 🧪

@@ -1,7 +1,8 @@
-"""The Typer application itself: the entry point, the group callback and ``--version``.
+"""The Typer application itself: the entry point, the group callback and its arguments.
 
-These are unit tests because they exercise the CLI without a store, a model or a network: the stub
-command of roadmap 7.1 is the only command so far, and ``--version`` answers from the package alone.
+These are unit tests: every one exercises the CLI without a store, a model or a network, so a
+failure here is about the parser or the version, never about a service. The command bodies are
+tested in ``tests/integration/test_cli.py``, where an in-memory store can be injected.
 """
 
 from __future__ import annotations
@@ -31,27 +32,26 @@ def test_the_app_lists_its_commands() -> None:
     assert "today" in result.stdout
 
 
-def test_the_stub_command_writes_json_to_stdout() -> None:
-    """``make run`` stays honest until 7.3 replaces the stub with the real ``today``."""
-    result = runner.invoke(app, ["today"])
+def test_without_arguments_it_shows_help() -> None:
+    """A bare ``numenews`` is a usage error, not a silent no-op."""
+    result = runner.invoke(app, [])
 
-    assert result.exit_code == 0
-    assert json.loads(result.stdout)["status"] == "not_implemented"
-
-
-def test_no_pretty_writes_a_single_line() -> None:
-    """``--no-pretty`` is the compact form, indented output being the default."""
-    result = runner.invoke(app, ["--no-pretty", "today"])
-
-    assert result.exit_code == 0
-    assert result.stdout.count("\n") == 1
+    assert result.exit_code == 2
+    assert "Usage" in result.stdout
 
 
-def test_logs_go_to_stderr_and_stdout_stays_json() -> None:
-    """ROADMAP 7.2: the payload parses as JSON while the progress line lands on stderr."""
-    result = runner.invoke(app, ["today"])
+def test_an_unknown_command_is_a_usage_error() -> None:
+    """A mistyped command exits 2 with the message on stderr and nothing on stdout."""
+    result = runner.invoke(app, ["tody"])
 
-    assert result.exit_code == 0
-    assert json.loads(result.stdout)["status"] == "not_implemented"
-    assert "cli.invoked" in result.stderr
-    assert "cli.invoked" not in result.stdout
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert "tody" in result.stderr
+
+
+def test_an_unknown_option_is_a_usage_error() -> None:
+    """A mistyped flag is caught by the parser before any command body runs."""
+    result = runner.invoke(app, ["--colour", "today"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""

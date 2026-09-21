@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from numenews.models import (
     DateRange,
+    DominantResult,
     ExtractedNumbers,
     Forecast,
     ForecastId,
@@ -190,6 +191,29 @@ def test_master_check_result_fields() -> None:
     assert result.has_master is True
     assert result.master_numbers == (11, 22)
     assert result.count == 3
+
+
+def test_dominant_result_records_the_evidence_behind_the_number() -> None:
+    """A reader can tell a day eleven items agree on from a day one item was all there was."""
+    result = DominantResult(dominant_number=11, is_master=True, votes=3, considered=5)
+
+    assert result.dominant_number == 11
+    assert result.is_master is True
+    assert result.votes == 3
+    assert result.considered == 5
+
+
+def test_dominant_result_is_frozen_and_strict() -> None:
+    """The result crosses the CLI boundary, so it validates like every other model."""
+    with pytest.raises(ValidationError):
+        DominantResult.model_validate(
+            {"dominant_number": "11", "is_master": True, "votes": 1, "considered": 1}
+        )
+
+    result = DominantResult(dominant_number=7, is_master=False, votes=1, considered=1)
+
+    with pytest.raises(ValidationError):
+        result.votes = 2  # type: ignore[misc]  # frozen model, mypy cannot see it
 
 
 def test_topic_trims_surrounding_whitespace() -> None:

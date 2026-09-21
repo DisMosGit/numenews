@@ -139,6 +139,25 @@ find_date_resonances([date(2026, 9, 21), date(2026, 9, 22), date(2026, 9, 12)])
 Two identical dates resonate by definition, a repeated date forms as many pairs as it has partners,
 and fewer than two dates yield `[]`.
 
+## The dominant number of a set
+
+A day's reading needs one number to stand for it, and `dominant_number(values)` decides which from
+the reduced values of that day's news: the most frequent value wins, and a tie goes to the larger
+value. The result is a `DominantResult` carrying the evidence with the answer — `votes` (how often
+the winner occurred) and `considered` (how many values were counted) — so a reader can tell a day
+that eleven items agree on from a day that had one item.
+
+```python
+dominant_number([11, 11, 11, 7, 3])  # 11, votes 3, considered 5
+dominant_number([7, 7, 11, 11])      # 11: the tie goes to the larger value
+dominant_number([])                  # 0, votes 0, considered 0
+```
+
+`0` is again the sentinel, because no reduced value is ever `0`; a day with no news has no dominant
+number, and the pipeline falls back to `reduce_date(day)` — a reading always has a number to rest
+on. A value below `1` raises `ValueError`: `compute_numerology` reports a text without letters as
+`0`, which means "not computed" and must not vote.
+
 ## Regex extraction
 
 The layer never asks a model for anything. These functions are the fallback that keeps the pipeline
@@ -192,6 +211,7 @@ Everything below is re-exported from `numenews.numerology` and listed in its `__
 | `normalize_text` | `(text: str) -> str` | Casefolded, mapped letters only |
 | `date_resonance` | `(d1: date, d2: date) -> int` | Shared value, or `0` |
 | `find_date_resonances` | `(dates: Sequence[date]) -> list[tuple[date, date, int]]` | Every resonant pair |
+| `dominant_number` | `(values: Sequence[int]) -> DominantResult` | Most frequent value, ties to the larger |
 | `extract_numbers_regex` | `(text: str) -> list[int]` | All digit runs |
 | `extract_dates_regex` | `(text: str, *, today: date \| None = None) -> list[date]` | Three formats |
 | `extract_symbols` | `(text: str, symbols: Sequence[str]) -> list[str]` | Present symbols |

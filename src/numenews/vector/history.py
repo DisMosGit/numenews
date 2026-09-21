@@ -14,7 +14,14 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
-from qdrant_client.models import DatetimeRange, FieldCondition, Filter, MatchValue, PointStruct
+from qdrant_client.models import (
+    Condition,
+    DatetimeRange,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+)
 
 from numenews.logging import get_logger
 from numenews.models import NumberActivation
@@ -93,19 +100,74 @@ def get_history(
     if days < 1:
         raise ValueError("history window must be at least one day")
     require_collection(store.client, NUMBER_HISTORY_COLLECTION)
+    activations = _scroll(store, _window_filter(days, today, number=number))
+    activations.sort(key=_newest_first, reverse=True)
+    logger.debug("vector.history.read", number=number, days=days, activations=len(activations))
+    return activations
+
+
+def get_activations(
+    store: VectorStore,
+    days: int,
+    *,
+    today: date | None = None,
+) -> list[NumberActivation]:
+    """Return every activation inside the last ``days`` days, newest first, whatever the number.
+
+    This is the read the forecast step needs (roadmap 5.4): the day's reading should draw on all the
+    numbers the recent news activated, not on one of them. ``get_history`` stays the question with a
+    subject ("when was 11 active"), this one is the question without ("what was active").
+
+    Args:
+        store: The connection. The history has no vectors, so neither embedder is used.
+        days: Length of the window in calendar days, ending today and including it.
+        today: The end of the window. Defaults to the current UTC day.
+
+    Raises:
+        ValueError: when ``days`` is less than one.
+        CollectionNotFoundError: when the ``number_history`` collection was never created.
+
+    Returns:
+        The activations, newest first.
+    """
+    if days < 1:
+        raise ValueError("history window must be at least one day")
+    require_collection(store.client, NUMBER_HISTORY_COLLECTION)
+    activations = _scroll(store, _window_filter(days, today))
+    activations.sort(key=_newest_first, reverse=True)
+    logger.debug("vector.history.window_read", days=days, activations=len(activations))
+    return activations
+
+
+def _window_filter(
+    days: int,
+    today: date | None,
+    *,
+    number: int | None = None,
+) -> Filter:
+    """Return the payload filter of a window ending today, optionally for one number."""
     end = today if today is not None else datetime.now(UTC).date()
-    scroll_filter = Filter(
-        must=[
-            FieldCondition(key="number", match=MatchValue(value=number)),
-            FieldCondition(
-                key="date",
-                range=DatetimeRange(
-                    gte=day_start(end - timedelta(days=days - 1)),
-                    lt=day_start(end + timedelta(days=1)),
-                ),
+    conditions: list[Condition] = [
+        FieldCondition(
+            key="date",
+            range=DatetimeRange(
+                gte=day_start(end - timedelta(days=days - 1)),
+                lt=day_start(end + timedelta(days=1)),
             ),
-        ]
-    )
+        )
+    ]
+    if number is not None:
+        conditions.insert(0, FieldCondition(key="number", match=MatchValue(value=number)))
+    return Filter(must=conditions)
+
+
+def _newest_first(activation: NumberActivation) -> tuple[date, str]:
+    """Return the key that orders activations newest first when the sort is reversed."""
+    return (activation.date, str(activation.news_id.root))
+
+
+def _scroll(store: VectorStore, scroll_filter: Filter) -> list[NumberActivation]:
+    """Return every activation the filter matches, page by page, unsorted."""
     activations: list[NumberActivation] = []
     offset: int | str | UUID | None = None
     while True:
@@ -118,7 +180,4 @@ def get_history(
         )
         activations.extend(activation_from_payload(record.payload or {}) for record in records)
         if offset is None:
-            break
-    activations.sort(key=lambda item: (item.date, str(item.news_id.root)), reverse=True)
-    logger.debug("vector.history.read", number=number, days=days, activations=len(activations))
-    return activations
+            return activations

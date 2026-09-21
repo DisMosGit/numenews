@@ -17,6 +17,7 @@ from numenews.vector import (
     NUMBER_HISTORY_COLLECTION,
     CollectionNotFoundError,
     VectorStore,
+    get_activations,
     get_history,
     record_activation,
 )
@@ -119,3 +120,52 @@ def test_a_window_shorter_than_a_day_is_refused(vector_store: VectorStore) -> No
     """`days` counts calendar days; zero or negative is a bug at the call site."""
     with pytest.raises(ValueError, match="at least one day"):
         get_history(vector_store, 7, days=0, today=TODAY)
+
+
+def test_the_whole_window_comes_back_whatever_the_number(vector_store: VectorStore) -> None:
+    """Roadmap 5.4 asks "what was active", not "when was 7 active"."""
+    record_activation(vector_store, _activation(number=7, news_url="a"))
+    record_activation(vector_store, _activation(number=11, news_url="b"))
+    record_activation(vector_store, _activation(number=7, news_url="c"))
+
+    activations = get_activations(vector_store, days=7, today=TODAY)
+
+    assert sorted(item.number for item in activations) == [7, 7, 11]
+
+
+def test_the_whole_window_keeps_the_same_window_and_order(
+    vector_store: VectorStore,
+) -> None:
+    """The window rule is shared with `get_history`: one implementation, one meaning."""
+    record_activation(
+        vector_store, _activation(number=7, published=date(2026, 9, 14), news_url="outside")
+    )
+    record_activation(
+        vector_store, _activation(number=11, published=date(2026, 9, 19), news_url="older")
+    )
+    record_activation(
+        vector_store, _activation(number=7, published=date(2026, 9, 21), news_url="newer")
+    )
+
+    activations = get_activations(vector_store, days=7, today=TODAY)
+
+    assert [(item.number, item.date) for item in activations] == [
+        (7, date(2026, 9, 21)),
+        (11, date(2026, 9, 19)),
+    ]
+
+
+def test_reading_the_whole_window_from_an_absent_collection_is_a_setup_error(
+    vector_store: VectorStore,
+) -> None:
+    """The forecast folds this into "no history"; the layer itself still reports the setup."""
+    with pytest.raises(CollectionNotFoundError, match="ensure_collections"):
+        get_activations(vector_store, days=7, today=TODAY)
+
+
+def test_a_window_of_the_whole_history_shorter_than_a_day_is_refused(
+    vector_store: VectorStore,
+) -> None:
+    """`days` counts calendar days here too."""
+    with pytest.raises(ValueError, match="at least one day"):
+        get_activations(vector_store, days=0, today=TODAY)

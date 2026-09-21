@@ -1,4 +1,9 @@
-"""Results returned by the pure numerology layer."""
+"""Results returned by the pure numerology layer.
+
+`NumerologyResult` is what reading one text produces, `MasterCheckResult` the answer to the
+master-number question, and `DominantResult` which value a *set* of values is read under — the rule
+that decides a day's number from the numbers of that day's news.
+"""
 
 from __future__ import annotations
 
@@ -35,3 +40,21 @@ class MasterCheckResult(BaseModel):
     has_master: bool
     master_numbers: tuple[int, ...]
     count: int
+
+
+class DominantResult(BaseModel):
+    """Which value a set of reduced values is read under.
+
+    ``dominant_number`` is the value that occurs most often, ties going to the larger value;
+    ``votes`` is how often it occurred and ``considered`` how many values were counted, so a caller
+    can tell "eleven items agree" from "one item was all there was". ``dominant_number == 0`` is the
+    sentinel for an empty set — the same idiom as :func:`~numenews.numerology.gematria_reduce` and
+    :func:`~numenews.numerology.date_resonance`, because ``0`` is not a reduced value.
+    """
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    dominant_number: int
+    is_master: bool
+    votes: int
+    considered: int

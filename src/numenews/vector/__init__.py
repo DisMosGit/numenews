@@ -26,7 +26,7 @@ from numenews.vector.collections import (
 from numenews.vector.errors import CollectionNotFoundError, VectorStoreError
 from numenews.vector.filters import build_news_filter
 from numenews.vector.forecasts import get_forecast, save_forecast
-from numenews.vector.history import get_history, record_activation
+from numenews.vector.history import get_activations, get_history, record_activation
 from numenews.vector.news import (
     READ_PAGE,
     get_news_items,
@@ -56,6 +56,7 @@ __all__ = [
     "create_patterns_collection",
     "ensure_collections",
     "find_similar_patterns",
+    "get_activations",
     "get_forecast",
     "get_history",
     "get_news_items",

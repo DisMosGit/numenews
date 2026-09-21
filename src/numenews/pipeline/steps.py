@@ -16,8 +16,8 @@ runs are already async. A step that failed logs ``pipeline.step.failed`` and let
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from datetime import date
+from collections.abc import Awaitable, Callable, Sequence
+from datetime import date, timedelta
 from functools import partial
 
 from numenews.agents import AgentError
@@ -29,16 +29,22 @@ from numenews.models import (
     NewsId,
     NewsItem,
     NumberActivation,
+    Pattern,
     Topic,
 )
-from numenews.numerology import compute_numerology
+from numenews.numerology import compute_numerology, dominant_number, reduce_date
 from numenews.pipeline.errors import PipelineError, PipelineRetryError
 from numenews.pipeline.pipeline import Pipeline
 from numenews.pipeline.timings import PipelineRun, StepTimer, Timing
 from numenews.vector import (
+    CollectionNotFoundError,
     create_news_collection,
+    get_activations,
+    get_forecast,
     get_news_items,
+    read_news_range,
     record_activation,
+    save_forecast,
     save_pattern,
     upsert_news,
     upsert_number_patterns,
@@ -291,12 +297,145 @@ async def analyze(pipeline: Pipeline, news_ids: tuple[NewsId, ...]) -> PipelineR
     )
 
 
-async def forecast(pipeline: Pipeline, day: date, *, rerun_analysis: bool = True) -> Forecast:
+async def forecast(
+    pipeline: Pipeline,
+    day: date,
+    *,
+    rerun_analysis: bool = True,
+    today: date | None = None,
+) -> Forecast:
     """Return the reading for ``day``, from storage when it is already there.
 
-    Roadmap 5.4. Implemented in this phase's 5.4 commit.
+    Roadmap 5.4 in full. A day that is already stored short-circuits everything: the second call
+    answers from Qdrant without a model run, which is what ``get_forecast``'s date-derived point id
+    was built for (phase 3.6). Otherwise the reading is assembled from four sources:
+
+    * the window of news — ``day`` and the ``window_days - 1`` days before it, read with
+      ``read_news_range`` (roadmap 5.5);
+    * the patterns among those items, found and stored through the same path as :func:`analyze` —
+      skipped when the caller has just run it (``rerun_analysis=False``);
+    * the day's ``dominant_number`` and ``master_active`` from the pure rule of
+      ``numerology.dominant_number``, with ``reduce_date(day)`` as the fallback for a day with no
+      news, because a reading always has a number to rest on;
+    * the recent activations of exactly the numbers this day's news carries, so the memory shown to
+      the model is evidence for these items and not an unrelated 7 from last week.
+
+    ``analyze`` is re-run rather than reading patterns back by time: ``discovered_at`` records when
+    a connection was written, not which day it belongs to, and the deterministic ``PatternId``
+    (phase 4.3) makes the second save an overwrite of the same point rather than a duplicate.
+
+    Args:
+        pipeline: The orchestrator whose store, agents and clock the step uses.
+        day: The calendar day to read.
+        rerun_analysis: Whether to derive the day's patterns again (the default) or to trust that
+            the caller already ran :func:`analyze` for the same items.
+        today: The end of the news window. Defaults to the current UTC day read from the injected
+            clock; a caller replaying an old batch passes it explicitly (as in 1.6 and 3.7).
+
+    Returns:
+        The reading, as stored — the same object a later call returns from the cache.
+
+    Raises:
+        PipelineRetryError: when the pattern or forecast agent failed twice.
+        CollectionNotFoundError: when the ``forecasts`` collection was never created.
     """
-    raise PipelineError("pipeline.steps.forecast lands in roadmap 5.4")
+    with StepTimer(pipeline.clock, "forecast") as cached_timer:
+        cached = await _cached_forecast(pipeline, day)
+    if cached is not None:
+        log_step(cached_timer, cached=True)
+        return cached
+    log_step(cached_timer, cached=False)
+
+    end = today if today is not None else pipeline.clock.now().date()
+    start = end - timedelta(days=pipeline.window_days - 1)
+    with StepTimer(pipeline.clock, "window") as window_timer:
+        items = await _window_items(pipeline, start, end)
+        value = dominant_number(
+            [item.numerology_value for item in items if item.numerology_value is not None]
+        )
+    log_step(window_timer, items=len(items), dominant_number=value.dominant_number)
+
+    patterns: tuple[Pattern, ...] = ()
+    if rerun_analysis:
+        analysis = await analyze(pipeline, tuple(item.id for item in items))
+        patterns = analysis.patterns
+
+    history = await _day_history(pipeline, items, window_days=pipeline.window_days, today=end)
+
+    with StepTimer(pipeline.clock, "write") as write_timer:
+        reading = await retrying(
+            "build_forecast",
+            lambda: pipeline.forecast_agent.forecast(
+                date=day,
+                dominant_number=value.dominant_number or reduce_date(day),
+                master_active=value.is_master,
+                patterns=patterns,
+                history=history,
+            ),
+        )
+        await pipeline.run_blocking(lambda: save_forecast(pipeline.store, reading))
+    log_step(write_timer, patterns=len(patterns), history=len(history))
+
+    logger.info(
+        "pipeline.forecast.complete",
+        date=day.isoformat(),
+        dominant_number=reading.dominant_number,
+        master_active=reading.master_active,
+    )
+    return reading
+
+
+async def _cached_forecast(pipeline: Pipeline, day: date) -> Forecast | None:
+    """Return the stored reading for ``day``, or ``None`` when there is none.
+
+    ``get_forecast`` keeps "the day was never read" (``None``) apart from "the collection does not
+    exist" (``CollectionNotFoundError``), which is the right distinction for a reader of past
+    readings. For a *first* forecast the missing collection simply means nothing was read yet, so
+    this helper folds that one case into ``None``; a caller that asks about their history wants the
+    error, and still gets it from ``get_forecast`` itself (phase 6.7's tool, phase 7's command).
+    """
+    try:
+        return await pipeline.run_blocking(lambda: get_forecast(pipeline.store, day))
+    except CollectionNotFoundError:
+        return None
+
+
+async def _window_items(pipeline: Pipeline, start: date, end: date) -> list[NewsItem]:
+    """Return the news of the window, or nothing at all when the store has no news yet.
+
+    A first forecast on a fresh store has no ``news`` collection; that is an empty window, not the
+    setup error ``read_news_range`` reports to a caller who asked for their data and found none.
+    """
+    try:
+        return await pipeline.run_blocking(lambda: read_news_range(pipeline.store, start, end))
+    except CollectionNotFoundError:
+        return []
+
+
+async def _day_history(
+    pipeline: Pipeline,
+    items: Sequence[NewsItem],
+    *,
+    window_days: int,
+    today: date,
+) -> list[NumberActivation]:
+    """Return the recent activations of the numbers this day's news carries, newest first.
+
+    Only the numbers of the day are kept: the memory in the prompt is evidence for this reading, and
+    an unrelated 7 from last week is not. A day whose news states no number at all asks nothing of
+    the history collection, so an empty or uninitialised one cannot fail a reading it does not feed;
+    a missing collection is read as "nothing was ever activated", which is what it means here.
+    """
+    numbers = {number for item in items for number in item.numbers}
+    if not numbers:
+        return []
+    try:
+        activations = await pipeline.run_blocking(
+            lambda: get_activations(pipeline.store, window_days, today=today)
+        )
+    except CollectionNotFoundError:
+        return []
+    return [activation for activation in activations if activation.number in numbers]
 
 
 __all__ = [

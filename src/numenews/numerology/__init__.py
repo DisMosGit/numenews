@@ -15,6 +15,7 @@ from __future__ import annotations
 
 from numenews.numerology.api import compute_numerology
 from numenews.numerology.constants import MASTER_NUMBERS, REDUCED_NUMBERS
+from numenews.numerology.dominant import dominant_number
 from numenews.numerology.extraction import (
     extract_dates_regex,
     extract_numbers_regex,
@@ -31,6 +32,7 @@ __all__ = [
     "check_master_numbers",
     "compute_numerology",
     "date_resonance",
+    "dominant_number",
     "extract_dates_regex",
     "extract_numbers_regex",
     "extract_symbols",

@@ -159,14 +159,21 @@ class Pipeline:
 
         return await steps.analyze(self, news_ids)
 
-    async def forecast(self, day: date, *, rerun_analysis: bool = True) -> Forecast:
+    async def forecast(
+        self,
+        day: date,
+        *,
+        rerun_analysis: bool = True,
+        today: date | None = None,
+    ) -> Forecast:
         """Return the reading for ``day``, from storage when it is already there.
 
-        Delegates to :func:`numenews.pipeline.steps.forecast`.
+        Delegates to :func:`numenews.pipeline.steps.forecast`. ``today`` is the end of the news
+        window, defaulting to the current UTC day read from the injected clock.
         """
         from numenews.pipeline import steps
 
-        return await steps.forecast(self, day, rerun_analysis=rerun_analysis)
+        return await steps.forecast(self, day, rerun_analysis=rerun_analysis, today=today)
 
     async def run_blocking[ResultT](self, call: Callable[[], ResultT]) -> ResultT:
         """Run the synchronous ``call`` in a worker thread, keeping the event loop free.

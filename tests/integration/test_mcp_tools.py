@@ -13,7 +13,7 @@ The subprocess/stdio form of the same server is checked separately in ``test_mcp
 from __future__ import annotations
 
 from datetime import date
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 import pytest
@@ -27,7 +27,12 @@ from numenews.mcp import AppContext, build_server
 from numenews.models import NewsId, NewsItem, Pattern, PatternId
 from numenews.news import NewsAggregator
 from numenews.pipeline import Pipeline
-from numenews.vector import VectorStore, save_pattern, upsert_news
+from numenews.vector import (
+    PATTERNS_COLLECTION,
+    VectorStore,
+    save_pattern,
+    upsert_news,
+)
 from numenews.vector.payloads import news_embedding_text, pattern_embedding_text
 
 from ..unit.pipeline_fakes import (
@@ -383,3 +388,60 @@ async def test_query_qdrant_reports_a_missing_collection(
 
     assert result.is_error is True
     assert "does not exist" in text_of(result)
+
+
+def _pattern_payload(
+    *, pattern_id: UUID | None = None, discovered_at: str | None = None
+) -> dict[str, object]:
+    """Return a save_pattern argument as a client would send it."""
+    payload: dict[str, object] = {
+        "id": str(pattern_id or uuid4()),
+        "type": "resonance",
+        "numbers": [11, 22],
+        "news_ids": [str(uuid4())],
+        "strength": 0.8,
+        "interpretation": "Числа 11 и 22 резонируют.",
+    }
+    if discovered_at is not None:
+        payload["discovered_at"] = discovered_at
+    return payload
+
+
+async def test_save_pattern_stores_it_and_stamps_the_time(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """ROADMAP 6.9: the pattern is written to the collection and comes back stamped."""
+    pattern_id = uuid4()
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool(
+            "save_pattern", {"pattern": _pattern_payload(pattern_id=pattern_id)}
+        )
+
+        assert result.is_error is False
+        assert result.structured_content is not None
+        saved = result.structured_content
+        assert saved["id"] == str(pattern_id)
+        assert saved["numbers"] == [11, 22]
+        assert saved["discovered_at"] is not None
+        assert vector_store.client.count(PATTERNS_COLLECTION, exact=True).count == 1
+
+
+async def test_save_pattern_keeps_an_existing_timestamp_and_replaces_the_point(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """A found-at time is history, and the same id is an overwrite rather than a duplicate."""
+    pattern_id = uuid4()
+    context = AppContext(settings, store=vector_store)
+    payload = _pattern_payload(pattern_id=pattern_id, discovered_at="2026-09-01T10:00:00Z")
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        first = await client.call_tool("save_pattern", {"pattern": payload})
+        second = await client.call_tool("save_pattern", {"pattern": payload})
+
+        assert first.structured_content is not None
+        assert second.structured_content is not None
+        assert str(first.structured_content["discovered_at"]).startswith("2026-09-01T10:00:00")
+        assert second.structured_content == first.structured_content
+        assert vector_store.client.count(PATTERNS_COLLECTION, exact=True).count == 1

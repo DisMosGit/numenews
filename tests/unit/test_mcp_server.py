@@ -24,6 +24,7 @@ EXPECTED_TOOLS: tuple[str, ...] = (
     "check_master_numbers",
     "build_forecast",
     "query_qdrant",
+    "save_pattern",
 )
 
 

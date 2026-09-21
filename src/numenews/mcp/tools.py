@@ -36,6 +36,7 @@ from numenews.mcp.schemas import (
     CollectionQueryResult,
     DateRangeInput,
     NewsFilterInput,
+    PatternInput,
 )
 from numenews.models import (
     ExtractedNumbers,
@@ -50,6 +51,7 @@ from numenews.models import (
 from numenews.numerology import check_master_numbers as master_check
 from numenews.numerology import compute_numerology as read_numerology
 from numenews.vector import find_similar_patterns, hybrid_search_news
+from numenews.vector import save_pattern as store_pattern
 
 
 def context_of(ctx: Context[AppContext]) -> AppContext:
@@ -174,6 +176,19 @@ async def query_qdrant(
         return CollectionQueryResult(collection=collection, query=query, items=tuple(items))
 
 
+async def save_pattern(pattern: PatternInput, ctx: Context[AppContext]) -> Pattern:
+    """Store one pattern and return it as written, with ``discovered_at`` filled in.
+
+    The roadmap called the return type ``SavedPattern``; the saved model *is* a ``Pattern`` (the one
+    ``numenews.vector.save_pattern`` returns), so the tool returns that rather than a second type
+    saying the same thing. Re-saving the same pattern id overwrites the point instead of adding a
+    copy, and a timestamp already present is never rewritten. Needs Qdrant only.
+    """
+    with tool_errors():
+        store = await context_of(ctx).store()
+        return await asyncio.to_thread(store_pattern, store, pattern.to_domain())
+
+
 #: Every tool the server registers, in roadmap order.
 TOOLS: tuple[Callable[..., object], ...] = (
     fetch_news,
@@ -183,6 +198,7 @@ TOOLS: tuple[Callable[..., object], ...] = (
     check_master_numbers,
     build_forecast,
     query_qdrant,
+    save_pattern,
 )
 
 
@@ -196,4 +212,5 @@ __all__ = [
     "fetch_news",
     "find_patterns",
     "query_qdrant",
+    "save_pattern",
 ]

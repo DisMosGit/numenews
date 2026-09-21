@@ -20,6 +20,7 @@ can import and call the ones that need no context directly.
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import date
 from uuid import UUID
 
 from mcp.server.mcpserver import Context
@@ -29,6 +30,7 @@ from numenews.mcp.errors import tool_errors
 from numenews.mcp.schemas import DateRangeInput
 from numenews.models import (
     ExtractedNumbers,
+    Forecast,
     MasterCheckResult,
     NewsId,
     NewsItem,
@@ -116,6 +118,19 @@ def check_master_numbers(numbers: list[int]) -> MasterCheckResult:
     return master_check(numbers)
 
 
+async def build_forecast(day: date, ctx: Context[AppContext]) -> Forecast:
+    """Return the numerological reading for a calendar day, saving it for later calls.
+
+    A day that was already read answers from Qdrant without running a model. Otherwise the reading
+    is assembled from the last seven days of stored news (their dominant number, whether a master
+    number is active, and the patterns among them) plus the recent activations of exactly those
+    numbers, and then written back. Needs Qdrant and an LLM endpoint.
+    """
+    with tool_errors():
+        pipeline = await context_of(ctx).pipeline()
+        return await pipeline.forecast(day)
+
+
 #: Every tool the server registers, in roadmap order.
 TOOLS: tuple[Callable[..., object], ...] = (
     fetch_news,
@@ -123,11 +138,13 @@ TOOLS: tuple[Callable[..., object], ...] = (
     compute_numerology,
     find_patterns,
     check_master_numbers,
+    build_forecast,
 )
 
 
 __all__ = [
     "TOOLS",
+    "build_forecast",
     "check_master_numbers",
     "compute_numerology",
     "context_of",

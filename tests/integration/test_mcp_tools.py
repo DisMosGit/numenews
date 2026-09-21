@@ -91,11 +91,11 @@ def _pipeline(
     store: VectorStore,
     *,
     patterns: list[dict[str, object]] | None = None,
-) -> tuple[Pipeline, ModelCounter]:
-    """Return a pipeline over ``store`` whose every collaborator is a scripted double."""
+) -> tuple[Pipeline, ModelCounter, ModelCounter]:
+    """Return a pipeline over ``store`` and the counters of its pattern and forecast agents."""
     extract, _ = extract_agent([11])
     pattern_reader, pattern_counter = pattern_agent(patterns or [])
-    forecaster, _ = forecast_agent()
+    forecaster, forecast_counter = forecast_agent()
     summarizer, _ = summarize_agent()
     pipeline = Pipeline(
         store=store,
@@ -106,7 +106,7 @@ def _pipeline(
         fetcher=fetcher_returning([]),
         clock=FrozenClock(),
     )
-    return pipeline, pattern_counter
+    return pipeline, pattern_counter, forecast_counter
 
 
 async def test_fetch_news_returns_the_aggregated_items(
@@ -189,7 +189,7 @@ async def test_find_patterns_connects_the_stored_items(
     """ROADMAP 6.5: the tool runs ``Pipeline.analyze`` and returns the saved patterns."""
     items = [_item(f"story {number}") for number in range(3)]
     upsert_news(vector_store, items)
-    pipeline, counter = _pipeline(vector_store, patterns=[_pattern_draft(items)])
+    pipeline, counter, _ = _pipeline(vector_store, patterns=[_pattern_draft(items)])
     context = AppContext(settings, pipeline=pipeline)
 
     async with Client(build_server(context=context), raise_exceptions=True) as client:
@@ -212,7 +212,7 @@ async def test_find_patterns_without_ids_answers_empty(
     settings: Settings, vector_store: VectorStore
 ) -> None:
     """An empty list never reaches the model: "nothing to look at" is not "nothing connects"."""
-    pipeline, counter = _pipeline(vector_store)
+    pipeline, counter, _ = _pipeline(vector_store)
     context = AppContext(settings, pipeline=pipeline)
 
     async with Client(build_server(context=context), raise_exceptions=True) as client:
@@ -243,3 +243,28 @@ async def test_check_master_numbers_needs_no_service(settings: Settings) -> None
         "master_numbers": [11],
         "count": 2,
     }
+
+
+async def test_build_forecast_reads_the_day_and_caches_it(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """ROADMAP 6.7: the reading comes from ``Pipeline.forecast``, and a second call is free."""
+    stored = _item("11th hour deal").model_copy(update={"numbers": (11,), "numerology_value": 11})
+    upsert_news(vector_store, [stored])
+    pipeline, _, forecast_counter = _pipeline(vector_store)
+    context = AppContext(settings, pipeline=pipeline)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        first = await client.call_tool("build_forecast", {"day": "2026-09-21"})
+        second = await client.call_tool("build_forecast", {"day": "2026-09-21"})
+
+    assert first.is_error is False
+    assert first.structured_content is not None
+    reading = first.structured_content
+    assert reading["date"] == "2026-09-21"
+    assert reading["dominant_number"] == 11
+    assert reading["master_active"] is True
+    assert reading["forecast"] == "День под знаком одиннадцати."
+    assert reading["advice"] == "Слушайте интуицию."
+    assert forecast_counter.calls == 1
+    assert second.structured_content == reading

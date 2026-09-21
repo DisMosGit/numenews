@@ -48,7 +48,8 @@ Common commands:
 make install    # uv sync
 make lint       # ruff + mypy --strict
 make test       # unit + integration
-make test-eval  # ragas eval
+make test-eval  # ragas eval in .venv-eval (needs an LLM endpoint; docs/EVAL.md)
+make eval-env   # build .venv-eval (ragas cannot share an env with pydantic-ai; ADR 0013)
 make run        # sample one-shot CLI
 make mcp        # start MCP server (stdio)
 make clean      # stop Qdrant, drop volumes

@@ -122,7 +122,8 @@ make help          # list every target
 make install       # uv sync --all-extras
 make lint          # ruff check + format check + mypy
 make test          # unit + integration (with coverage)
-make test-eval     # ragas evaluation (needs --run-eval)
+make test-eval     # ragas evaluation in .venv-eval (needs an LLM endpoint; see docs/EVAL.md)
+make eval-env      # build .venv-eval (ragas; ADR 0013)
 make dev           # docker compose up -d --wait
 make dev-down      # stop Qdrant, keep the volume
 make clean         # stop Qdrant, delete volumes and caches
@@ -143,6 +144,7 @@ make mcp           # start the MCP server (stdio)
 - [`docs/CONTEXT_MANAGEMENT.md`](docs/CONTEXT_MANAGEMENT.md) — the window, the history and the digest
 - [`docs/MCP_TOOLS.md`](docs/MCP_TOOLS.md) — the nine MCP tools, their examples and the client configs
 - [`docs/USER_FLOW.md`](docs/USER_FLOW.md) — the one-shot CLI, its commands and their JSON
+- [`docs/EVAL.md`](docs/EVAL.md) — the ragas evaluation: how to run it and how to read the report
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`AGENTS.md`](AGENTS.md) — how AI coding agents work in this repository
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commits, local workflow

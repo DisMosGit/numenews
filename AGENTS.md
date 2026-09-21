@@ -63,7 +63,8 @@ uv run ruff check .            # lint
 uv run ruff format .           # format
 uv run mypy .                  # typecheck (strict is configured in pyproject.toml)
 uv run pytest tests/unit tests/integration -v
-uv run pytest tests/eval -v --run-eval
+make test-eval                 # ragas eval in .venv-eval (needs an LLM endpoint; docs/EVAL.md)
+make eval-env                  # build .venv-eval: ragas, isolated from pydantic-ai (ADR 0013)
 docker compose up -d --wait qdrant   # start Qdrant
 uv run numenews today          # sample one-shot CLI run (needs Qdrant + an LLM endpoint)
 uv run numenews --help         # the six commands (today, forecast, history, search, patterns, mcp)
@@ -86,4 +87,6 @@ make install lint test run mcp # shortcut targets
 - Bypass `pydantic-ai` structured output with free-form JSON parsing.
 - Put numerology logic in agents or CLI handlers — it belongs in `numerology/`.
 - Add CI/CD, Kubernetes, or Terraform — out of scope.
-- Introduce LangChain, LlamaIndex, or LangGraph — `pydantic-ai` is the chosen orchestrator.
+- Introduce LangChain, LlamaIndex, or LangGraph — `pydantic-ai` is the chosen orchestrator. The one
+  exception is the ragas evaluation, whose dependency tree pulls LangChain transitively; it is kept
+  out of `.venv`, `uv.lock` and `[project]` and lives only in the isolated `.venv-eval` (ADR 0013).

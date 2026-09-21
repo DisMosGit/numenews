@@ -1398,24 +1398,55 @@
 > **Результат фазы:** `make test-eval` выдаёт отчёт по метрикам `ragas`.
 
 ### 9.1. Фикстуры новостей
-- [ ] `tests/eval/fixtures/news.jsonl` — 50 новостей с известными числами · `M` 📝
-- [ ] `tests/eval/fixtures/questions.jsonl` — 20 Q&A пар · `M` 📝
-- [ ] Загрузчики фикстур · `S` 🧪
-- [ ] Коммит: `test(eval): fixtures` · `M`
+- [x] `tests/eval/fixtures/news.jsonl` — 50 новостей с известными числами · `M` 📝
+- [x] `tests/eval/fixtures/questions.jsonl` — 20 Q&A пар · `M` 📝
+- [x] Загрузчики фикстур · `S` 🧪
+- [x] Коммит: `test(eval): fixtures` · `M`
 
 ### 9.2. Скрипт eval
-- [ ] `tests/eval/test_rag.py` с `ragas.evaluate` · `M` 🧪
-- [ ] Метрики: `faithfulness`, `context_precision`, `context_recall`, `answer_relevancy` · `M` 🧪
-- [ ] Пороги: `faithfulness ≥ 0.7`, `context_precision ≥ 0.6` · `S` 🧪
-- [ ] Makefile таргет `test-eval` · `S`
-- [ ] Коммит: `test(eval): ragas metrics` · `M` 🧪
+- [x] `tests/eval/test_rag.py` с `ragas.evaluate` · `M` 🧪
+- [x] Метрики: `faithfulness`, `context_precision`, `context_recall`, `answer_relevancy` · `M` 🧪
+- [x] Пороги: `faithfulness ≥ 0.7`, `context_precision ≥ 0.6` · `S` 🧪
+- [x] Makefile таргет `test-eval` · `S`
+- [x] Коммит: `test(eval): ragas metrics` · `M` 🧪
 
 ### 9.3. Отчёт eval
-- [ ] Сохранение отчёта в `docs/eval_report.md` · `S` 📝
-- [ ] `docs/EVAL.md` — как запускать, как читать · `M` 📝
-- [ ] Коммит: `docs: eval report` · `M` 📝
+- [x] Сохранение отчёта в `docs/eval_report.md` · `S` 📝
+- [x] `docs/EVAL.md` — как запускать, как читать · `M` 📝
+- [x] Коммит: `docs: eval report` · `M` 📝
 
 **✅ Phase 9 завершена, когда:** `make test-eval` зелёный, отчёт сохранён.
+
+> **Итог phase 9 (2026-09-21).** Задачи 9.1–9.3 закрыты. `make test-eval` — 3 теста, 1:51–2:03:
+> `test_rag_quality` (ragas) и два детерминированных теста фикстур и поиска. Отчёт
+> `docs/eval_report.md` снят живьём против `deepseek-flash` через OpenAI-совместимый
+> `https://api.deepseek.com/v1`: `faithfulness` **0.900** (порог 0.70), `context_precision`
+> **1.000** (порог 0.60), `context_recall` **0.990**, `answer_relevancy` **0.922**, hit@5
+> **20/20**. Корпус — 50 английских новостей с объявленными числами, 20 вопросов с эталонными
+> ответами и списком релевантных слагов; поиск идёт через боевой `hybrid_search_news` и настоящие
+> `fastembed`-модели в `QdrantClient(":memory:")`, без Docker. Загрузчик сам проверяет фикстуры
+> (уникальность slug и url, наличие объявленного числа в тексте, ненулевое гематрическое чтение,
+> существование слагов в вопросах), поэтому дрейф корпуса падает тестом, а не тихо ослабляет
+> `context_recall`.
+>
+> **Отклонения** записаны в ADR 0013. Главное: `ragas` и `pydantic-ai` **несовместимы в одном
+> окружении** — `pydantic-ai-slim[openai]` требует `openai>=3.8` (`jiter>=0.16`), а все версии
+> `instructor` (жёсткая зависимость ragas) держат `jiter<0.15` и `openai<3.0`; `uv lock` с группой
+> зависимостей падает, `uv pip install -e . ragas` тоже. Поэтому ragas не попал ни в `pyproject`,
+> ни в `uv.lock`, а живёт в отдельном `.venv-eval` (`make eval-env`: `uv sync
+> --no-install-package pydantic-ai-slim` + `tests/eval/requirements-eval.txt`), куда LangChain
+> приходит только транзитивно. Второй пин — `langchain-community<0.4`: ragas 0.4.3 импортирует
+> `langchain_community.chat_models.vertexai`, удалённый в 0.4.0. Метрики взяты из поддерживаемого
+> `ragas.metrics.collections` (`ascore`), а не из устаревшего `ragas.evaluate`, названного в 9.2;
+> `answer_relevancy` эмбеддится локальной 384d-моделью через адаптер `BaseRagasEmbedding`, чтобы не
+> звать embedding API. Английский корпус — следствие английских `bge-*-en-v1.5`
+> (`docs/EMBEDDINGS.md`). Ответ для метрик пишет сам судья через `llm_factory` (в `.venv-eval` нет
+> `pydantic-ai`), промпт — в `tests/eval/judge.py` и помечен как eval-обвязка, а не продуктовый
+> промпт; `max_tokens=4096`, потому что рассуждающая модель съедает дефолтные 1024 до JSON. Судья
+> шумит по отдельным вопросам (q13 дважды получил `faithfulness` 0.000 на ответе, дословно
+> повторяющем контекст), поэтому порог стоит на среднем, а отчёт печатает таблицу по вопросам.
+> `make lint` и `make test` (677 тестов, 8 пропущенных Docker-тестов Qdrant, покрытие 99%) зелёные;
+> в `.venv` нет ни `ragas`, ни `langchain*`.
 
 ---
 

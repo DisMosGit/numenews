@@ -133,8 +133,22 @@ Versioning: [Semantic Versioning](https://semver.org/).
   `Pipeline.history_days`, thirty days by default and independent of the seven-day news window.
   Documented in `docs/CONTEXT_MANAGEMENT.md`, `docs/QDRANT_COLLECTIONS.md`, `docs/MCP_TOOLS.md` and
   `docs/USER_FLOW.md`, with ADR 0012.
+- RAG evaluation (phase 9): `tests/eval/fixtures/news.jsonl` (50 articles with declared numbers) and
+  `questions.jsonl` (20 questions with a reference answer and the slugs they are answerable from),
+  the loaders that turn them into production `NewsItem`s, a deterministic retrieval test (`hit@5`
+  at least 0.8 over the production `hybrid_search_news`) and `tests/eval/test_rag.py`, which scores
+  the retrieved contexts with `ragas` — `faithfulness`, `context_precision`, `context_recall` and
+  `answer_relevancy` — and writes `docs/eval_report.md`. `make eval-env` builds the isolated
+  `.venv-eval` the metrics run in (ragas cannot share an environment with `pydantic-ai`), and
+  `make test-eval` skips them with an actionable message when no LLM endpoint is configured.
+  Documented in `docs/EVAL.md`, with ADR 0013.
 
 ### Changed
+- `make test-eval` builds and uses the isolated `.venv-eval`; `ragas` and its LangChain tree live
+  there and never in `.venv`, `uv.lock` or `[project]`, and `make clean` removes that environment
+  with the other caches.
+- `tests/conftest.py` applies pydantic-ai's `ALLOW_MODEL_REQUESTS` guard only when pydantic-ai is
+  installed: the eval environment installs ragas instead (ADR 0013).
 - Dependencies: `typer>=0.27.2` joins the runtime set in phase 7 — the CLI framework, which brings
   `rich` (for `--help`), `shellingham` and `annotated-doc` with it. The package now also installs a
   `numenews` console script (`[project.scripts]`).

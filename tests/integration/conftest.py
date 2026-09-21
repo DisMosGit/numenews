@@ -11,7 +11,7 @@ the first run and reuse them from `.cache/fastembed` afterwards.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator, Sequence
 from pathlib import Path
 
 import pytest
@@ -21,6 +21,7 @@ from qdrant_client import QdrantClient
 from numenews.config import Settings
 from numenews.embeddings import FastEmbedBase, FastEmbedSmall
 from numenews.news import build_news_client, http
+from numenews.vector import VectorStore, VectorStoreError
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "news"
 
@@ -29,6 +30,84 @@ FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "news"
 # again, and the path is absolute on purpose: the `settings` fixture moves the working directory, so
 # a relative one would download the weights per test.
 EMBEDDING_CACHE_DIR = Path(__file__).resolve().parents[2] / ".cache" / "fastembed"
+
+
+def basis_vector(dimension: int, index: int) -> list[float]:
+    """Return a one-hot vector of ``dimension`` floats with ``index`` set.
+
+    Orthogonal vectors let a vector test say exactly which item is the nearest neighbour without
+    loading a model: cosine similarity is 1 against the same axis and 0 against any other.
+    """
+    vector = [0.0] * dimension
+    vector[index] = 1.0
+    return vector
+
+
+class FakeEmbedder:
+    """A deterministic stand-in for an ``Embedder``.
+
+    Texts registered in ``vectors`` get the vector they were registered with; anything else maps to
+    the first axis, so a test that only cares about filtering needs no registration.
+    """
+
+    def __init__(self, dimension: int, vectors: dict[str, list[float]] | None = None) -> None:
+        self._dimension = dimension
+        self._vectors = dict(vectors or {})
+        self.calls: list[list[str]] = []
+
+    @property
+    def dimension(self) -> int:
+        """Width of every vector this fake returns."""
+        return self._dimension
+
+    def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        """Return the registered vector per text, recording the batch for assertions."""
+        self.calls.append(list(texts))
+        fallback = basis_vector(self._dimension, 0)
+        return [list(self._vectors.get(text, fallback)) for text in texts]
+
+
+@pytest.fixture
+def fake_base_embedder() -> FakeEmbedder:
+    """Return a fake 768d embedder for the news, patterns and forecasts collections."""
+    return FakeEmbedder(768)
+
+
+@pytest.fixture
+def fake_small_embedder() -> FakeEmbedder:
+    """Return a fake 384d embedder for the numbers collection."""
+    return FakeEmbedder(384)
+
+
+@pytest.fixture
+def vector_store(
+    fake_base_embedder: FakeEmbedder,
+    fake_small_embedder: FakeEmbedder,
+) -> Iterator[VectorStore]:
+    """Yield an in-memory store with fake embedders: no Docker, no model, real Qdrant semantics."""
+    store = VectorStore.in_memory(base=fake_base_embedder, small=fake_small_embedder)
+    try:
+        yield store
+    finally:
+        store.close()
+
+
+@pytest.fixture(scope="session")
+def docker_store() -> Iterator[VectorStore]:
+    """Yield a store over the Qdrant ``make dev`` starts, skipping when it is not running.
+
+    Unlike every other fixture here, this one reads the developer's own configuration — testing the
+    configured container is the point. Payload indexes are the one thing the in-memory engine
+    ignores, so the checks that depend on them live in `test_vector_docker.py`.
+    """
+    try:
+        store = VectorStore.from_settings(Settings())
+    except VectorStoreError as error:
+        pytest.skip(f"Qdrant from `make dev` is not reachable: {error}")
+    try:
+        yield store
+    finally:
+        store.close()
 
 
 @pytest.fixture(scope="session")

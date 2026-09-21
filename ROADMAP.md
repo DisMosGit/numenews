@@ -527,13 +527,26 @@
 > fastembed без override: пакет поставляет `py.typed`.*
 
 ### 3.2. Qdrant-клиент
-- [ ] `QdrantClient` обёртка в `vector/client.py` · `M` 🧪
-- [ ] Подключение к Docker Qdrant из `Settings.qdrant_url` · `S`
-- [ ] Health-check при старте · `S` 🧪
-- [ ] Фикстура `qdrant_in_memory` для тестов · `M` 🧪
-- [ ] Коммит: `feat(vector): qdrant client` · `M` 🧪
+- [x] `QdrantClient` обёртка в `vector/client.py` · `M` 🧪
+- [x] Подключение к Docker Qdrant из `Settings.qdrant_url` · `S`
+- [x] Health-check при старте · `S` 🧪
+- [x] Фикстура `qdrant_in_memory` для тестов · `M` 🧪
+- [x] Коммит: `feat(vector): qdrant client` · `M` 🧪
 
 **DoD:** тест использует `QdrantClient(":memory:")`, интеграционный тест — Docker.
+
+> *Отклонения. Обёртка названа `VectorStore`, а не `QdrantClient`: одноимённый класс есть в
+> `qdrant_client`, и импорт обоих в один модуль читался бы как рекурсия. Она держит клиент **и оба
+> эмбеддера** (768d + 384d), чтобы операция коллекции не могла получить не тот эмбеддер, а тест
+> собирал тот же объект поверх `QdrantClient(":memory:")` через `VectorStore.in_memory(...)` — без
+> Docker и без весов. `from_settings(settings)` строит клиент по `Settings.qdrant_url`/`qdrant_api_key`
+> и сразу зовёт `health_check()`: недостижимый сервер превращается в `VectorStoreError` с подсказкой
+> про `make dev`, а не в транспортное исключение на первом же upsert. Прежняя фикстура
+> `qdrant_in_memory` (сырой `QdrantClient`) оставлена — она проверена с phase 0 и нужна тестам, которым
+> эмбеддер не нужен; к ней добавлены `vector_store` (in-memory store с фейковыми эмбеддерами) и
+> `docker_store` (пропускает тест, если контейнер не поднят). Docker-тест —
+> `tests/integration/test_vector_docker.py`; в этой среде `make dev` поднимает Qdrant 1.19.1, но
+> localhost проксируется через proxychains, поэтому прогон с Docker делается с `env -u LD_PRELOAD`.*
 
 ### 3.3. Коллекция `news`
 - [ ] `create_news_collection()` с 768d COSINE · `M` 🧪

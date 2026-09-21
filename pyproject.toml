@@ -119,6 +119,12 @@ markers = [
     "integration: needs a reachable service (Docker Qdrant; HTTP and LLM calls are mocked)",
     "eval: RAG quality metrics, run only with --run-eval (phase 9)",
 ]
+filterwarnings = [
+    # Two vector tests deliberately point the client at a dead port to exercise the health check;
+    # the client's own compatibility probe then warns that it could not read the server version,
+    # which is the outcome under test, not a problem to report.
+    "ignore:Failed to obtain server version:UserWarning",
+]
 
 # -----------------------------------------------------------------------------
 # Coverage

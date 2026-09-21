@@ -129,13 +129,15 @@ Anything else is a usage error (exit code 2, nothing on stdout).
 ### `history`
 
 Prints when a number was activated in the news: one entry per `(news item, number)` pair an ingest
-stored, newest first, with the snippet the number was read in. `--days` ends today and includes it, so
-`--days 1` is today.
+stored, newest first, with the snippet the number was read in and the item's own reduced value.
+`by_day` folds the same entries into a per-day frequency, newest day first. `--days` ends today and
+includes it, so `--days 1` is today.
 
 ```bash
 uv run numenews history --number 11
 uv run numenews history --number 11 --days 30
 uv run numenews history --number 11 | jq '.activations | length'
+uv run numenews history --number 11 | jq '.by_day'
 ```
 
 ```json
@@ -147,8 +149,12 @@ uv run numenews history --number 11 | jq '.activations | length'
       "number": 11,
       "date": "2026-09-21",
       "news_id": "b371bc46-7b4b-5b38-92db-cdf94a550f33",
-      "context": "eleven ministers resigned after the vote"
+      "context": "eleven ministers resigned after the vote",
+      "numerology_value": 11
     }
+  ],
+  "by_day": [
+    {"date": "2026-09-21", "count": 1}
   ]
 }
 ```

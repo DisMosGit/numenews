@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from numenews.models import NumberActivation, Pattern, PatternType
+from numenews.models import DayActivationCount, NumberActivation, Pattern, PatternType
 
 
 class VersionInfo(BaseModel):
@@ -29,7 +29,9 @@ class HistoryResult(BaseModel):
 
     A list alone would leave the caller guessing which number and window it belongs to, so the
     arguments are echoed back the way ``CollectionQueryResult`` echoes its own. ``activations`` is
-    newest first, as :func:`numenews.vector.get_history` returns them.
+    newest first, as :func:`numenews.vector.get_history` returns them, and ``by_day`` is the same
+    rows folded into the per-day frequency of roadmap 8.2 (``activation_frequency``), newest day
+    first — so a caller that only wants the shape of the period does not have to count.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -37,6 +39,7 @@ class HistoryResult(BaseModel):
     number: int
     days: int
     activations: tuple[NumberActivation, ...] = ()
+    by_day: tuple[DayActivationCount, ...] = ()
 
 
 class ErrorReport(BaseModel):

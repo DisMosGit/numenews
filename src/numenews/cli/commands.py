@@ -24,6 +24,7 @@ from numenews.mcp.schemas import CollectionName, CollectionQueryResult
 from numenews.models import DateRange, Forecast, NewsItem, Pattern, PatternType, Topic
 from numenews.pipeline import window_start
 from numenews.vector import (
+    activation_frequency,
     find_similar_patterns,
     get_history,
     hybrid_search_news,
@@ -84,7 +85,8 @@ async def history(context: AppContext, *, number: int, days: int) -> HistoryResu
 
     This is the read of ``number_history``, the project's long-term memory: one entry per
     ``(news item, number)`` pair an ingest stored, with the day the article was published and the
-    snippet the number was read in. It needs Qdrant only — no news API, no model.
+    snippet the number was read in. The same rows are folded into ``by_day`` (phase 8.2) so the
+    answer carries the period's frequency as well. It needs Qdrant only — no news API, no model.
 
     Args:
         context: The application context; its store is built on first use.
@@ -92,11 +94,17 @@ async def history(context: AppContext, *, number: int, days: int) -> HistoryResu
         days: Length of the window in calendar days, ending today and including it.
 
     Returns:
-        The window's activations, newest first, plus the arguments that produced them.
+        The window's activations, newest first, the per-day frequency, and the arguments that
+        produced them.
     """
     store = await context.store()
     activations = await asyncio.to_thread(get_history, store, number, days)
-    return HistoryResult(number=number, days=days, activations=tuple(activations))
+    return HistoryResult(
+        number=number,
+        days=days,
+        activations=tuple(activations),
+        by_day=activation_frequency(activations),
+    )
 
 
 async def search(

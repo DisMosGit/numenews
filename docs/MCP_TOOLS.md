@@ -261,7 +261,9 @@ async def get_history(number: int, days: int = 30) -> list[NumberActivation]
 
 Returns when a number was activated in the news, newest first, inside the last `days` days (the
 window ends today and includes it; 1–365). One entry per `(news item, number)` pair the ingest
-stored.
+stored; `numerology_value` is the item's own reduced value (phase 8.1) and is absent when it has
+none. The per-day frequency of the same rows is reported by `numenews history` (phase 8.2), not by
+this tool: its return type is the rows themselves.
 
 ```json
 {"number": 11, "days": 30}
@@ -274,7 +276,8 @@ stored.
       "number": 11,
       "date": "2026-09-21",
       "news_id": "af8c2f10-abf5-4780-b3d7-76a14bbe3fbd",
-      "context": "11th hour deal reached on the budget"
+      "context": "11th hour deal reached on the budget",
+      "numerology_value": 11
     }
   ]
 }

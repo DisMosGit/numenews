@@ -29,7 +29,12 @@ from numenews.vector.digests import get_digest, save_digest
 from numenews.vector.errors import CollectionNotFoundError, VectorStoreError
 from numenews.vector.filters import build_news_filter
 from numenews.vector.forecasts import get_forecast, save_forecast
-from numenews.vector.history import get_activations, get_history, record_activation
+from numenews.vector.history import (
+    activation_frequency,
+    get_activations,
+    get_history,
+    record_activation,
+)
 from numenews.vector.news import (
     READ_PAGE,
     get_news_items,
@@ -52,6 +57,7 @@ __all__ = [
     "CollectionNotFoundError",
     "VectorStore",
     "VectorStoreError",
+    "activation_frequency",
     "build_news_filter",
     "create_digests_collection",
     "create_forecasts_collection",

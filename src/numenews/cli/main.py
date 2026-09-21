@@ -206,8 +206,9 @@ def history(
     """Print when a number was activated in the news, newest first, inside a recent window.
 
     One entry per ``(news item, number)`` pair a previous ingest stored: the publication day, the
-    item's id and the sentence the number was read in. ``--days`` ends today and includes it, so
-    ``--days 1`` is today. Needs Qdrant only.
+    item's id and the sentence the number was read in. ``by_day`` folds the same entries into a
+    per-day frequency, newest day first. ``--days`` ends today and includes it, so ``--days 1`` is
+    today. Needs Qdrant only.
     """
     run_command(ctx, lambda context: commands.history(context, number=number, days=days))
 

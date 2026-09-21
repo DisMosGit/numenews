@@ -347,6 +347,11 @@ def test_history_reads_the_window_newest_first(
         today.isoformat(),
         (today - timedelta(days=2)).isoformat(),
     ]
+    # The same rows folded per day (roadmap 8.2), newest day first.
+    assert report["by_day"] == [
+        {"date": today.isoformat(), "count": 1},
+        {"date": (today - timedelta(days=2)).isoformat(), "count": 1},
+    ]
     assert {entry["number"] for entry in report["activations"]} == {11}
 
 

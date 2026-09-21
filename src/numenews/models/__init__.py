@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from numenews.models.forecasts import Forecast
 from numenews.models.ids import ForecastId, NewsId, PatternId
-from numenews.models.memory import NumberActivation
+from numenews.models.memory import DayActivationCount, NumberActivation
 from numenews.models.news import ExtractedNumbers, NewsItem
 from numenews.models.patterns import Pattern, PatternType
 from numenews.models.query import DateRange, NewsFilter, Topic
@@ -21,6 +21,7 @@ from numenews.models.results import Digest, DominantResult, MasterCheckResult, N
 
 __all__ = [
     "DateRange",
+    "DayActivationCount",
     "Digest",
     "DominantResult",
     "ExtractedNumbers",

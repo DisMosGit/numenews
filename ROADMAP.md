@@ -1342,9 +1342,9 @@
 - [x] Коммит: `feat(memory): record activations` · `M` 🧪
 
 ### 8.2. Чтение истории
-- [ ] `get_history(number, days)` с payload-фильтром · `M` 🧪
-- [ ] Агрегация: частота по дням · `M` 🧪
-- [ ] Коммит: `feat(memory): read history` · `M` 🧪
+- [x] `get_history(number, days)` с payload-фильтром · `M` 🧪
+- [x] Агрегация: частота по дням · `M` 🧪
+- [x] Коммит: `feat(memory): read history` · `M` 🧪
 
 ### 8.3. Инъекция в промпт прогноза
 - [ ] `ForecastAgent` получает историю последних 30 дней · `M` 🧪

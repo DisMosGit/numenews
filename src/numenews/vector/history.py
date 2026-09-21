@@ -3,7 +3,8 @@
 This is the project's long-term memory (``ROADMAP.md``, phase 8): every ingest appends the numbers
 it found with the day they were published, and a forecast reads the window back. The collection has
 no vectors — a question about history is exact ("which 11s since Monday?"), and the semantic
-counterpart lives in ``numbers``.
+counterpart lives in ``numbers``. A read returns the rows (:func:`get_history`,
+:func:`get_activations`), and :func:`activation_frequency` folds them into the per-day series.
 
 Writes are idempotent: the point id is derived from the news item and the number, so re-ingesting an
 article overwrites its activations rather than appending duplicates.
@@ -11,6 +12,8 @@ article overwrites its activations rather than appending duplicates.
 
 from __future__ import annotations
 
+from collections import Counter
+from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
@@ -24,7 +27,7 @@ from qdrant_client.models import (
 )
 
 from numenews.logging import get_logger
-from numenews.models import NumberActivation
+from numenews.models import DayActivationCount, NumberActivation
 from numenews.vector.client import VectorStore
 from numenews.vector.collections import (
     NUMBER_HISTORY_COLLECTION,
@@ -138,6 +141,28 @@ def get_activations(
     activations.sort(key=_newest_first, reverse=True)
     logger.debug("vector.history.window_read", days=days, activations=len(activations))
     return activations
+
+
+def activation_frequency(activations: Sequence[NumberActivation]) -> tuple[DayActivationCount, ...]:
+    """Return how many activations fall on each day, newest day first.
+
+    A history read answers "when was 11 active" with one row per news item; this folds the same rows
+    into the time series the roadmap 8.2 aggregation asks for, which is what a reader wants beside
+    the rows themselves. The order matches :func:`get_history` — newest first — so the report and
+    its series read the same way. Rows are counted, not distinct numbers: two articles that both
+    state 11 make one day with ``count=2``.
+
+    Args:
+        activations: The rows a read returned, in any order.
+
+    Returns:
+        One bucket per day present, newest first; an empty input gives an empty tuple.
+    """
+    counts = Counter(activation.date for activation in activations)
+    return tuple(
+        DayActivationCount(date=day, count=count)
+        for day, count in sorted(counts.items(), reverse=True)
+    )
 
 
 def _window_filter(

@@ -30,3 +30,19 @@ class NumberActivation(BaseModel):
     news_id: NewsId
     context: str
     numerology_value: int | None = None
+
+
+class DayActivationCount(BaseModel):
+    """How many activations fall on one day.
+
+    The per-day frequency of a history window (phase 8.2): one bucket per calendar day, counted over
+    the activation rows a read returned. A row exists per ``(news item, number)`` pair, so a day
+    with two articles that both state 11 has ``count=2`` — the bucket counts activations, not
+    distinct numbers. The bucket is what a caller charts or reports; ``numenews history`` prints the
+    series beside the activations themselves.
+    """
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    date: date
+    count: int

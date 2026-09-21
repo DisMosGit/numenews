@@ -11,23 +11,29 @@ from __future__ import annotations
 from numenews.vector.client import VectorStore
 from numenews.vector.collections import (
     NEWS_COLLECTION,
+    NUMBERS_COLLECTION,
     create_news_collection,
+    create_numbers_collection,
     ensure_collections,
     require_collection,
 )
 from numenews.vector.errors import CollectionNotFoundError, VectorStoreError
 from numenews.vector.filters import build_news_filter
 from numenews.vector.news import search_news, upsert_news
+from numenews.vector.numbers import upsert_number_patterns
 
 __all__ = [
     "NEWS_COLLECTION",
+    "NUMBERS_COLLECTION",
     "CollectionNotFoundError",
     "VectorStore",
     "VectorStoreError",
     "build_news_filter",
     "create_news_collection",
+    "create_numbers_collection",
     "ensure_collections",
     "require_collection",
     "search_news",
     "upsert_news",
+    "upsert_number_patterns",
 ]

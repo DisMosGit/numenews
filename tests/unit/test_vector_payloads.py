@@ -10,8 +10,12 @@ from __future__ import annotations
 from datetime import date
 from uuid import uuid4
 
-from numenews.models import NewsId, NewsItem
+from numenews.models import NewsId, NewsItem, NumberActivation
 from numenews.vector.payloads import (
+    activation_embedding_text,
+    activation_from_payload,
+    activation_payload,
+    activation_point_id,
     news_embedding_text,
     news_from_payload,
     news_payload,
@@ -81,3 +85,51 @@ def test_the_point_id_is_the_news_id() -> None:
 
     assert news_point_id(item) == str(item.id.root)
     assert news_point_id(item) == news_point_id(item)
+
+
+def _activation(**overrides: object) -> NumberActivation:
+    """Return a number activation; ``overrides`` replace single fields."""
+    fields: dict[str, object] = {
+        "number": 7,
+        "date": date(2026, 9, 21),
+        "news_id": NewsId(uuid4()),
+        "context": "seven markets closed higher",
+    }
+    fields.update(overrides)
+    return NumberActivation.model_validate(fields)
+
+
+def test_a_stored_activation_comes_back_unchanged() -> None:
+    """`numbers` and `number_history` share one payload shape, so one round trip covers both."""
+    activation = _activation()
+
+    assert activation_from_payload(activation_payload(activation)) == activation
+
+
+def test_an_activation_date_is_stored_as_the_start_of_its_utc_day() -> None:
+    """`number_history` indexes `date` as a DATETIME, so the same RFC 3339 rule applies."""
+    payload = activation_payload(_activation(date=date(2026, 9, 21)))
+
+    assert payload["date"] == "2026-09-21T00:00:00Z"
+
+
+def test_an_activation_is_embedded_by_its_context() -> None:
+    """The snippet is what makes an activation findable by meaning."""
+    assert activation_embedding_text(_activation()) == "seven markets closed higher"
+
+
+def test_an_activation_without_a_context_is_embedded_by_its_number() -> None:
+    """An empty string would give every context-less activation the same vector."""
+    assert activation_embedding_text(_activation(context="")) == "7"
+
+
+def test_an_activation_id_is_one_per_news_item_and_number() -> None:
+    """Re-ingesting an article overwrites its activations instead of duplicating them."""
+    news_id = NewsId(uuid4())
+    first = _activation(news_id=news_id, number=7)
+    same = _activation(news_id=news_id, number=7)
+    other_number = _activation(news_id=news_id, number=11)
+    other_news = _activation(news_id=NewsId(uuid4()), number=7)
+
+    assert activation_point_id(first) == activation_point_id(same)
+    assert len({activation_point_id(item) for item in (first, other_number, other_news)}) == 3

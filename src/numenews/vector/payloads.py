@@ -21,8 +21,9 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from datetime import date
+from uuid import NAMESPACE_URL, uuid5
 
-from numenews.models import NewsItem
+from numenews.models import NewsItem, NumberActivation
 from numenews.numerology import is_master
 
 
@@ -46,11 +47,7 @@ def news_from_payload(payload: Mapping[str, object]) -> NewsItem:
     timestamp, and JSON validation is the path ``NewsId`` documents for reading stored payloads.
     Unknown keys (``master_number``) are ignored by Pydantic.
     """
-    restored = dict(payload)
-    date_value = restored.get("date")
-    if isinstance(date_value, str):
-        restored["date"] = date_value[:10]
-    return NewsItem.model_validate_json(json.dumps(restored))
+    return NewsItem.model_validate_json(json.dumps(_restore_day(dict(payload))))
 
 
 def news_embedding_text(item: NewsItem) -> str:
@@ -68,6 +65,50 @@ def news_point_id(item: NewsItem) -> str:
     return str(item.id.root)
 
 
+def activation_payload(activation: NumberActivation) -> dict[str, object]:
+    """Return the payload of one number activation.
+
+    The same shape serves ``numbers`` (vector-backed, the semantic index over contexts) and
+    ``number_history`` (payload only, the exact log); the collections differ in what they can be
+    asked, not in what they store.
+    """
+    payload: dict[str, object] = dict(activation.model_dump(mode="json", exclude_none=True))
+    payload["date"] = iso_day(activation.date)
+    return payload
+
+
+def activation_from_payload(payload: Mapping[str, object]) -> NumberActivation:
+    """Rebuild a :class:`~numenews.models.NumberActivation` from a stored payload."""
+    return NumberActivation.model_validate_json(json.dumps(_restore_day(dict(payload))))
+
+
+def activation_embedding_text(activation: NumberActivation) -> str:
+    """Return the text embedded for one activation: the snippet, or the number itself.
+
+    The context is what makes an activation findable by meaning ("финансы", "выборы"); when the
+    extractor had no snippet, the number is the only text there is, and it must not be empty.
+    """
+    return activation.context.strip() or str(activation.number)
+
+
+def activation_point_id(activation: NumberActivation) -> str:
+    """Return one point id per ``(news item, number)`` pair.
+
+    A news item contributes a number once — ``ExtractedNumbers.numbers`` is already de-duplicated —
+    so re-ingesting the same article overwrites its activations instead of piling them up.
+    """
+    key = f"numenews:activation:{activation.news_id.root}:{activation.number}"
+    return str(uuid5(NAMESPACE_URL, key))
+
+
 def iso_day(day: date) -> str:
     """Return the RFC 3339 UTC start of ``day``, the only shape a ``DATETIME`` index accepts."""
     return f"{day.isoformat()}T00:00:00Z"
+
+
+def _restore_day(payload: dict[str, object]) -> dict[str, object]:
+    """Turn a stored RFC 3339 day back into the ``YYYY-MM-DD`` the strict models expect."""
+    date_value = payload.get("date")
+    if isinstance(date_value, str):
+        payload["date"] = date_value[:10]
+    return payload

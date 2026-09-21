@@ -578,10 +578,20 @@
 > local mode.*
 
 ### 3.4. Коллекция `numbers`
-- [ ] `create_numbers_collection()` с 384d COSINE · `M` 🧪
-- [ ] Payload-индексы: `number`, `context` · `M` 🧪
-- [ ] `upsert_number_patterns(patterns)` · `M` 🧪
-- [ ] Коммит: `feat(vector): numbers collection` · `M` 🧪
+- [x] `create_numbers_collection()` с 384d COSINE · `M` 🧪
+- [x] Payload-индексы: `number`, `context` · `M` 🧪
+- [x] `upsert_number_patterns(patterns)` · `M` 🧪
+- [x] Коммит: `feat(vector): numbers collection` · `M` 🧪
+
+> *Уточнение. Аргумент `upsert_number_patterns` — `Sequence[NumberActivation]`, а не новый тип
+> «паттерна числа»: payload этой коллекции и есть `NumberActivation` (`number` + `context` плюс
+> `date`/`news_id` для трассируемости), а 3.7 переиспользует тот же payload для `number_history`.
+> Вектор строится по `context` (короткая фраза — работа для 384d-модели), а при пустом контексте —
+> по самому числу, иначе пустая строка дала бы всем таким активациям один и тот же вектор.
+> Point id — `uuid5` от `(news_id, number)`, по одной точке на пару: `ExtractedNumbers.numbers`
+> уже дедуплицирован, поэтому повторный ingest перезаписывает активации, а не копит их. Различие
+> коллекций: `numbers` — семантический индекс по контекстам, `number_history` (3.7) — точный
+> журнал активаций; этот коммит пишет только первую.*
 
 ### 3.5. Коллекция `patterns`
 - [ ] `create_patterns_collection()` с 768d · `M` 🧪

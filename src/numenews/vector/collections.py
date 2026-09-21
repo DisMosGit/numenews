@@ -5,9 +5,11 @@ walk, without one it collects candidates and throws most of them away. Every ``c
 therefore idempotent — it checks ``collection_exists`` before creating — and every write path calls
 it, so ``upsert_news`` cannot run against a collection that has no indexes yet.
 
-One unnamed 768d COSINE vector per collection is deliberate: phase 3 searches dense vectors only
+One unnamed COSINE vector per collection is deliberate: phase 3 searches dense vectors only
 (roadmap 3.8 is "dense + filter"), and a single vector keeps the point payload the only place where
-a schema can drift. ``docs/QDRANT_COLLECTIONS.md`` records each payload field.
+a schema can drift. The width is the model the collection was designed around — 768d for ``news``,
+384d for the short number contexts of ``numbers`` — so a wrong embedder fails at creation rather
+than silently at the first query. ``docs/QDRANT_COLLECTIONS.md`` records each payload field.
 
 Local mode (``QdrantClient(":memory:")``) ignores payload indexes and warns about it; the indexes
 are asserted against the Docker server in ``tests/integration/test_vector_docker.py``.
@@ -20,13 +22,14 @@ from collections.abc import Callable, Mapping
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PayloadSchemaType, VectorParams
 
-from numenews.embeddings import BASE_DIMENSION
+from numenews.embeddings import BASE_DIMENSION, SMALL_DIMENSION
 from numenews.logging import get_logger
 from numenews.vector.errors import CollectionNotFoundError
 
 logger = get_logger(__name__)
 
 NEWS_COLLECTION = "news"
+NUMBERS_COLLECTION = "numbers"
 
 #: Payload fields of ``news`` that get an index, in creation order. ``master_number`` is derived
 #: from ``numerology_value`` by ``payloads.news_payload``: a filter on it must not have to fetch
@@ -38,11 +41,24 @@ NEWS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
     "master_number": PayloadSchemaType.BOOL,
 }
 
+#: Payload fields of ``numbers``. ``context`` is indexed as a keyword because the searchable part
+#: of a number activation is its vector, not a full-text match on the sentence around it.
+NUMBERS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
+    "number": PayloadSchemaType.INTEGER,
+    "context": PayloadSchemaType.KEYWORD,
+}
+
 
 def create_news_collection(client: QdrantClient) -> None:
     """Create the 768d ``news`` collection and its payload indexes, unless it is already there."""
     _create_collection(client, NEWS_COLLECTION, BASE_DIMENSION)
     _create_indexes(client, NEWS_COLLECTION, NEWS_PAYLOAD_INDEXES)
+
+
+def create_numbers_collection(client: QdrantClient) -> None:
+    """Create the 384d ``numbers`` collection and its payload indexes, unless already there."""
+    _create_collection(client, NUMBERS_COLLECTION, SMALL_DIMENSION)
+    _create_indexes(client, NUMBERS_COLLECTION, NUMBERS_PAYLOAD_INDEXES)
 
 
 def ensure_collections(client: QdrantClient) -> None:
@@ -86,4 +102,7 @@ def _create_indexes(
 
 #: Every collection creator, in the order ``ensure_collections`` runs them. It grows with the
 #: collections of phase 3, so a caller always sees the schemas this build actually defines.
-COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (create_news_collection,)
+COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (
+    create_news_collection,
+    create_numbers_collection,
+)

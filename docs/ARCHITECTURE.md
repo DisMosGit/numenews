@@ -104,7 +104,7 @@ touching the news APIs:
 flowchart LR
     fixtures[tests/eval/fixtures<br/>news.jsonl + questions.jsonl] --> mem[Qdrant :memory: + real fastembed]
     mem --> hybrid[hybrid_search_news<br/>the production path]
-    hybrid --> hit[hit@5 >= 0.8]
+    hybrid --> hit[hit@5 at least 0.8]
     hybrid --> ragas[ragas metrics in .venv-eval<br/>faithfulness, precision, recall, relevancy]
 ```
 
@@ -144,7 +144,8 @@ sequenceDiagram
     P->>V: store patterns, read the activation history
     P->>A: forecast(dominant, master_active, history)
     A-->>P: Forecast
-    P->>Q: upsert forecast
+    P->>V: store the forecast
+    V->>Q: upsert
     P-->>U: PipelineRun / today's Forecast
     U->>U: print exactly one JSON document on stdout
 ```

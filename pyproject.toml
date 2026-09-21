@@ -21,8 +21,13 @@ requires-python = ">=3.14"
 #              tqdm, loguru, py-rust-stemmers, mmh3 and requests with it; the two
 #              bge models are downloaded on first use, not at import (see
 #              docs/EMBEDDINGS.md)
-#   Later      Phase 4 pydantic-ai, Phase 6 mcp, Phase 7 typer + rich,
-#              Phase 9 ragas — see the note below; it stays out of the default sync
+#              Phase 4: pydantic-ai-slim[openai], the agent runtime of `agents/`.
+#              The `pydantic-ai` meta-package hard-pulls the anthropic, google,
+#              logfire, evals, mcp and web extras, none of which the agents use;
+#              slim + the openai extra is the whole surface they need
+#              (see ADR 0004)
+#   Later      Phase 6 mcp, Phase 7 typer + rich, Phase 9 ragas — see the note
+#              below; ragas stays out of the default sync
 #
 # `ragas` hard-depends on langchain, langchain-core, langchain-community and
 # langchain_openai, and AGENTS.md rules LangChain out: the eval harness must not
@@ -33,6 +38,7 @@ dependencies = [
     "hishel[httpx]>=1.4",
     "httpx>=0.28.1",
     "pydantic>=2.11",
+    "pydantic-ai-slim[openai]>=2.46",
     "pydantic-settings>=2.15",
     "qdrant-client>=1.19",
     "structlog>=26.1",

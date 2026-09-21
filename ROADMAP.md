@@ -213,13 +213,19 @@
 > `st.integers(min_value=1, max_value=10**12)` плюс отдельные проверки идемпотентности и `st.dates()`.*
 
 ### 1.3. Мастер-числа
-- [ ] `is_master(n: int) -> bool` · `S` 🧪
-- [ ] `MASTER_NUMBERS = frozenset({11, 22, 33})` · `S`
-- [ ] `check_master_numbers(numbers: Sequence[int]) -> MasterCheckResult` · `S` 🧪
-- [ ] Тесты: границы, пустой список, дубликаты · `S` 🧪
-- [ ] Коммит: `feat(numerology): master numbers` · `S` 🧪
+- [x] `is_master(n: int) -> bool` · `S` 🧪
+- [x] `MASTER_NUMBERS = frozenset({11, 22, 33})` · `S`
+- [x] `check_master_numbers(numbers: Sequence[int]) -> MasterCheckResult` · `S` 🧪
+- [x] Тесты: границы, пустой список, дубликаты · `S` 🧪
+- [x] Коммит: `feat(numerology): master numbers` · `S` 🧪
 
 **DoD:** функция возвращает `MasterCheckResult(has_master, master_numbers, count)`.
+
+> *`MASTER_NUMBERS` лежит в `numerology/constants.py` (заведён в 1.2, см. примечание там);
+> `master.py` импортирует его и добавляет `is_master`/`check_master_numbers`, а `MasterCheckResult`
+> определён в `models/results.py` (заведён в 1.1). Семантика полей: `master_numbers` — различные
+> мастер-числа по возрастанию, `count` — все вхождения, поэтому `[11, 11]` даёт `(True, (11,), 2)`;
+> пустая последовательность — валидный вход и даёт `(False, (), 0)`.*
 
 ### 1.4. Гематрия
 - [ ] `gematria_simple(text: str) -> int` — A=1..Z=26 + кириллица · `M` 🧪

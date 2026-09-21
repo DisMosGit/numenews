@@ -16,15 +16,25 @@ from numenews.mcp.server import SERVER_NAME, build_server
 from numenews.mcp.tools import TOOLS
 
 #: Every tool the finished server exposes, in roadmap order (6.2-6.10).
-EXPECTED_TOOLS: tuple[str, ...] = ()
+EXPECTED_TOOLS: tuple[str, ...] = ("fetch_news",)
 
 
-async def test_the_skeleton_registers_no_tools(settings: Settings) -> None:
-    """ROADMAP 6.1's DoD: the server starts and ``list_tools`` returns an empty list."""
+async def test_the_registry_and_the_server_agree_on_the_tools(settings: Settings) -> None:
+    """The registry drives registration, so a tool that is not in it is not a tool."""
     server = build_server(context=AppContext(settings))
 
-    assert await server.list_tools() == []
+    assert [tool.name for tool in await server.list_tools()] == list(EXPECTED_TOOLS)
     assert tuple(getattr(tool, "__name__", "") for tool in TOOLS) == EXPECTED_TOOLS
+
+
+async def test_every_registered_tool_publishes_schemas(settings: Settings) -> None:
+    """A tool without an input schema, a description or an output schema cannot be called."""
+    server = build_server(context=AppContext(settings))
+
+    for tool in await server.list_tools():
+        assert tool.description
+        assert tool.input_schema["type"] == "object"
+        assert tool.output_schema is not None
 
 
 async def test_the_server_reports_its_own_name(settings: Settings) -> None:

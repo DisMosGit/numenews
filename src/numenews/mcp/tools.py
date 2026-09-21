@@ -24,9 +24,9 @@ from collections.abc import Callable
 from mcp.server.mcpserver import Context
 
 from numenews.mcp.context import AppContext
-
-#: Every tool the server registers, in roadmap order.
-TOOLS: tuple[Callable[..., object], ...] = ()
+from numenews.mcp.errors import tool_errors
+from numenews.mcp.schemas import DateRangeInput
+from numenews.models import NewsItem, Topic
 
 
 def context_of(ctx: Context[AppContext]) -> AppContext:
@@ -39,4 +39,25 @@ def context_of(ctx: Context[AppContext]) -> AppContext:
     return ctx.request_context.lifespan_context
 
 
-__all__ = ["TOOLS", "context_of"]
+async def fetch_news(
+    topic: str,
+    date_range: DateRangeInput,
+    ctx: Context[AppContext],
+) -> list[NewsItem]:
+    """Fetch the news of a topic in an inclusive date range from every configured source.
+
+    The five feeds run in parallel and the result is merged, de-duplicated and filtered to the
+    range. A source that fails is skipped with a warning, so a broken feed thins the result instead
+    of failing the call; if no source is configured at all (no GDELT, which needs no key) the call
+    is a tool error.
+    """
+    with tool_errors():
+        aggregator = await context_of(ctx).news()
+        return await aggregator.fetch_all(Topic(query=topic), date_range.to_domain())
+
+
+#: Every tool the server registers, in roadmap order.
+TOOLS: tuple[Callable[..., object], ...] = (fetch_news,)
+
+
+__all__ = ["TOOLS", "context_of", "fetch_news"]

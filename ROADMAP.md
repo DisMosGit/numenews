@@ -348,14 +348,27 @@
 > наследования удовлетворяет протоколу — и это же проверяет `mypy --strict`.*
 
 ### 2.2. HTTP-клиент с кэшем (hishel)
-- [ ] `httpx.AsyncClient` + `hishel.AsyncCacheClient` · `M` 🧪
-- [ ] Кэш-директория из `Settings.cache_dir` · `S`
-- [ ] TTL 15 минут для новостей · `S` 🧪
-- [ ] Обёртка с `tenacity` для retry на 5xx · `M` 🧪
-- [ ] Тест: повторный запрос идёт из кэша (`respx`) · `M` 🧪
-- [ ] Коммит: `feat(news): http client with hishel cache` · `M` 🧪
+- [x] `httpx.AsyncClient` + `hishel.AsyncCacheClient` · `M` 🧪
+- [x] Кэш-директория из `Settings.cache_dir` · `S`
+- [x] TTL 15 минут для новостей · `S` 🧪
+- [x] Обёртка с `tenacity` для retry на 5xx · `M` 🧪
+- [x] Тест: повторный запрос идёт из кэша (`respx`) · `M` 🧪
+- [x] Коммит: `feat(news): http client with hishel cache` · `M` 🧪
 
 **DoD:** тест через `respx` подтверждает, что второй запрос не бьёт по сети.
+
+> *Отклонения. Кэш работает в режиме `hishel.FilterPolicy`, а не в режиме спецификации: ни один из
+> пяти API не присылает заголовков свежести, которыми RFC 9111 мог бы пользоваться, поэтому
+> `SpecificationPolicy` считал бы каждый сохранённый ответ протухшим и кэш не отвечал бы никогда
+> (проверено: два одинаковых запроса → два сетевых вызова). Пятнадцать минут — это
+> `AsyncSqliteStorage(default_ttl=...)`, расширение hishel, а не правило кэширования; TTL влияет на
+> срок хранения записи. Второе следствие того, что hishel сохраняет всё: в `FilterPolicy` добавлен
+> фильтр `_CacheOnlySuccesses`, иначе кэшированный 503 повторялся бы весь TTL вместо retry, а 429
+> скрывал бы сброс квоты. `tenacity` 9.1 больше не содержит `wait_retry_after`, поэтому задержка —
+> своя функция: она уважает числовой `Retry-After` (HTTP-дата игнорируется) и иначе отступает
+> экспоненциально; флаг `retryable` берётся с исключения (2.1). В лог идёт URL без query-строки:
+> Mediastack передаёт ключ именно в query. Зависимости `httpx`/`hishel[httpx]`/`tenacity` (и
+> `respx` в dev-группу) добавлены в этом же коммите, комментарий фаз в `pyproject.toml` обновлён.*
 
 ### 2.3. GDELT adapter
 - [ ] `GDELTSource(NewsSource)` · `M` 🧪

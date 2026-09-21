@@ -20,9 +20,11 @@ from numenews.news.errors import (
     NewsSourceRateLimitError,
     NewsSourceTransportError,
 )
+from numenews.news.http import NEWS_CACHE_TTL_SECONDS, build_news_client
 from numenews.news.protocol import NewsSource
 
 __all__ = [
+    "NEWS_CACHE_TTL_SECONDS",
     "NewsSource",
     "NewsSourceAuthError",
     "NewsSourceError",
@@ -30,4 +32,5 @@ __all__ = [
     "NewsSourceParseError",
     "NewsSourceRateLimitError",
     "NewsSourceTransportError",
+    "build_news_client",
 ]

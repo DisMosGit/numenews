@@ -171,16 +171,28 @@
 > **Результат фазы:** покрытие `numerology/` ≥ 95%, все инварианты покрыты property-based тестами.
 
 ### 1.1. Доменные модели (Pydantic)
-- [ ] `NewsId`, `PatternId`, `ForecastId` (UUID-обёртки) · `S` 🧪
-- [ ] `NewsItem` (id, title, text, source, date, url, numbers, numerology_value) · `M` 🧪
-- [ ] `ExtractedNumbers` (numbers: list[int], sources: list[str], symbols: list[str]) · `S` 🧪
-- [ ] `NumerologyResult` (value, is_master, breakdown) · `S` 🧪
-- [ ] `Pattern` (id, type, numbers, news_ids, strength, interpretation) · `M` 🧪
-- [ ] `Forecast` (date, dominant_number, master_active, patterns, forecast, advice, warnings) · `M` 🧪
-- [ ] `NumberActivation` (number, date, news_id, context) · `S` 🧪
-- [ ] Коммит: `feat(models): domain pydantic models` · `M` 🧪
+- [x] `NewsId`, `PatternId`, `ForecastId` (UUID-обёртки) · `S` 🧪
+- [x] `NewsItem` (id, title, text, source, date, url, numbers, numerology_value) · `M` 🧪
+- [x] `ExtractedNumbers` (numbers: list[int], sources: list[str], symbols: list[str]) · `S` 🧪
+- [x] `NumerologyResult` (value, is_master, breakdown) · `S` 🧪
+- [x] `Pattern` (id, type, numbers, news_ids, strength, interpretation) · `M` 🧪
+- [x] `Forecast` (date, dominant_number, master_active, patterns, forecast, advice, warnings) · `M` 🧪
+- [x] `NumberActivation` (number, date, news_id, context) · `S` 🧪
+- [x] Коммит: `feat(models): domain pydantic models` · `M` 🧪
 
 **DoD:** все модели проходят `mypy --strict`, `model_config = ConfigDict(frozen=True, strict=True)`.
+
+> *Отклонения. `MasterCheckResult` добавлен в `models/` здесь, хотя roadmap упоминает его только в 1.3:
+> он нужен и 1.3, и MCP-инструменту 6.6. `NumerologyResult` несёт `text` и `gematria` сверх
+> `(value, is_master, breakdown)`, а `breakdown` — кортеж отрендеренных шагов (так модель остаётся
+> hashable и JSON читаем). `NewsItem.numbers`/`numerology_value` получили значения по умолчанию
+> (`()`/`None`): извлечение приходит только в 4.2/5.2, а `None` — явное «ещё не посчитано», потому что
+> `0` не входит в множество редуцированных значений. `ExtractedNumbers.sources` — метки стратегий
+> извлечения (`regex`, `llm`), а не параллельный список к `numbers`. `PatternType` — замкнутый
+> `Literal["resonance", "repetition", "master", "symbol", "hidden"]`, `discovered_at` появится в 3.5
+> вместе с payload-индексом. Поле прогноза названо `master_active` по этому файлу, а не
+> `master_number_active` из `.docs/plan.md`. Модели делятся по модулям (`ids`, `news`, `results`,
+> `patterns`, `forecasts`, `memory`) и переэкспортируются из `models/__init__.py`.*
 
 ### 1.2. Редукция
 - [ ] `reduce_number(n: int) -> int` — свёртка до 1–9 · `S` 🧪

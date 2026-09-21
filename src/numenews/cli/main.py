@@ -36,6 +36,7 @@ from numenews.logging import (
 )
 from numenews.mcp.context import AppContext
 from numenews.mcp.errors import DOMAIN_ERRORS
+from numenews.mcp.main import main as serve_mcp
 
 logger = get_logger("numenews.cli")
 
@@ -277,3 +278,20 @@ def patterns(
             limit=limit,
         ),
     )
+
+
+@app.command()
+def mcp(
+    transport: Annotated[
+        Literal["stdio"],
+        typer.Option("--transport", help="Transport to serve (stdio only for now)."),
+    ] = "stdio",
+) -> None:
+    """Serve the nine MCP tools over ``--transport`` until the client disconnects.
+
+    This is the long-running counterpart of the one-shot commands, and the only one whose stdout
+    is not a single JSON document: it carries the JSON-RPC wire. It is the same server as
+    ``python -m numenews.mcp`` (roadmap 7.8 proxies into ``mcp/main.py``), built lazily, so it
+    starts with neither Qdrant nor an LLM endpoint reachable.
+    """
+    serve_mcp(transport)

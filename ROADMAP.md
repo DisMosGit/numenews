@@ -1250,9 +1250,17 @@
 > выписан рядом.*
 
 ### 7.8. Команда `mcp`
-- [ ] `numenews mcp --transport stdio` · `S` 🧪
-- [ ] Проксирует в `mcp/main.py` · `S`
-- [ ] Коммит: `feat(cli): mcp command` · `S` 🧪
+- [x] `numenews mcp --transport stdio` · `S` 🧪
+- [x] Проксирует в `mcp/main.py` · `S`
+- [x] Коммит: `feat(cli): mcp command` · `S` 🧪
+
+> *Уточнения. Команда зовёт `numenews.mcp.main.main` в том же процессе (импорт как `serve_mcp`), а не
+> поднимает подпроцесс: это ровно то, что делает `python -m numenews.mcp`, плюс аргумент
+> `--transport`. stdout здесь — JSON-RPC-провод, а не один JSON-документ: это единственное
+> задокументированное исключение из правила «stdout — один документ» (ADR 0005), и оно не команда, а
+> сервер. `--transport` — `Literal["stdio"]`: другие транспорты SDK появятся вместе с их
+> потребителем. Юнит-тест подменяет `serve_mcp`; настоящий stdio-хендшейк по-прежнему проверяет
+> `tests/integration/test_mcp_stdio.py` через `python -m numenews.mcp`.*
 
 ### 7.9. Smoke-тесты CLI
 - [ ] `typer.testing.CliRunner` для всех команд · `M` 🧪

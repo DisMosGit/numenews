@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
+from numenews.cli import main as cli_main
 from numenews.cli.main import app
 
 runner = CliRunner()
@@ -52,6 +54,37 @@ def test_an_unknown_command_is_a_usage_error() -> None:
 def test_an_unknown_option_is_a_usage_error() -> None:
     """A mistyped flag is caught by the parser before any command body runs."""
     result = runner.invoke(app, ["--colour", "today"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+
+
+def test_mcp_serves_stdio(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ROADMAP 7.8: ``numenews mcp`` proxies into ``mcp/main.py`` and writes no JSON of its own."""
+    transports: list[str] = []
+    monkeypatch.setattr(cli_main, "serve_mcp", transports.append)
+
+    result = runner.invoke(app, ["mcp", "--transport", "stdio"])
+
+    assert result.exit_code == 0
+    assert transports == ["stdio"]
+    assert result.stdout == ""
+
+
+def test_mcp_defaults_to_stdio(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The transport has a default, so the terse ``numenews mcp`` works."""
+    transports: list[str] = []
+    monkeypatch.setattr(cli_main, "serve_mcp", transports.append)
+
+    result = runner.invoke(app, ["mcp"])
+
+    assert result.exit_code == 0
+    assert transports == ["stdio"]
+
+
+def test_mcp_refuses_an_unknown_transport() -> None:
+    """Phase 6 serves stdio only; asking for HTTP is a usage error, not a silent fallback."""
+    result = runner.invoke(app, ["mcp", "--transport", "http"])
 
     assert result.exit_code == 2
     assert result.stdout == ""

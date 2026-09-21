@@ -23,7 +23,6 @@ from numenews.news import (
     NewsSourceParseError,
     NewsSourceRateLimitError,
     NewsSourceTransportError,
-    http,
 )
 from numenews.news.http import NEWS_CACHE_TTL_SECONDS, build_news_client, get_response, parse_json
 
@@ -36,12 +35,6 @@ class _Payload(BaseModel):
     model_config = ConfigDict(extra="ignore", strict=True)
 
     title: str
-
-
-@pytest.fixture
-def instant_retries(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Replace the backoff with an immediate retry, so the suite spends no seconds asleep."""
-    monkeypatch.setattr(http, "_wait", lambda retry_state: 0.0)
 
 
 async def _fetch(client: httpx.AsyncClient, **params: str) -> httpx.Response:

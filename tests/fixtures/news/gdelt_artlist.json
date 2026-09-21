@@ -1,0 +1,47 @@
+{
+  "articles": [
+    {
+      "url": "https://www.example.com/politics/11th-hour-deal",
+      "url_mobile": "",
+      "title": "11th hour deal reached on the budget",
+      "seendate": "20260921T101500Z",
+      "socialimage": "https://www.example.com/img/deal.jpg",
+      "domain": "example.com",
+      "language": "English",
+      "sourcecountry": "United States"
+    },
+    {
+      "url": "https://news.example.org/world/summit-ends",
+      "url_mobile": "https://m.news.example.org/world/summit-ends",
+      "title": "Summit ends without an agreement",
+      "seendate": "20260920T235900Z",
+      "socialimage": "",
+      "domain": "news.example.org",
+      "language": "English",
+      "sourcecountry": "United Kingdom"
+    },
+    {
+      "url": "https://www.example.com/politics/unusable-timestamp",
+      "title": "A story whose timestamp is not a timestamp",
+      "seendate": "yesterday",
+      "domain": "example.com",
+      "language": "English",
+      "sourcecountry": "United States"
+    },
+    {
+      "title": "A story without a URL",
+      "seendate": "20260921T120000Z",
+      "domain": "example.com",
+      "language": "English",
+      "sourcecountry": "United States"
+    },
+    {
+      "url": "https://www.example.com/politics/no-timestamp",
+      "title": "A story with no timestamp at all",
+      "seendate": "",
+      "domain": "example.com",
+      "language": "English",
+      "sourcecountry": "United States"
+    }
+  ]
+}

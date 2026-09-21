@@ -17,9 +17,15 @@ from hishel.httpx import AsyncCacheClient
 from qdrant_client import QdrantClient
 
 from numenews.config import Settings
-from numenews.news import build_news_client
+from numenews.news import build_news_client, http
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "news"
+
+
+@pytest.fixture
+def instant_retries(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace the retry backoff with an immediate retry, so the suite spends no seconds asleep."""
+    monkeypatch.setattr(http, "_wait", lambda retry_state: 0.0)
 
 
 @pytest.fixture

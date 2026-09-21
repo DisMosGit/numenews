@@ -20,11 +20,13 @@ from numenews.news.errors import (
     NewsSourceRateLimitError,
     NewsSourceTransportError,
 )
+from numenews.news.gdelt import GDELTSource
 from numenews.news.http import NEWS_CACHE_TTL_SECONDS, build_news_client
 from numenews.news.protocol import NewsSource
 
 __all__ = [
     "NEWS_CACHE_TTL_SECONDS",
+    "GDELTSource",
     "NewsSource",
     "NewsSourceAuthError",
     "NewsSourceError",

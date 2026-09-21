@@ -107,12 +107,13 @@
 > пустой stdout у MCP, in-memory Qdrant). Фикстуры добавляет 0.8.*
 
 ### 0.6. Конфиг через pydantic-settings
-- [ ] `src/numenews/config.py` — `Settings(BaseSettings)` · `M` 🧪
-- [ ] Поля: `qdrant_url`, `qdrant_api_key`, `openai_api_key`, `openai_base_url`, `llm_model`, `log_level`, `cache_dir` · `M`
-- [ ] `.env.example` со всеми переменными · `S` 📝
-- [ ] Загрузка через `model_config = SettingsConfigDict(env_file=".env")` · `S`
-- [ ] Тест: невалидный конфиг кидает `ValidationError` · `S` 🧪
-- [ ] Коммит: `feat(config): pydantic-settings` · `M` 🧪
+- [x] `src/numenews/config.py` — `Settings(BaseSettings)` · `M` 🧪
+- [x] Поля: `qdrant_url`, `qdrant_api_key`, `openai_api_key`, `openai_base_url`, `llm_model`, `log_level`, `cache_dir` · `M`
+      *Плюс `environment: Literal["dev", "prod"] = "dev"` — им переключается рендерер логов (0.7), отдельного `log_json` не заводим.*
+- [x] `.env.example` со всеми переменными · `S` 📝
+- [x] Загрузка через `model_config = SettingsConfigDict(env_file=".env")` · `S`
+- [x] Тест: невалидный конфиг кидает `ValidationError` · `S` 🧪
+- [x] Коммит: `feat(config): pydantic-settings` · `M` 🧪
 
 **DoD:** `Settings()` читает `.env`, тест на невалидные значения зелёный.
 

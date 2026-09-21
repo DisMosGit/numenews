@@ -1,9 +1,9 @@
 # numenews — developer entry points.
 #
 # `make install` sets up the environment, `make dev` starts Qdrant, and
-# `make lint && make test` is the gate every commit has to pass. The CLI, the MCP server
-# and the ragas suite arrive in phases 7, 6 and 9: until then `make run`, `make mcp` and
-# `make test-eval` exercise the placeholders in `src/numenews/*/__main__.py`.
+# `make lint && make test` is the gate every commit has to pass. `make mcp` serves the nine
+# MCP tools over stdio (phase 6). The CLI and the ragas suite arrive in phases 7 and 9: until
+# then `make run` and `make test-eval` exercise the placeholders in `src/numenews/*/__main__.py`.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help

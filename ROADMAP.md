@@ -979,72 +979,163 @@
 > **Результат фазы:** `make mcp` запускает сервер, инструменты вызываются из клиента.
 
 ### 6.1. Каркас MCP-сервера
-- [ ] `mcp/server.py` — `FastMCP("numenews")` · `S` 🧪
-- [ ] Dependency injection через `AppContext` · `M` 🧪
-- [ ] Точка входа `mcp/main.py` со `stdio` transport · `S`
-- [ ] Тест: сервер стартует, `list_tools` возвращает пустой список · `M` 🧪
-- [ ] Коммит: `feat(mcp): server skeleton` · `M` 🧪
+- [x] `mcp/server.py` — `FastMCP("numenews")` · `S` 🧪
+- [x] Dependency injection через `AppContext` · `M` 🧪
+- [x] Точка входа `mcp/main.py` со `stdio` transport · `S`
+- [x] Тест: сервер стартует, `list_tools` возвращает пустой список · `M` 🧪
+- [x] Коммит: `feat(mcp): server skeleton` · `M` 🧪
 
 **DoD:** `make mcp` запускает сервер, не падает при подключении.
 
+> *Отклонения. Класс называется `MCPServer`, а не `FastMCP`: установлен официальный SDK **v2**
+> (`mcp>=2.2,<3`), где v1-й `FastMCP` переименован, а `mcp.server.fastmcp` больше не существует;
+> v1.x живёт на ветке поддержки. Причина записана в ADR 0010. Сервер собирает фабрика
+> `build_server(context=...)`, а не модульный объект: тест подставляет свой `AppContext`.
+> `AppContext` (`mcp/context.py`) держит настройки и **лениво** строит store, extract-агента,
+> `Pipeline` и `NewsAggregator` вместе с одним долгоживущим hishel-клиентом — по одному разу, под
+> общим `asyncio.Lock`, а блокирующие конструкторы уходят в `asyncio.to_thread` (мост ADR 0003).
+> Поэтому 6.1 DoD выполняется буквально: сервер поднимается без Qdrant и без ключа LLM, а ошибка
+> «нет базы/ключа» приходит на первом вызове инструмента как читаемый `ToolError`.
+> `mcp/schemas.py` (JSON-формы аргументов) и `mcp/errors.py` (перевод ожидаемых ошибок в
+> `ToolError`) заведены здесь же — инструменты 6.2–6.10 их только используют. Точка входа —
+> `mcp/main.py`, а `mcp/__main__.py` делегирует в неё: `python -m numenews.mcp` уже был в Makefile
+> и docs, и оба пути должны остаться рабочими.*
+
 ### 6.2. Инструмент `fetch_news`
-- [ ] `@mcp.tool() def fetch_news(topic, date_range) -> list[NewsItem]` · `M` 🧪
-- [ ] Вызов `NewsAggregator` · `S`
-- [ ] Structured output через Pydantic · `S`
-- [ ] Коммит: `feat(mcp): fetch_news tool` · `M` 🧪
+- [x] `@mcp.tool() def fetch_news(topic, date_range) -> list[NewsItem]` · `M` 🧪
+- [x] Вызов `NewsAggregator` · `S`
+- [x] Structured output через Pydantic · `S`
+- [x] Коммит: `feat(mcp): fetch_news tool` · `M` 🧪
+
+> *Уточнения. `date_range` — не доменная `DateRange` (она `strict` и отвергла бы JSON-строки дат), а
+> `DateRangeInput` из `mcp/schemas.py` с тем же правилом «начало не позже конца»; `topic` — голая
+> строка, из которой инструмент собирает `Topic`. Агрегатор берётся из `AppContext` и живёт вместе
+> с сервером: у него один общий кэширующий клиент (обещание 2.8 «долгоживущий клиент — за фазой 6»).
+> `NewsSourceError` («ни одного источника») переводится в `ToolError`, падение одного фида —
+> по-прежнему тихое понижение результата.*
 
 ### 6.3. Инструмент `extract_numbers`
-- [ ] `@mcp.tool() def extract_numbers(text) -> ExtractedNumbers` · `S` 🧪
-- [ ] Вызов `ExtractNumbersAgent` · `S`
-- [ ] Коммит: `feat(mcp): extract_numbers tool` · `S` 🧪
+- [x] `@mcp.tool() def extract_numbers(text) -> ExtractedNumbers` · `S` 🧪
+- [x] Вызов `ExtractNumbersAgent` · `S`
+- [x] Коммит: `feat(mcp): extract_numbers tool` · `S` 🧪
+
+> *Уточнение. `ExtractNumbersAgent.extract` уже содержит regex-фолбэк, поэтому инструмент не
+> обрабатывает отказ модели вообще; его единственная точка отказа — не настроенный эндпоинт
+> (`LLMConfigurationError` → `ToolError`). `AppContext.extract()` строит агент без Qdrant, так что
+> инструменту нужен только LLM.*
 
 ### 6.4. Инструмент `compute_numerology`
-- [ ] `@mcp.tool() def compute_numerology(text) -> NumerologyResult` · `S` 🧪
-- [ ] Чистая функция из `numerology/` · `S`
-- [ ] Коммит: `feat(mcp): compute_numerology tool` · `S` 🧪
+- [x] `@mcp.tool() def compute_numerology(text) -> NumerologyResult` · `S` 🧪
+- [x] Чистая функция из `numerology/` · `S`
+- [x] Коммит: `feat(mcp): compute_numerology tool` · `S` 🧪
+
+> *Уточнение. Инструмент — синхронный и без `ctx`: SDK выполняет синхронные инструменты в
+> worker-потоке, а нумерология на одном заголовке и так мгновенна. Импорт алиасирован
+> (`read_numerology`), чтобы имя инструмента и имя чистой функции не конфликтовали.*
 
 ### 6.5. Инструмент `find_patterns`
-- [ ] `@mcp.tool() def find_patterns(news_ids) -> list[Pattern]` · `M` 🧪
-- [ ] Вызов `Pipeline.analyze` · `S`
-- [ ] Коммит: `feat(mcp): find_patterns tool` · `M` 🧪
+- [x] `@mcp.tool() def find_patterns(news_ids) -> list[Pattern]` · `M` 🧪
+- [x] Вызов `Pipeline.analyze` · `S`
+- [x] Коммит: `feat(mcp): find_patterns tool` · `M` 🧪
+
+> *Уточнения. `news_ids` типизированы как `list[UUID]`, поэтому кривой id отвергает схема SDK до тела
+> инструмента и сама называет поле. `Pipeline.analyze` возвращает `PipelineRun`, а не список, так
+> что инструмент отдаёт `run.patterns` (уже с проставленным `discovered_at`). Неизвестный id —
+> пропуск, пустой список — `[]` без вызова модели (правило 4.3).*
 
 ### 6.6. Инструмент `check_master_numbers`
-- [ ] `@mcp.tool() def check_master_numbers(numbers) -> MasterCheckResult` · `S` 🧪
-- [ ] Коммит: `feat(mcp): check_master_numbers tool` · `S` 🧪
+- [x] `@mcp.tool() def check_master_numbers(numbers) -> MasterCheckResult` · `S` 🧪
+- [x] Коммит: `feat(mcp): check_master_numbers tool` · `S` 🧪
+
+> *Уточнение. Второй чистый инструмент: без `ctx`, прямой вызов `numerology.check_master_numbers` под
+> алиасом. Семантика полей — фазы 1.3: `master_numbers` — различные значения, `count` — все
+> вхождения.*
 
 ### 6.7. Инструмент `build_forecast`
-- [ ] `@mcp.tool() def build_forecast(date) -> Forecast` · `M` 🧪
-- [ ] Вызов `Pipeline.forecast` · `S`
-- [ ] Коммит: `feat(mcp): build_forecast tool` · `M` 🧪
+- [x] `@mcp.tool() def build_forecast(date) -> Forecast` · `M` 🧪
+- [x] Вызов `Pipeline.forecast` · `S`
+- [x] Коммит: `feat(mcp): build_forecast tool` · `M` 🧪
+
+> *Уточнение. Аргумент назван `day` (имя параметра уходит в схему). Повторный вызов дня читает
+> готовое чтение из `forecasts` без прогона модели — это поведение 5.4, а не новое.*
 
 ### 6.8. Инструмент `query_qdrant`
-- [ ] `@mcp.tool() def query_qdrant(collection, query, filters) -> list[dict]` · `M` 🧪
-- [ ] Валидация `collection` через Literal · `S` 🧪
-- [ ] Коммит: `feat(mcp): query_qdrant tool` · `M` 🧪
+- [x] `@mcp.tool() def query_qdrant(collection, query, filters) -> list[dict]` · `M` 🧪
+- [x] Валидация `collection` через Literal · `S` 🧪
+- [x] Коммит: `feat(mcp): query_qdrant tool` · `M` 🧪
+
+> *Отклонения. Возврат — `CollectionQueryResult` (`collection`, `query`, `items: NewsItem | Pattern`),
+> а не `list[dict]`: AGENTS.md запрещает словари на границах. `Literal` сужен до
+> `["news", "patterns"]` — это ровно те коллекции, у которых в `vector/` есть семантический путь
+> чтения; `numbers`, `forecasts` и `digests` пока только пишутся, а `number_history` читается точно
+> инструментом 6.10. Для `news` вызывается `hybrid_search_news` (фильтр внутри `Prefetch` — правило
+> AGENTS.md и задел 7.6 «гибридный поиск через `query_qdrant`»), для `patterns` —
+> `find_similar_patterns`; фильтры с `patterns` **отвергаются**, а не игнорируются. Синхронный
+> векторный слой вызывается через `asyncio.to_thread`.*
 
 ### 6.9. Инструмент `save_pattern`
-- [ ] `@mcp.tool() def save_pattern(pattern) -> SavedPattern` · `S` 🧪
-- [ ] Upsert в коллекцию `patterns` · `S`
-- [ ] Коммит: `feat(mcp): save_pattern tool` · `S` 🧪
+- [x] `@mcp.tool() def save_pattern(pattern) -> SavedPattern` · `S` 🧪
+- [x] Upsert в коллекцию `patterns` · `S`
+- [x] Коммит: `feat(mcp): save_pattern tool` · `S` 🧪
+
+> *Отклонения. Отдельной модели `SavedPattern` нет: `vector.save_pattern` возвращает сам `Pattern` с
+> проставленным `discovered_at`, и второй тип лишь повторял бы его. Аргумент — `PatternInput`
+> (JSON-строки id, массив чисел), конвертируемый в strict-модель; `strength` вне `[0, 1]` и
+> неизвестный `type` отвергает схема. Повторное сохранение того же id перезаписывает точку, а
+> существующая метка времени не переписывается.*
 
 ### 6.10. Инструмент `get_history`
-- [ ] `@mcp.tool() def get_history(number) -> list[NumberActivation]` · `S` 🧪
-- [ ] Чтение из `number_history` · `S`
-- [ ] Коммит: `feat(mcp): get_history tool` · `S` 🧪
+- [x] `@mcp.tool() def get_history(number) -> list[NumberActivation]` · `S` 🧪
+- [x] Чтение из `number_history` · `S`
+- [x] Коммит: `feat(mcp): get_history tool` · `S` 🧪
+
+> *Отклонение. Добавлен параметр `days=30` (1–365): чтение 3.7 — это окно, а не «всё когда-либо», и
+> 30 дней совпадают с окном памяти фазы 8.3. Окно заканчивается сегодня и включает его.*
 
 ### 6.11. Интеграция с клиентами
-- [ ] Конфиг для Claude Desktop (`claude_desktop_config.json`) · `S` 📝
-- [ ] Конфиг для Cursor (`.cursor/mcp.json`) · `S` 📝
-- [ ] Ручной smoke-тест из Claude Desktop · `M`
-- [ ] Коммит: `docs(mcp): client configs` · `M` 📝
+- [x] Конфиг для Claude Desktop (`claude_desktop_config.json`) · `S` 📝
+- [x] Конфиг для Cursor (`.cursor/mcp.json`) · `S` 📝
+- [x] Ручной smoke-тест из Claude Desktop · `M`
+- [x] Коммит: `docs(mcp): client configs` · `M` 📝
+
+> *Отклонения. `.cursor/mcp.json` добавлен в репозиторий (проектный конфиг Cursor, без абсолютных
+> путей). Конфиг Claude Desktop — в пользовательском каталоге, поэтому он **документирован** в
+> `docs/MCP_TOOLS.md` (с абсолютным путём-заглушкой), а не записан в домашний каталог.
+> Ручной smoke-тест из Claude Desktop в этой среде невозможен (нет GUI/Node); его заменяет
+> `tests/integration/test_mcp_stdio.py` — реальный subprocess `python -m numenews.mcp` и
+> stdio-хендшейк клиентом самого SDK: проверяются девять инструментов, их описания и схемы.*
 
 ### 6.12. Документация MCP
-- [ ] `docs/MCP_TOOLS.md` — 9 инструментов, сигнатуры, примеры · `L` 📝
-- [ ] ADR `0010-use-mcp-server.md` · `M` 📝
+- [x] `docs/MCP_TOOLS.md` — 9 инструментов, сигнатуры, примеры · `L` 📝
+- [x] ADR `0010-use-mcp-server.md` · `M` 📝
       *Номер изменён с `0001` (он занят записью о ведении ADR из 0.9); нумерация ADR — в `docs/adr/0001-record-architecture-decisions.md`.*
-- [ ] Коммит: `docs: mcp tools + ADR` · `M` 📝
+- [x] Коммит: `docs: mcp tools + ADR` · `M` 📝
 
 **✅ Phase 6 завершена, когда:** Claude Desktop видит 9 инструментов, `fetch_news` возвращает новости.
+
+> **Итог phase 6 (2026-09-21).** Задачи 6.1–6.12 закрыты. Сервер — один `MCPServer` официального
+> SDK v2 (`mcp>=2.2,<3`) с девятью инструментами над слоями ниже: `fetch_news`, `extract_numbers`,
+> `compute_numerology`, `find_patterns`, `check_master_numbers`, `build_forecast`, `query_qdrant`,
+> `save_pattern`, `get_history`. Покрытие `src/numenews/mcp/` — 100% инструкций и ветвей (кроме
+> `__main__.py`, который исполняется subprocess'ом stdio-теста и не измеряется), весь `make test` —
+> 589 тестов, 8 пропущенных Docker-тестов Qdrant (контейнер здесь недостижим без `env -u
+> LD_PRELOAD`, как в фазах 3–5); `ruff check`, `ruff format --check`, `mypy --strict` и
+> `pre-commit run --all-files` зелёные.
+>
+> Условие фазы проверено дважды: `tests/integration/test_mcp_stdio.py` поднимает настоящий
+> `python -m numenews.mcp` как дочерний процесс и получает список из девяти инструментов, а
+> `tests/integration/test_mcp_tools.py` прогоняет каждый инструмент через in-memory `Client` с
+> in-memory Qdrant, скриптованными `FunctionModel`-агентами и `respx` (включая `fetch_news` на
+> записанной фикстуре GDELT и перевод ошибок в `ToolError`). Старт без Qdrant и без ключа LLM —
+> отдельная проверка: ничего не строится, пока инструмент не понадобится.
+>
+> **Отклонения** отмечены по задачам выше: `MCPServer` вместо `FastMCP` (SDK v2), ленивый
+> `AppContext`, DTO аргументов в `mcp/schemas.py` (доменные модели strict и JSON-формы не
+> принимают), `ToolError` для ожидаемых отказов и санитизированный крах для остального,
+> `query_qdrant` только по `news`/`patterns` и с типизированным результатом вместо `list[dict]`,
+> `save_pattern` возвращает `Pattern` вместо `SavedPattern`, `get_history` получил окно `days=30`,
+> конфиг Claude Desktop документирован, а ручной smoke-тест заменён stdio-тестом. Живого прогона в
+> Claude Desktop/Cursor нет — как и живых ключей новостных API и LLM в фазах 2, 4 и 5.
 
 ---
 

@@ -12,6 +12,7 @@ import pytest
 
 from numenews.config import Settings
 from numenews.mcp.context import AppContext
+from numenews.mcp.main import main as mcp_main
 from numenews.mcp.server import SERVER_NAME, build_server
 from numenews.mcp.tools import TOOLS
 
@@ -68,3 +69,20 @@ def test_building_a_server_writes_nothing_to_stdout(
     build_server(context=AppContext(settings))
 
     assert capsys.readouterr().out == ""
+
+
+def test_main_serves_the_transport_it_was_given(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The process entry point configures logging and hands the server to ``run``."""
+    transports: list[str] = []
+
+    class _RecordingServer:
+        def run(self, *, transport: str) -> None:
+            transports.append(transport)
+
+    monkeypatch.setattr("numenews.mcp.main.build_server", lambda: _RecordingServer())
+
+    mcp_main()
+
+    assert transports == ["stdio"]

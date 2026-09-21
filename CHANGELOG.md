@@ -83,8 +83,38 @@ Versioning: [Semantic Versioning](https://semver.org/).
 - Documentation for the layer: `docs/RAG_PIPELINE.md` (the chain, the API, degradation, testing) and
   `docs/CONTEXT_MANAGEMENT.md` (the window, the history, the digest and what it costs), with ADR 0011
   recording the new layer, the new collection and the day's-number rule.
+- MCP server (phases 6.1–6.11): `numenews.mcp` — one `MCPServer` from the official SDK v2, served over
+  stdio by `python -m numenews.mcp` / `make mcp`, with nine tools that are thin wrappers over the
+  layers below: `fetch_news`, `extract_numbers`, `compute_numerology`, `find_patterns`,
+  `check_master_numbers`, `build_forecast`, `query_qdrant`, `save_pattern` and `get_history`. Every
+  tool returns a Pydantic model; lists arrive as the SDK's `{"result": [...]}`.
+- `AppContext` (roadmap 6.1): the lifespan object the tools share, holding the settings and lazily
+  building — once, under one lock, off the event loop with `asyncio.to_thread` — the vector store,
+  the extract agent, the `Pipeline`, the `NewsAggregator` and the one long-lived `hishel` client. The
+  server therefore starts with no Qdrant and no LLM key, and each tool needs only what it uses.
+- `numenews.mcp.schemas`: the wire DTOs (`DateRangeInput`, `NewsFilterInput`, `PatternInput`,
+  `CollectionQueryResult`) that accept JSON shapes and convert into the strict domain models, with the
+  domain rules (reversed ranges, reversed dates, `strength` in `[0, 1]`) enforced at the boundary so
+  `to_domain()` cannot fail.
+- `numenews.mcp.errors.tool_errors`: expected domain failures (`AgentError`, `NewsSourceError`,
+  `PipelineError`, `VectorStoreError`) become `ToolError`s whose message the model can act on, while
+  anything unexpected stays a sanitised crash with an ERROR traceback.
+- Client configuration for the server: a committed `.cursor/mcp.json`, the Claude Desktop
+  `claude_desktop_config.json` snippet in `docs/MCP_TOOLS.md`, and
+  `tests/integration/test_mcp_stdio.py`, which launches the real server as a subprocess through the
+  SDK's stdio client and asserts the nine tools — the automated stand-in for the manual
+  "open it in Claude Desktop" check.
+- Documentation for the interface: `docs/MCP_TOOLS.md` (the nine tools, their arguments,
+  prerequisites, example `structuredContent`, failure semantics and the client configs) and ADR 0010
+  (SDK v2 and the `FastMCP` → `MCPServer` rename, the lazy application context, the wire-DTO boundary,
+  the error policy and the narrowed `query_qdrant`).
 
 ### Changed
+- Dependencies: `mcp>=2.2,<3` joins the runtime set in phase 6 — the official SDK v2 with the stdio
+  transport, and the `MCPServer` class that v1 called `FastMCP`.
+- `README.md`, `AGENTS.md` and the package docstring track phase 6; `make mcp` no longer says
+  "placeholder", and `docs/EMBEDDINGS.md`/`docs/NEWS_SOURCES.md` were corrected where they described
+  the MCP layer as unbuilt.
 - Dependencies: `pydantic-ai-slim[openai]` joins the runtime set in phase 4 — the `pydantic-ai`
   meta-package would pull the anthropic, google, logfire, evals, mcp and web extras the agents do not
   use.

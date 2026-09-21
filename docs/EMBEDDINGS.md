@@ -58,8 +58,9 @@ is what makes a stored vector comparable with a later query (asserted in
 Embedding and Qdrant access are **synchronous**. The vector layer is built on `QdrantClient`, because
 that is what `QdrantClient(":memory:")` supports for the test suite, and an ONNX session is a CPU-bound
 object rather than an async one. Async callers (the pipeline of phase 5, the MCP tools of phase 6)
-offload a blocking call to a worker thread — `asyncio.to_thread` for the pipeline, and FastMCP's own
-worker thread for a synchronous tool function. ADR 0003 records the trade-off.
+offload a blocking call to a worker thread — `asyncio.to_thread` for the pipeline and for the tools'
+storage calls, and the SDK's own worker thread for a synchronous tool function. ADR 0003 records the
+trade-off.
 
 ## Tests
 

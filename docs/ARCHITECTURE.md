@@ -2,7 +2,7 @@
 
 > **Phase 0 template.** The layer map, the boundary rules and the state model below are settled;
 > the data-flow diagram describes the *target* pipeline and is filled in as its steps land
-> (phases 2–5, of which 2, 3, 4 and 5 are done). The full document is written in phase 10.1.
+> (phases 2–6, all of which are done). The full document is written in phase 10.1.
 
 ## One pipeline, two interfaces
 
@@ -110,4 +110,9 @@ layer — `pipeline/` owns the chain (`ingest → analyze → forecast`, plus th
 seven-day sliding window and the step timings, bridges the async pipeline to the synchronous vector
 layer with `asyncio.to_thread`, and adds the sixth collection `digests` for the summary of the news
 the window leaves behind; documented in `docs/RAG_PIPELINE.md` and `docs/CONTEXT_MANAGEMENT.md` with
-ADR 0011. `ROADMAP.md` is the authoritative status; `docs/adr/` records the decisions.
+ADR 0011. Phase 6: the interface layer — `mcp/` builds one `MCPServer` over stdio around the nine
+tools, with an `AppContext` whose collaborators (the store, the extract agent, the pipeline and the
+cached news client) are built lazily on first use, JSON-shaped argument schemas that convert into the
+strict domain models, and a failure policy that turns expected domain errors into `ToolError`s the
+model can read; documented in `docs/MCP_TOOLS.md` with ADR 0010. `ROADMAP.md` is the authoritative
+status; `docs/adr/` records the decisions.

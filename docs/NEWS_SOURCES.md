@@ -179,8 +179,9 @@ the source sends one. `tenacity` 9 no longer ships `wait_retry_after`, so the wa
 - **No pagination.** One page per source per run, capped by the free tier; the caps are constants in
   each adapter.
 - **No de-duplication beyond the literal key** — no fuzzy titles, no canonical URLs.
-- **No key handling in the CLI or MCP layers yet** (phases 6 and 7): the adapters read `Settings`
-  through `from_settings`, and `build_sources` decides which of them exist.
+- **No key handling in the CLI layer yet** (phase 7): the adapters read `Settings`
+  through `from_settings`, and `build_sources` decides which of them exist. The MCP server of phase 6
+  does the same — it hands `Settings` to `build_sources` and has no key handling of its own.
 
 ## Configuration
 

@@ -7,12 +7,12 @@ numerology (digit reduction, master numbers 11/22/33, gematria), finds patterns 
 vector search in Qdrant, and builds a daily forecast — while keeping every number activation as
 long-term memory.
 
-> **Status: Phase 5 — RAG pipeline.** The tooling, configuration, logging, the domain models, the
+> **Status: Phase 6 — MCP server.** The tooling, configuration, logging, the domain models, the
 > pure numerology layer, the five news sources behind one Protocol, the vector layer (the two local
 > `bge` models, the six Qdrant collections, semantic and hybrid search), the four `pydantic-ai`
-> agents (extract numbers, find patterns, build the forecast, summarise old news) and the pipeline
-> that composes them (`ingest → analyze → forecast`, with the sliding window and the digest) exist.
-> The MCP server and the CLI land in phases 6–10. See
+> agents (extract numbers, find patterns, build the forecast, summarise old news), the pipeline that
+> composes them (`ingest → analyze → forecast`, with the sliding window and the digest) and the MCP
+> server with its nine tools exist. The CLI lands in phases 7–10. See
 > [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is done.
 
 ## Quick start
@@ -25,6 +25,19 @@ make lint && make test      # ruff + mypy --strict, pytest with coverage
 ```
 
 Qdrant's dashboard is then at <http://localhost:6333/dashboard>.
+
+## Quick start over MCP
+
+The server starts without Qdrant or an API key and builds each dependency on the first tool call
+that needs it, so it can be attached to a host right away. Cursor's project config ships in
+[`.cursor/mcp.json`](.cursor/mcp.json); Claude Desktop takes the same command in its own
+`claude_desktop_config.json`. The nine tools, their examples and the failure semantics are in
+[`docs/MCP_TOOLS.md`](docs/MCP_TOOLS.md).
+
+```bash
+make mcp                                            # serve stdio (Ctrl-D to stop)
+uv run pytest tests/integration/test_mcp_stdio.py   # the same handshake, as a test
+```
 
 ## Example output
 
@@ -59,7 +72,7 @@ builds it already exists; stdout is always JSON, so it pipes straight into `jq`:
 | Vector store | Qdrant (Docker Compose; `:memory:` in tests) |
 | Embeddings | `fastembed` (`bge-small-en-v1.5` 384d, `bge-base-en-v1.5` 768d) — local, no API keys |
 | LLM orchestration | `pydantic-ai` with structured output |
-| MCP server | Python `mcp` SDK (`FastMCP`) |
+| MCP server | Python `mcp` SDK v2 (`MCPServer`), nine tools over stdio |
 | HTTP | `httpx` + `hishel` (RFC 9111 cache) + `tenacity` |
 | Config / logs | `pydantic-settings` / `structlog` (stderr, JSON in prod) |
 | CLI | Typer + Rich, **JSON-only stdout** |
@@ -108,6 +121,7 @@ make mcp           # start the MCP server (stdio)
 - [`docs/PROMPTS.md`](docs/PROMPTS.md) — every agent prompt, verbatim, with its rationale
 - [`docs/RAG_PIPELINE.md`](docs/RAG_PIPELINE.md) — the chain, its degradation rules and its tests
 - [`docs/CONTEXT_MANAGEMENT.md`](docs/CONTEXT_MANAGEMENT.md) — the window, the history and the digest
+- [`docs/MCP_TOOLS.md`](docs/MCP_TOOLS.md) — the nine MCP tools, their examples and the client configs
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`AGENTS.md`](AGENTS.md) — how AI coding agents work in this repository
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commits, local workflow

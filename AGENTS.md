@@ -9,7 +9,7 @@ Guidance for AI coding agents working in this repository.
 ## Stack
 
 - Python 3.14+, `uv` (single package, src-layout)
-- MCP Python SDK (`FastMCP`) + `pydantic-ai`
+- MCP Python SDK v2 (`MCPServer`) + `pydantic-ai`
 - Qdrant (Docker Compose) + `fastembed` (local embeddings)
 - `httpx` + `hishel` (RFC 9111 cache), `pydantic-settings`, `structlog`
 - Typer + Rich for CLI (JSON-only stdout)
@@ -22,8 +22,8 @@ Guidance for AI coding agents working in this repository.
 - `src/numenews/news/` — adapters for GDELT, NewsAPI, GNews, Mediastack, Currents behind one Protocol
 - `src/numenews/embeddings/` — `fastembed` wrapper (384d and 768d)
 - `src/numenews/vector/` — Qdrant client, collections, hybrid search, payload-index setup
-- `src/numenews/agents/` — `pydantic-ai` agents: extract, pattern, forecast
-- `src/numenews/mcp/` — MCP server and 9 tools
+- `src/numenews/agents/` — `pydantic-ai` agents: extract, pattern, forecast, summarize
+- `src/numenews/mcp/` — MCP server (`MCPServer`), the nine tools and the `AppContext`
 - `src/numenews/cli/` — one-shot Typer commands
 - `src/numenews/models/` — Pydantic v2 domain models
 - `docs/` — architecture, ADRs, MCP tools, Qdrant schema, RAG pipeline
@@ -53,7 +53,9 @@ Guidance for AI coding agents working in this repository.
 
 ## Commands
 
-Commands below are the target state; the CLI (`numenews today`, Phase 7) and the MCP server (Phase 6) are placeholders until those phases land — `make run` and `make mcp` run the placeholders until then.
+Commands below are the target state; the CLI (`numenews today`, Phase 7) is still a placeholder until
+that phase lands, so `make run` exercises the placeholder. The MCP server and its nine tools are
+implemented (Phase 6): `make mcp` serves them over stdio.
 
 ```
 uv sync --all-extras           # install

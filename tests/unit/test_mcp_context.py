@@ -82,6 +82,14 @@ async def test_injected_collaborators_are_returned_unchanged(settings: Settings)
     assert await context.store() is pipeline.store
 
 
+async def test_an_injected_pipeline_serves_the_store_accessor(settings: Settings) -> None:
+    """A pipeline injected without a store still gives the storage tools the same store."""
+    store = FakeStore()
+    context = AppContext(settings, pipeline=_pipeline(store))
+
+    assert await context.store() is store  # type: ignore[comparison-overlap]  # test double
+
+
 async def test_a_store_is_built_only_once_even_under_concurrency(
     settings: Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -136,6 +144,28 @@ async def test_the_news_aggregator_shares_the_injected_client(
     assert aggregator.sources  # GDELT needs no key, so one source is always configured
     await context.aclose()
     assert client.is_closed
+
+
+async def test_the_context_builds_the_news_client_when_none_is_injected(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The long-lived client is the context's to create, and its to close."""
+    built: list[AsyncCacheClient] = []
+
+    def spy(resolved: Settings) -> AsyncCacheClient:
+        client = build_news_client(resolved)
+        built.append(client)
+        return client
+
+    monkeypatch.setattr("numenews.mcp.context.build_news_client", spy)
+    context = AppContext(settings)
+
+    aggregator = await context.news()
+    await context.aclose()
+
+    assert aggregator.sources
+    assert len(built) == 1
+    assert built[0].is_closed
 
 
 async def test_aclose_closes_a_standalone_store(settings: Settings) -> None:

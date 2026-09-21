@@ -7,15 +7,15 @@ numerology (digit reduction, master numbers 11/22/33, gematria), finds patterns 
 vector search in Qdrant, and builds a daily forecast — while keeping every number activation as
 long-term memory.
 
-> **Status: Phase 8 — long-term memory.** The tooling, configuration, logging, the domain models,
+> **Status: v0.1.0 — phases 0–10 complete.** The tooling, configuration, logging, the domain models,
 > the pure numerology layer, the five news sources behind one Protocol, the vector layer (the two
 > local `bge` models, the six Qdrant collections, semantic and hybrid search), the four `pydantic-ai`
 > agents (extract numbers, find patterns, build the forecast, summarise old news), the pipeline that
 > composes them (`ingest → analyze → forecast`, with the sliding window and the digest), the MCP
 > server with its nine tools, the one-shot CLI (`today`, `forecast`, `history`, `search`, `patterns`,
-> `mcp`), and the long-term memory of number activations (`number_history`, its per-day frequency and
-> the forecast's thirty-day memory window) exist. See [`ROADMAP.md`](ROADMAP.md) for the
-> phase-by-phase plan and what is done.
+> `mcp`), the long-term memory of number activations (`number_history`, its per-day frequency and the
+> forecast's thirty-day memory window), and the ragas evaluation in its isolated environment all
+> exist. See [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is done.
 
 ## Quick start
 
@@ -131,10 +131,19 @@ make run           # sample one-shot CLI run (needs Qdrant and an LLM endpoint)
 make mcp           # start the MCP server (stdio)
 ```
 
+`make test` runs the unit and integration suites with coverage and then checks the per-layer floors
+(numerology ≥ 95 %, pipeline/agents ≥ 80 %, vector/news ≥ 70 %); the levels, the doubles and the
+dated coverage snapshot are in [`docs/TESTING.md`](docs/TESTING.md).
+
 ## Documentation
 
 - [`ROADMAP.md`](ROADMAP.md) — phases 0–10, atomic tasks, definitions of done
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers and data flow
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the layers, the data flow and the runtime topology
+- [`docs/STACK.md`](docs/STACK.md) — every tool, why it was chosen and what it costs
+- [`docs/TESTING.md`](docs/TESTING.md) — the test levels, the doubles and the coverage floors
+- [`docs/TOOL_USE.md`](docs/TOOL_USE.md) — which MCP tool answers which question
+- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — MCP, RAG, gematria, master number and the rest
+- [`docs/FAQ.md`](docs/FAQ.md) — "why numerology?", "do I need API keys?", "how do I connect Cursor?"
 - [`docs/NUMEROLOGY.md`](docs/NUMEROLOGY.md) — terminology and rules
 - [`docs/NEWS_SOURCES.md`](docs/NEWS_SOURCES.md) — the five news APIs, their limits and the cache
 - [`docs/QDRANT_COLLECTIONS.md`](docs/QDRANT_COLLECTIONS.md) — the six collections, payloads and indexes
@@ -146,7 +155,8 @@ make mcp           # start the MCP server (stdio)
 - [`docs/USER_FLOW.md`](docs/USER_FLOW.md) — the one-shot CLI, its commands and their JSON
 - [`docs/EVAL.md`](docs/EVAL.md) — the ragas evaluation: how to run it and how to read the report
 - [`docs/adr/`](docs/adr/) — architecture decision records
-- [`AGENTS.md`](AGENTS.md) — how AI coding agents work in this repository
+- [`docs/agentic/`](docs/agentic/) — how AI coding agents work here, and their guardrails
+- [`AGENTS.md`](AGENTS.md) — the rules for AI coding agents in this repository
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commits, local workflow
 
 ## License

@@ -1,20 +1,23 @@
 # Architecture
 
-> **Phase 0 template.** The layer map, the boundary rules and the state model below are settled;
-> the data-flow diagram describes the *target* pipeline and is filled in as its steps land
-> (phases 2–6, all of which are done). The full document is written in phase 10.1.
+> `ROADMAP.md` is the authoritative status; this document describes the shape the code has. The
+> reasoning behind each significant choice is in [`docs/adr/`](adr/), and the phase that introduced a
+> layer is named where it matters.
 
-## One pipeline, two interfaces
+## One pipeline, two interfaces, one measurement
 
-numenews is a single package with two entry points over the same code:
+numenews is a single package with two entry points over the same code, plus an offline measurement of
+the retrieval it performs:
 
 - **MCP server** (`numenews.mcp`, phase 6) — nine tools an LLM client calls, each returning a
-  Pydantic model.
-- **One-shot CLI** (`numenews.cli`, phase 7) — the same operations once per invocation, JSON on
-  stdout, nothing else.
+  Pydantic model ([`MCP_TOOLS.md`](MCP_TOOLS.md)).
+- **One-shot CLI** (`numenews.cli`, phase 7) — the same operations once per invocation, one JSON
+  document on stdout and nothing else ([`USER_FLOW.md`](USER_FLOW.md)).
+- **Evaluation** (`tests/eval`, phase 9) — the production retrieval path and a ragas scoring of it,
+  in an isolated environment ([`EVAL.md`](EVAL.md), [ADR 0013](adr/0013-eval-isolation.md)).
 
-Both are thin: the work lives in the pipeline, and all persistent state lives in Qdrant, so a
-command must be idempotent and resumable (AGENTS.md).
+The two interfaces are thin: the work lives in `numenews.pipeline`, and all persistent state lives in
+Qdrant, so every command is idempotent and resumable (`AGENTS.md`).
 
 ## Layers
 
@@ -28,11 +31,38 @@ command must be idempotent and resumable (AGENTS.md).
 | Composition | `pipeline` | everything above | the RAG chain, the sliding window, step timing and retries |
 | Interfaces | `mcp`, `cli` | everything above; `cli` also uses `mcp` | tool and command surfaces, JSON serialization |
 
+`config` and `logging` sit below every layer: settings are validated once at start, and logs go to
+stderr so stdout stays machine-readable.
+
+```mermaid
+flowchart BT
+    models[models]
+    numerology[numerology] --> models
+    news[news] --> models
+    embeddings[embeddings] --> models
+    vector[vector] --> embeddings
+    vector --> numerology
+    vector --> models
+    agents[agents] --> numerology
+    agents --> models
+    pipeline[pipeline] --> vector
+    pipeline --> news
+    pipeline --> agents
+    pipeline --> numerology
+    mcp[mcp] --> pipeline
+    cli[cli] --> mcp
+    cli --> pipeline
+```
+
+(`config` and `logging` are omitted from the graph: every layer may read settings and write a log
+line, and neither imports anything but the standard library and its own dependencies.)
+
 Two rules keep this acyclic and testable:
 
 1. `numerology` is pure — no I/O, and never imports `news`, `vector`, `agents`, `pipeline` or `mcp`;
    it depends only on `models` for the types of its results (ADR 0002), so its invariants can be
-   property-tested without any infrastructure.
+   property-tested without any infrastructure. `tests/unit/test_numerology_api.py` asserts the rule
+   in a subprocess.
 2. State crosses boundaries as Pydantic models only — no dicts, no dataclasses, no free-form JSON
    from an LLM.
 
@@ -49,9 +79,6 @@ asynchronous while `vector` stays synchronous, bridged only by `asyncio.to_threa
 `numenews.mcp.main`, and the one-shot commands share the MCP server's lazy `AppContext` as their
 container instead of growing a second one — the two surfaces build the store, the agents and the news
 client the same way, once (ADR 0006).
-
-`config` and `logging` sit below every layer: settings are validated once at start, and logs go to
-stderr so stdout stays machine-readable.
 
 ## Data flow
 
@@ -70,11 +97,83 @@ flowchart TD
     I --> J[JSON to CLI stdout / MCP client]
 ```
 
+The evaluation measures the retrieval half of that chain offline, against a committed corpus, without
+touching the news APIs:
+
+```mermaid
+flowchart LR
+    fixtures[tests/eval/fixtures<br/>news.jsonl + questions.jsonl] --> mem[Qdrant :memory: + real fastembed]
+    mem --> hybrid[hybrid_search_news<br/>the production path]
+    hybrid --> hit[hit@5 >= 0.8]
+    hybrid --> ragas[ragas metrics in .venv-eval<br/>faithfulness, precision, recall, relevancy]
+```
+
 All of it is driven by `numenews.pipeline`, which is the only layer that knows this order. Context
 management: a sliding seven-day window feeds the agents, their reading may cite the last thirty days
 of number activations from `number_history`, older items are summarised into a numerological digest,
-and that log carries activations across sessions — see
-[`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md).
+and that log carries activations across sessions — see [`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md).
+
+## One `numenews today` run
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as CLI (Typer)
+    participant C as mcp.AppContext (lazy)
+    participant P as pipeline.Pipeline
+    participant N as news: fetch_news + hishel
+    participant A as agents: pydantic-ai
+    participant V as vector: VectorStore + fastembed
+    participant Q as Qdrant
+
+    U->>C: today()
+    C->>P: pipeline (built on first use)
+    P->>N: ingest: fetch_news(topic, range)
+    N-->>P: NewsItem batch (from the hishel cache or the feed)
+    P->>V: which news ids are already stored?
+    V->>Q: retrieve by id
+    Q-->>V: known ids
+    Note over P: a known item is skipped before its extraction
+    P->>A: extract_numbers(text)  (regex fallback on failure)
+    A-->>P: numbers + sources
+    P->>V: embed + upsert news, numbers, number_history
+    V->>Q: upsert (deterministic point ids)
+    P->>V: read the seven-day window
+    P->>A: find_patterns(window items)
+    A-->>P: patterns
+    P->>V: store patterns, read the activation history
+    P->>A: forecast(dominant, master_active, history)
+    A-->>P: Forecast
+    P->>Q: upsert forecast
+    P-->>U: PipelineRun / today's Forecast
+    U->>U: print exactly one JSON document on stdout
+```
+
+## Runtime topology
+
+```mermaid
+flowchart LR
+    subgraph host[The host machine]
+        client[MCP client: Cursor, Claude Desktop, or a script]
+        server[numenews MCP server<br/>stdio JSON-RPC]
+        cli[numenews CLI<br/>one process per command]
+        cache[(.cache: hishel sqlite + fastembed weights)]
+        qdrant[(Qdrant, Docker Compose<br/>named volume)]
+    end
+    client -- stdio --> server
+    server --> cache
+    server --> qdrant
+    cli --> cache
+    cli --> qdrant
+    server -. HTTPS .-> news[five news APIs]
+    cli -. HTTPS .-> news
+    server -. OpenAI-compatible .-> llm[LLM endpoint]
+    cli -. OpenAI-compatible .-> llm
+```
+
+Nothing is connected at startup: each MCP tool and each CLI command builds what it needs on first use,
+and an unavailable prerequisite becomes an actionable error rather than a crash at launch. Embeddings
+never leave the machine.
 
 ## State
 
@@ -89,47 +188,63 @@ and that log carries activations across sessions — see
 
 Payload indexes are created **before** ingest: with an index Qdrant pre-filters inside the HNSW
 walk, without one it degrades to post-filtering. In multi-stage (hybrid) queries the filter belongs
-inside each `Prefetch`.
+inside each `Prefetch` ([ADR 0007](adr/0007-qdrant-hybrid-search.md)).
 
 A `date` payload field holds the RFC 3339 start of the day (`2026-09-21T00:00:00Z`), because the
 `datetime` index accepts nothing shorter; `vector/payloads.py` writes that shape and reads it back
-as the domain models' `date`. `docs/QDRANT_COLLECTIONS.md` documents every payload field.
+as the domain models' `date`. [`QDRANT_COLLECTIONS.md`](QDRANT_COLLECTIONS.md) documents every
+payload field.
+
+## Failure and degradation
+
+| Failure | What happens |
+|---|---|
+| One news source fails | The aggregator keeps the feeds that answered and logs a warning |
+| Every feed is unconfigured | `NewsSourceError` — a configuration error, not a quiet empty run |
+| The extract model fails | `ExtractNumbersAgent` falls back to the regex pass, so ingest still works |
+| The pattern or forecast model fails | One retry, then `PipelineRetryError` naming the step; nothing is fabricated |
+| Qdrant is unreachable | The store's health check fails before the first step, naming `make dev` |
+| An MCP tool is misused | The SDK rejects the argument, or the tool returns a readable `ToolError` |
+
+The full contract, per command and per tool, is in [`USER_FLOW.md`](USER_FLOW.md) and
+[`MCP_TOOLS.md`](MCP_TOOLS.md).
 
 ## Implemented so far
 
-Phase 0: configuration (`config.py`), logging (`logging.py`), the package skeleton and the test
-scaffolding. Phase 1: the domain models (`models/`, frozen and strict) and the pure numerology layer
-(`numerology/`, 100% covered) with `docs/NUMEROLOGY.md` and ADR 0002. Phase 2: the news layer
-(`news/`, 100% covered) — one `NewsSource` Protocol, five adapters (GDELT, NewsAPI, GNews,
-Mediastack, Currents), one `hishel`-cached `httpx` client with a `tenacity` retry policy, and
-`fetch_news` as the aggregating entry point, documented in `docs/NEWS_SOURCES.md`. Phase 3: the
-vector layer — `embeddings/` wraps the two local `bge` models behind an `Embedder` Protocol
-(downloaded once into `.cache/fastembed`, never at import), and `vector/` owns the Qdrant connection,
-the five collections with their payload indexes, the model↔payload conversion and the four search
-paths (`search_news`, `hybrid_search_news`, `find_similar_patterns`, `get_history`), documented in
-`docs/QDRANT_COLLECTIONS.md` and `docs/EMBEDDINGS.md` with ADR 0003. Phase 4: the reasoning layer —
-`agents/` builds any OpenAI-compatible chat model from `Settings`, runs the three `pydantic-ai`
-agents (`ExtractNumbersAgent` with its regex fallback, `PatternAgent`, `ForecastAgent`), and turns
-each model answer into a domain model through the draft schemas of `agents/schemas.py`; the prompts
-and the `agents/` tests are documented in `docs/PROMPTS.md` with ADR 0004. Phase 5: the composition
-layer — `pipeline/` owns the chain (`ingest → analyze → forecast`, plus the opt-in `summarize`), the
-seven-day sliding window and the step timings, bridges the async pipeline to the synchronous vector
-layer with `asyncio.to_thread`, and adds the sixth collection `digests` for the summary of the news
-the window leaves behind; documented in `docs/RAG_PIPELINE.md` and `docs/CONTEXT_MANAGEMENT.md` with
-ADR 0011. Phase 6: the interface layer — `mcp/` builds one `MCPServer` over stdio around the nine
-tools, with an `AppContext` whose collaborators (the store, the extract agent, the pipeline and the
-cached news client) are built lazily on first use, JSON-shaped argument schemas that convert into the
-strict domain models, and a failure policy that turns expected domain errors into `ToolError`s the
-model can read; documented in `docs/MCP_TOOLS.md` with ADR 0010. Phase 7: the second interface — the
-one-shot CLI (`cli/`) with six commands (`today`, `forecast`, `history`, `search`, `patterns`, `mcp`),
-one JSON document per command on stdout and logs on stderr, a `--date` grammar of absolute and
-relative days, an `ErrorReport` for expected failures, and the exact `read_patterns` read of the
-`patterns` collection; it reuses the MCP server's `AppContext` as its container and proxies
-`numenews mcp` into `numenews.mcp.main`; documented in `docs/USER_FLOW.md` with ADR 0005 and 0006.
-Phase 8: long-term memory — `number_history` is the exact log of number activations, written on every
-ingest (each row carries the item's reduced value) and read back by `get_history`/`get_activations`;
-`activation_frequency` folds a read into a per-day series that `numenews history` prints as `by_day`;
-and the forecast step cites the activations of the day's numbers over `Pipeline.history_days` (30
-days by default, independent of the seven-day news window); documented in `docs/CONTEXT_MANAGEMENT.md`
-with ADR 0012.
-`ROADMAP.md` is the authoritative status; `docs/adr/` records the decisions.
+Phase 0: configuration, logging and the test scaffolding. Phase 1: the frozen domain models and the
+pure numerology layer (100 % covered) with ADR 0002. Phase 2: the news layer — one `NewsSource`
+Protocol, five adapters, one `hishel`-cached retrying client, `fetch_news` as the aggregating entry
+point, with ADR 0009. Phase 3: the vector layer — the two local `bge` models behind an `Embedder`
+Protocol, the Qdrant connection, six collections with their payload indexes, model↔payload
+conversion and the search paths, with ADR 0003, 0007 and 0008. Phase 4: the reasoning layer — four
+`pydantic-ai` agents (`ExtractNumbersAgent` with its regex fallback, `PatternAgent`, `ForecastAgent`,
+`SummarizeAgent`) and the draft schemas that turn a model answer into a domain model, with
+ADR 0004. Phase 5: the composition layer — `ingest → analyze → forecast`, the sliding window, the
+step timings, the opt-in `summarize`, and the `digests` collection, with ADR 0011. Phase 6: the MCP
+server — nine tools over stdio around a lazily built `AppContext`, with ADR 0010. Phase 7: the
+one-shot CLI — six commands, JSON-only stdout, an `ErrorReport` for expected failures, sharing the
+MCP container, with ADR 0005 and 0006. Phase 8: long-term memory — `number_history` written on every
+ingest, `activation_frequency` for the per-day series, and the thirty-day memory window in the
+forecast, with ADR 0012. Phase 9: the ragas evaluation over the production retrieval path, isolated
+in `.venv-eval`, with ADR 0013.
+
+The layer-by-layer detail lives in the topic documents linked above; `ROADMAP.md` is the
+authoritative status, and [`docs/adr/`](adr/) records every decision with its reason.
+
+## Documentation map
+
+| Question | Document |
+|---|---|
+| What is built, in what order? | [`ROADMAP.md`](../ROADMAP.md) |
+| What do the numbers mean? | [`NUMEROLOGY.md`](NUMEROLOGY.md) |
+| Which feeds, and how are they queried? | [`NEWS_SOURCES.md`](NEWS_SOURCES.md) |
+| Which collections and payloads? | [`QDRANT_COLLECTIONS.md`](QDRANT_COLLECTIONS.md) |
+| Which models embed what? | [`EMBEDDINGS.md`](EMBEDDINGS.md) |
+| What exactly do the prompts say? | [`PROMPTS.md`](PROMPTS.md) |
+| How does the chain run and degrade? | [`RAG_PIPELINE.md`](RAG_PIPELINE.md) |
+| How much of the past does a prompt see? | [`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md) |
+| Which tools, with which arguments? | [`MCP_TOOLS.md`](MCP_TOOLS.md) |
+| Which commands, with which JSON? | [`USER_FLOW.md`](USER_FLOW.md) |
+| How is quality measured? | [`EVAL.md`](EVAL.md) |
+| How are tests organised? | [`TESTING.md`](TESTING.md) |
+| Why each tool? | [`STACK.md`](STACK.md) |

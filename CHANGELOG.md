@@ -148,6 +148,13 @@ Versioning: [Semantic Versioning](https://semver.org/).
   embeddings — ONNX, two `bge` models by text length, lazy loading, the English-only limit) and
   ADR 0009 (`hishel` in filter mode — `default_ttl` instead of freshness headers, 2xx-only caching,
   one client per run). ADR 0001 and 0002 drop the forward references that said 10.3 still owed them.
+- Documentation set for a reader who arrives without context: `docs/ARCHITECTURE.md` is the full
+  document (layer graph, data flow, a `numenews today` sequence, the runtime topology, the state and
+  failure tables), and `docs/STACK.md` (every tool and its cost), `docs/TESTING.md` (test levels,
+  doubles, coverage floors), `docs/TOOL_USE.md` (how a model picks among the nine MCP tools),
+  `docs/GLOSSARY.md` (shared vocabulary) and `docs/FAQ.md` (the recurring questions) are new. The
+  README status line, its documentation index and its command notes track v0.1.0, and
+  `docs/EMBEDDINGS.md`/`docker-compose.yml` were corrected where they still counted five collections.
 
 ### Changed
 - `make test-eval` builds and uses the isolated `.venv-eval`; `ragas` and its LangChain tree live

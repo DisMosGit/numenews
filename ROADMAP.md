@@ -1456,13 +1456,13 @@
 > **Результат фазы:** README с диаграммой, все ADR, покрытие, тег `v0.1.0`.
 
 ### 10.1. Документация
-- [ ] `docs/ARCHITECTURE.md` — полная диаграмма (Mermaid) · `L` 📝
-- [ ] `docs/STACK.md` — обоснование выбора каждого инструмента · `M` 📝
-- [ ] `docs/TESTING.md` — стратегия тестов · `M` 📝
-- [ ] `docs/TOOL_USE.md` — логика выбора инструментов агентом · `M` 📝
-- [ ] `docs/GLOSSARY.md` — MCP, RAG, гематрия, мастер-число · `M` 📝
-- [ ] `docs/FAQ.md` — «почему нумерология?», «как подключить к Cursor?» · `M` 📝
-- [ ] Коммит: `docs: full documentation` · `L` 📝
+- [x] `docs/ARCHITECTURE.md` — полная диаграмма (Mermaid) · `L` 📝
+- [x] `docs/STACK.md` — обоснование выбора каждого инструмента · `M` 📝
+- [x] `docs/TESTING.md` — стратегия тестов · `M` 📝
+- [x] `docs/TOOL_USE.md` — логика выбора инструментов агентом · `M` 📝
+- [x] `docs/GLOSSARY.md` — MCP, RAG, гематрия, мастер-число · `M` 📝
+- [x] `docs/FAQ.md` — «почему нумерология?», «как подключить к Cursor?» · `M` 📝
+- [x] Коммит: `docs: full documentation` · `L` 📝
 
 ### 10.2. Agentic-документация
 - [ ] `docs/agentic/CONVENTIONS.md` — стиль кода, нейминг · `M` 📝

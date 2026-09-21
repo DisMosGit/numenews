@@ -15,7 +15,7 @@ requires and what makes the vector layer testable without a network.
 | Wrapper | Model | Dimensions | Used by |
 |---|---|---|---|
 | `FastEmbedSmall` | `BAAI/bge-small-en-v1.5` | 384 | `numbers` |
-| `FastEmbedBase` | `BAAI/bge-base-en-v1.5` | 768 | `news`, `patterns`, `forecasts` |
+| `FastEmbedBase` | `BAAI/bge-base-en-v1.5` | 768 | `news`, `patterns`, `forecasts`, `digests` |
 
 The split is by text length. The `numbers` collection stores one sentence per point — the snippet a
 number appeared in — and the small model is both sufficient and cheaper there. News items, pattern

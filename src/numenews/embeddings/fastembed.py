@@ -7,8 +7,8 @@ package, reading settings or creating a :class:`~numenews.vector.client.VectorSt
 nothing until something is actually embedded.
 
 Which model is used where is a property of the collection, not of the caller: the short number
-contexts of ``numbers`` use the smaller 384d model, while ``news``, ``patterns`` and ``forecasts``
-use the 768d one. ``docs/EMBEDDINGS.md`` records the reasoning, and
+contexts of ``numbers`` use the smaller 384d model, while ``news``, ``patterns``, ``forecasts`` and
+``digests`` use the 768d one. ``docs/EMBEDDINGS.md`` records the reasoning, and
 ``Settings.embedding_cache_dir`` is where the downloaded weights are kept.
 """
 
@@ -76,7 +76,10 @@ class FastEmbedSmall(_FastEmbedder):
 
 
 class FastEmbedBase(_FastEmbedder):
-    """``bge-base-en-v1.5``, 768d — the ``news``, ``patterns`` and ``forecasts`` collections."""
+    """``bge-base-en-v1.5``, 768d — the paragraph-sized collections.
+
+    Used by ``news``, ``patterns``, ``forecasts`` and ``digests``.
+    """
 
     model_name = BASE_MODEL_NAME
     dimension = BASE_DIMENSION

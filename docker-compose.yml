@@ -1,7 +1,7 @@
 # numenews — local infrastructure.
 #
-# Qdrant is the only required service: it holds the five collections (`news`,
-# `numbers`, `patterns`, `forecasts`, `number_history`), their payload indexes and
+# Qdrant is the only required service: it holds the six collections (`news`,
+# `numbers`, `patterns`, `forecasts`, `number_history`, `digests`), their payload indexes and
 # the hybrid-search vectors. `make dev` brings it up and waits until it is healthy,
 # `make clean` stops it and deletes the volume.
 #

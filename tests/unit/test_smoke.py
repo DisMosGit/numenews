@@ -9,7 +9,8 @@ import pytest
 
 import numenews
 from numenews.cli.__main__ import main as cli_main
-from numenews.mcp.__main__ import main as mcp_main
+from numenews.mcp import AppContext, build_server
+from numenews.mcp.main import main as mcp_main
 
 
 def test_package_exposes_version() -> None:
@@ -31,9 +32,8 @@ def test_cli_placeholder_writes_json_to_stdout(capsys: pytest.CaptureFixture[str
     assert json.loads(captured.out)["status"] == "not_implemented"
 
 
-def test_mcp_placeholder_leaves_stdout_empty(capsys: pytest.CaptureFixture[str]) -> None:
-    """The MCP placeholder reports on stderr only."""
-    assert mcp_main() == 0
-    captured = capsys.readouterr()
-    assert captured.out == ""
-    assert "mcp.server_not_implemented" in captured.err
+def test_mcp_entry_point_serves_the_phase_six_server() -> None:
+    """The placeholder is gone: the package exposes a server and its main serves it."""
+    assert callable(mcp_main)
+    assert callable(build_server)
+    assert AppContext.__name__ == "AppContext"

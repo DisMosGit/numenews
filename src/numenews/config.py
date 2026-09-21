@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     # hishel's RFC 9111 cache directory for news HTTP responses.
     cache_dir: Path = Path(".cache/hishel")
 
+    # `fastembed` downloads the two bge ONNX models (~286 MB together) on first use and reuses
+    # them from here afterwards, so the directory belongs inside the project (`.cache/` is
+    # gitignored) instead of the shared temporary directory fastembed defaults to.
+    embedding_cache_dir: Path = Path(".cache/fastembed")
+
     # News APIs — every key is optional. A source without its key is simply not queried, so the
     # default demo path needs no configuration (AGENTS.md) and a half-configured machine still
     # produces a result from the feeds that are available.

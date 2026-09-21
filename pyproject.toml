@@ -16,15 +16,20 @@ requires-python = ">=3.14"
 #              fixture from phase 0.8)
 #              Phase 2: httpx, hishel[httpx] (RFC 9111 cache) and tenacity (retries);
 #              respx, the httpx mock, is a dev dependency
-#   Later      Phase 3 fastembed, Phase 4 pydantic-ai, Phase 6 mcp,
-#              Phase 7 typer + rich, Phase 9 ragas — see the note below; it stays
-#              out of the default sync
+#              Phase 3: fastembed, the local ONNX embedder of `embeddings/`. It
+#              brings onnxruntime, huggingface-hub, tokenizers, numpy, pillow,
+#              tqdm, loguru, py-rust-stemmers, mmh3 and requests with it; the two
+#              bge models are downloaded on first use, not at import (see
+#              docs/EMBEDDINGS.md)
+#   Later      Phase 4 pydantic-ai, Phase 6 mcp, Phase 7 typer + rich,
+#              Phase 9 ragas — see the note below; it stays out of the default sync
 #
 # `ragas` hard-depends on langchain, langchain-core, langchain-community and
 # langchain_openai, and AGENTS.md rules LangChain out: the eval harness must not
 # leak into the runtime environment. Phase 9 decides how to isolate it (the
 # intended shape is an opt-in dependency group installed only by `make test-eval`).
 dependencies = [
+    "fastembed>=0.8",
     "hishel[httpx]>=1.4",
     "httpx>=0.28.1",
     "pydantic>=2.11",

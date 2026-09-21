@@ -505,14 +505,26 @@
 > **Результат фазы:** новости индексируются, семантический поиск работает.
 
 ### 3.1. Embeddings (fastembed)
-- [ ] `Embedder` Protocol с `embed(texts) -> list[list[float]]` · `S` 🧪
-- [ ] `FastEmbedSmall` (384d, `bge-small-en-v1.5`) · `M` 🧪
-- [ ] `FastEmbedBase` (768d, `bge-base-en-v1.5`) · `M` 🧪
-- [ ] Lazy-инициализация модели (не грузить при импорте) · `M` 🧪
-- [ ] Тест: эмбеддинг детерминирован, размерность корректна · `M` 🧪
-- [ ] Коммит: `feat(embeddings): fastembed wrapper` · `M` 🧪
+- [x] `Embedder` Protocol с `embed(texts) -> list[list[float]]` · `S` 🧪
+- [x] `FastEmbedSmall` (384d, `bge-small-en-v1.5`) · `M` 🧪
+- [x] `FastEmbedBase` (768d, `bge-base-en-v1.5`) · `M` 🧪
+- [x] Lazy-инициализация модели (не грузить при импорте) · `M` 🧪
+- [x] Тест: эмбеддинг детерминирован, размерность корректна · `M` 🧪
+- [x] Коммит: `feat(embeddings): fastembed wrapper` · `M` 🧪
 
 **DoD:** `FastEmbedBase().embed(["hello"])` возвращает `list[float]` длиной 768.
+
+> *Уточнения. `Embedder` объявляет ещё и `dimension`: векторному слою нужен размер вектора, чтобы
+> построить коллекцию той же ширины и поймать несоответствие при создании, а не на первом запросе.
+> `embed([])` возвращает `[]` **не загружая модель** — пустая партия не повод скачивать веса.
+> `cache_dir` у обёрток по умолчанию `None` (каталог fastembed в системном tmp), поэтому DoD
+> `FastEmbedBase()` без аргументов работает буквально; боевая сборка — `build_embedders(settings)`,
+> и она всегда передаёт `Settings.embedding_cache_dir` (`.cache/fastembed`, gitignored): модели
+> весят ~286 МБ вместе и скачиваются один раз при первом `embed`, а не при импорте.
+> Тест на детерминизм и размерность — интеграционный (`tests/integration/test_embeddings_fastembed.py`),
+> потому что ему нужны реальные веса; поведение самой обёртки (ленивость, переиспользование сессии,
+> конвертация в `float`) закрыто юнит-тестом с подменённым `TextEmbedding`. `mypy --strict` разобрал
+> fastembed без override: пакет поставляет `py.typed`.*
 
 ### 3.2. Qdrant-клиент
 - [ ] `QdrantClient` обёртка в `vector/client.py` · `M` 🧪

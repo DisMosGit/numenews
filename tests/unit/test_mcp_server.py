@@ -21,6 +21,7 @@ EXPECTED_TOOLS: tuple[str, ...] = (
     "extract_numbers",
     "compute_numerology",
     "find_patterns",
+    "check_master_numbers",
 )
 
 

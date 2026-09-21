@@ -230,3 +230,16 @@ async def test_find_patterns_refuses_a_malformed_id_before_running(settings: Set
 
     assert result.is_error is True
     assert "valid UUID" in text_of(result)
+
+
+async def test_check_master_numbers_needs_no_service(settings: Settings) -> None:
+    """ROADMAP 6.6: the second pure tool answers on a server with no configuration."""
+    async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
+        result = await client.call_tool("check_master_numbers", {"numbers": [11, 11, 7]})
+
+    assert result.is_error is False
+    assert result.structured_content == {
+        "has_master": True,
+        "master_numbers": [11],
+        "count": 2,
+    }

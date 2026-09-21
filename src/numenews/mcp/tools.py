@@ -29,12 +29,14 @@ from numenews.mcp.errors import tool_errors
 from numenews.mcp.schemas import DateRangeInput
 from numenews.models import (
     ExtractedNumbers,
+    MasterCheckResult,
     NewsId,
     NewsItem,
     NumerologyResult,
     Pattern,
     Topic,
 )
+from numenews.numerology import check_master_numbers as master_check
 from numenews.numerology import compute_numerology as read_numerology
 
 
@@ -103,17 +105,30 @@ async def find_patterns(news_ids: list[UUID], ctx: Context[AppContext]) -> list[
         return list(run.patterns)
 
 
+def check_master_numbers(numbers: list[int]) -> MasterCheckResult:
+    """Report the master numbers (11, 22, 33) among a list of numbers.
+
+    ``master_numbers`` lists the distinct master numbers found, ascending, and ``count`` how many
+    occurrences there were: ``[11, 11]`` gives ``has_master=True``, ``master_numbers=(11,)`` and
+    ``count=2``. An empty list is a valid input and reports no master number. Pure logic: no
+    configuration, no service.
+    """
+    return master_check(numbers)
+
+
 #: Every tool the server registers, in roadmap order.
 TOOLS: tuple[Callable[..., object], ...] = (
     fetch_news,
     extract_numbers,
     compute_numerology,
     find_patterns,
+    check_master_numbers,
 )
 
 
 __all__ = [
     "TOOLS",
+    "check_master_numbers",
     "compute_numerology",
     "context_of",
     "extract_numbers",

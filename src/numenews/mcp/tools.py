@@ -44,6 +44,7 @@ from numenews.models import (
     MasterCheckResult,
     NewsId,
     NewsItem,
+    NumberActivation,
     NumerologyResult,
     Pattern,
     Topic,
@@ -51,6 +52,7 @@ from numenews.models import (
 from numenews.numerology import check_master_numbers as master_check
 from numenews.numerology import compute_numerology as read_numerology
 from numenews.vector import find_similar_patterns, hybrid_search_news
+from numenews.vector import get_history as history_in_store
 from numenews.vector import save_pattern as store_pattern
 
 
@@ -189,6 +191,26 @@ async def save_pattern(pattern: PatternInput, ctx: Context[AppContext]) -> Patte
         return await asyncio.to_thread(store_pattern, store, pattern.to_domain())
 
 
+async def get_history(
+    number: int,
+    ctx: Context[AppContext],
+    days: Annotated[
+        int, Field(ge=1, le=365, description="Length of the window in days, ending today.")
+    ] = 30,
+) -> list[NumberActivation]:
+    """Return when a number was activated in the news, newest first, inside the last ``days`` days.
+
+    One entry per ``(news item, number)`` pair the ingest stored: the day the article was published,
+    the item's id and the snippet the number was read in. The window ends today and includes it
+    (``days=1`` is today). Roadmap 6.10 wrote the signature as ``get_history(number)``; the read is
+    a window, so ``days`` is a parameter whose default of 30 matches the memory window of phase 8.
+    Needs Qdrant only.
+    """
+    with tool_errors():
+        store = await context_of(ctx).store()
+        return await asyncio.to_thread(history_in_store, store, number, days)
+
+
 #: Every tool the server registers, in roadmap order.
 TOOLS: tuple[Callable[..., object], ...] = (
     fetch_news,
@@ -199,6 +221,7 @@ TOOLS: tuple[Callable[..., object], ...] = (
     build_forecast,
     query_qdrant,
     save_pattern,
+    get_history,
 )
 
 
@@ -211,6 +234,7 @@ __all__ = [
     "extract_numbers",
     "fetch_news",
     "find_patterns",
+    "get_history",
     "query_qdrant",
     "save_pattern",
 ]

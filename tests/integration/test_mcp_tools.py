@@ -12,7 +12,7 @@ The subprocess/stdio form of the same server is checked separately in ``test_mcp
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
 import httpx
@@ -24,12 +24,13 @@ from mcp.types import CallToolResult, TextContent
 
 from numenews.config import Settings
 from numenews.mcp import AppContext, build_server
-from numenews.models import NewsId, NewsItem, Pattern, PatternId
+from numenews.models import NewsId, NewsItem, NumberActivation, Pattern, PatternId
 from numenews.news import NewsAggregator
 from numenews.pipeline import Pipeline
 from numenews.vector import (
     PATTERNS_COLLECTION,
     VectorStore,
+    record_activation,
     save_pattern,
     upsert_news,
 )
@@ -445,3 +446,75 @@ async def test_save_pattern_keeps_an_existing_timestamp_and_replaces_the_point(
         assert str(first.structured_content["discovered_at"]).startswith("2026-09-01T10:00:00")
         assert second.structured_content == first.structured_content
         assert vector_store.client.count(PATTERNS_COLLECTION, exact=True).count == 1
+
+
+def _activation(number: int, *, day: date) -> NumberActivation:
+    """Return one activation row for a number on a day."""
+    return NumberActivation(
+        number=number,
+        date=day,
+        news_id=NewsId(uuid4()),
+        context=f"the {number} appeared here",
+    )
+
+
+async def test_get_history_reads_the_window_newest_first(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """ROADMAP 6.10: the activations of one number come back newest first."""
+    today = datetime.now(UTC).date()
+    record_activation(vector_store, _activation(11, day=today))
+    record_activation(vector_store, _activation(11, day=today - timedelta(days=2)))
+    record_activation(vector_store, _activation(7, day=today))
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool("get_history", {"number": 11})
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    activations = result.structured_content["result"]
+    assert [item["date"] for item in activations] == [
+        today.isoformat(),
+        (today - timedelta(days=2)).isoformat(),
+    ]
+    assert {item["number"] for item in activations} == {11}
+
+
+async def test_get_history_excludes_activations_outside_the_window(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """``days`` is the window: the default 30 drops an activation from forty days ago."""
+    today = datetime.now(UTC).date()
+    record_activation(vector_store, _activation(11, day=today - timedelta(days=40)))
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        default_window = await client.call_tool("get_history", {"number": 11})
+        year = await client.call_tool("get_history", {"number": 11, "days": 365})
+
+    assert default_window.structured_content == {"result": []}
+    assert year.structured_content is not None
+    assert len(year.structured_content["result"]) == 1
+
+
+async def test_get_history_without_the_collection_is_a_tool_error(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """A store that never recorded an activation says so instead of crashing."""
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool("get_history", {"number": 11})
+
+    assert result.is_error is True
+    assert "does not exist" in text_of(result)
+
+
+async def test_get_history_refuses_a_window_without_days(settings: Settings) -> None:
+    """``days=0`` is a call-site bug the schema catches before the read."""
+    async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
+        result = await client.call_tool("get_history", {"number": 11, "days": 0})
+
+    assert result.is_error is True
+    assert "greater than or equal to 1" in text_of(result)

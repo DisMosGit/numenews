@@ -25,7 +25,14 @@ EXPECTED_TOOLS: tuple[str, ...] = (
     "build_forecast",
     "query_qdrant",
     "save_pattern",
+    "get_history",
 )
+
+
+def test_the_phase_surface_is_exactly_nine_distinct_tools() -> None:
+    """ROADMAP phase 6 is nine tools; the registry is the source of truth for what ships."""
+    assert len(EXPECTED_TOOLS) == 9
+    assert len(set(EXPECTED_TOOLS)) == 9
 
 
 async def test_the_registry_and_the_server_agree_on_the_tools(settings: Settings) -> None:

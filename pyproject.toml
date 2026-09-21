@@ -67,6 +67,13 @@ src = ["src", "tests"]
 select = ["E", "W", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "ANN", "RUF", "PTH"]
 ignore = ["ANN401"]
 
+# The gematria module and its tests name Cyrillic letters on purpose: the value tables are keyed by
+# them and the worked examples read as words, so RUF001/002/003 would report the deliberate
+# mixed-script fragments as accidental confusables. Everywhere else the rules stay on.
+[tool.ruff.lint.per-file-ignores]
+"src/numenews/numerology/gematria.py" = ["RUF001", "RUF002", "RUF003"]
+"tests/unit/test_gematria.py" = ["RUF001", "RUF002", "RUF003"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["numenews"]
 

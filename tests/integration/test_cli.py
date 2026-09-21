@@ -25,11 +25,27 @@ from numenews.cli import main as cli_main
 from numenews.cli.main import app
 from numenews.config import Settings
 from numenews.mcp.context import AppContext
-from numenews.models import DateRange, Forecast, NewsId, NewsItem, NumberActivation, Topic
+from numenews.models import (
+    DateRange,
+    Forecast,
+    NewsId,
+    NewsItem,
+    NumberActivation,
+    Pattern,
+    PatternId,
+    Topic,
+)
 from numenews.news.errors import NewsSourceError
 from numenews.numerology import compute_numerology
 from numenews.pipeline import NewsFetcher, Pipeline, reading_text
-from numenews.vector import VectorStore, record_activation, save_forecast, upsert_news
+from numenews.vector import (
+    VectorStore,
+    record_activation,
+    save_forecast,
+    save_pattern,
+    upsert_news,
+)
+from numenews.vector.payloads import news_embedding_text, pattern_embedding_text
 
 from ..unit.pipeline_fakes import (
     FrozenClock,
@@ -40,6 +56,7 @@ from ..unit.pipeline_fakes import (
     pattern_agent,
     summarize_agent,
 )
+from .fakes import FakeEmbedder
 
 pytestmark = pytest.mark.integration
 
@@ -379,6 +396,107 @@ def test_history_refuses_a_window_without_days(
     _install(monkeypatch, AppContext(settings, store=vector_store))
 
     result = runner.invoke(app, ["history", "--number", "11", "--days", "0"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+
+
+def test_search_ranks_the_stored_news(
+    settings: Settings,
+    vector_store: VectorStore,
+    fake_base_embedder: FakeEmbedder,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """ROADMAP 7.6: ``search`` runs the hybrid news search and returns typed entities."""
+    near = _item("budget deal signed")
+    far = _item("weather report published")
+    fake_base_embedder.register_axis(news_embedding_text(near), 0)
+    fake_base_embedder.register_axis(news_embedding_text(far), 1)
+    fake_base_embedder.register_axis("budget", 0)
+    upsert_news(vector_store, [near, far])
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["search", "-q", "budget"])
+
+    assert result.exit_code == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["collection"] == "news"
+    assert payload["query"] == "budget"
+    assert [item["title"] for item in payload["items"]] == [
+        "budget deal signed",
+        "weather report published",
+    ]
+
+
+def test_search_honours_the_limit(
+    settings: Settings,
+    vector_store: VectorStore,
+    fake_base_embedder: FakeEmbedder,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``--limit`` bounds the answer, which is what a pipeline into ``jq`` relies on."""
+    first = _item("budget deal signed")
+    second = _item("budget vote scheduled")
+    fake_base_embedder.register_axis(news_embedding_text(first), 0)
+    fake_base_embedder.register_axis(news_embedding_text(second), 0)
+    fake_base_embedder.register_axis("budget", 0)
+    upsert_news(vector_store, [first, second])
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["search", "-q", "budget", "--limit", "1"])
+
+    assert result.exit_code == 0, result.stderr
+    assert len(json.loads(result.stdout)["items"]) == 1
+
+
+def test_search_can_ask_the_patterns_collection(
+    settings: Settings,
+    vector_store: VectorStore,
+    fake_base_embedder: FakeEmbedder,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``--collection patterns`` finds saved interpretations instead of news items."""
+    pattern = Pattern(
+        id=PatternId(uuid4()),
+        type="resonance",
+        numbers=(11, 22),
+        news_ids=(NewsId(uuid4()),),
+        strength=0.8,
+        interpretation="Числа 11 и 22 резонируют в новостях.",
+    )
+    fake_base_embedder.register_axis(pattern_embedding_text(pattern), 0)
+    fake_base_embedder.register_axis("резонанс", 0)
+    save_pattern(vector_store, pattern)
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["search", "-q", "резонанс", "--collection", "patterns"])
+
+    assert result.exit_code == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["collection"] == "patterns"
+    assert [item["id"] for item in payload["items"]] == [str(pattern.id.root)]
+    assert payload["items"][0]["numbers"] == [11, 22]
+
+
+def test_search_reports_a_missing_collection(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A store that was never ingested is an error report, not a crash."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["search", "-q", "budget"])
+
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["kind"] == "CollectionNotFoundError"
+
+
+def test_search_refuses_an_unknown_collection(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ``--collection`` choice is the contract: anything else is a usage error."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["search", "-q", "budget", "--collection", "numbers"])
 
     assert result.exit_code == 2
     assert result.stdout == ""

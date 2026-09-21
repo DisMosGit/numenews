@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Annotated, cast
+from typing import Annotated, Literal, cast
 
 import typer
 from pydantic import BaseModel
@@ -209,3 +209,31 @@ def history(
     ``--days 1`` is today. Needs Qdrant only.
     """
     run_command(ctx, lambda context: commands.history(context, number=number, days=days))
+
+
+@app.command()
+def search(
+    ctx: typer.Context,
+    query: Annotated[
+        str,
+        typer.Option("--query", "-q", help="What to look for, in natural language."),
+    ],
+    collection: Annotated[
+        # Spelled out instead of using ``CollectionName``: Typer does not resolve a PEP 695 type
+        # alias, and ``commands.search`` takes the domain alias, so mypy is what keeps the two in
+        # step.
+        Literal["news", "patterns"],
+        typer.Option("--collection", help="Which collection to search."),
+    ] = "news",
+    limit: Annotated[int, typer.Option("--limit", min=1, max=50, help="Maximum results.")] = 10,
+) -> None:
+    """Search the stored news or patterns by meaning, best match first.
+
+    ``--collection news`` (the default) runs the same hybrid search as the MCP ``query_qdrant``
+    tool over stored articles; ``--collection patterns`` finds saved pattern interpretations. Needs
+    Qdrant only: the query is embedded locally and no model is called.
+    """
+    run_command(
+        ctx,
+        lambda context: commands.search(context, query=query, collection=collection, limit=limit),
+    )

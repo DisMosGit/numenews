@@ -15,13 +15,15 @@ pipeline, two interfaces".
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Sequence
 
 from numenews.cli.dates import parse_day
 from numenews.cli.schemas import HistoryResult
 from numenews.mcp.context import AppContext
-from numenews.models import DateRange, Forecast, Topic
+from numenews.mcp.schemas import CollectionName, CollectionQueryResult
+from numenews.models import DateRange, Forecast, NewsItem, Pattern, Topic
 from numenews.pipeline import window_start
-from numenews.vector import get_history
+from numenews.vector import find_similar_patterns, get_history, hybrid_search_news
 
 
 async def today(context: AppContext, *, topic: str) -> Forecast:
@@ -92,4 +94,36 @@ async def history(context: AppContext, *, number: int, days: int) -> HistoryResu
     return HistoryResult(number=number, days=days, activations=tuple(activations))
 
 
-__all__ = ["forecast", "history", "today"]
+async def search(
+    context: AppContext,
+    *,
+    query: str,
+    collection: CollectionName,
+    limit: int,
+) -> CollectionQueryResult:
+    """Search the stored news or patterns by meaning and return the matching entities.
+
+    ``collection="news"`` runs the hybrid (multi-stage) search the MCP tool of phase 6.8 uses, so
+    the two interfaces answer the same question the same way; ``collection="patterns"`` finds saved
+    pattern interpretations. Both need Qdrant only — the query is embedded locally with
+    ``fastembed`` and no model is called.
+
+    Args:
+        context: The application context; its store is built on first use.
+        query: Free text, embedded with the same model as the stored entities.
+        collection: Which of the two searchable collections to ask.
+        limit: Maximum number of entities to return.
+
+    Returns:
+        The entities, best match first, plus the question that produced them.
+    """
+    store = await context.store()
+    items: Sequence[NewsItem | Pattern]
+    if collection == "patterns":
+        items = await asyncio.to_thread(find_similar_patterns, store, query, limit)
+    else:
+        items = await asyncio.to_thread(hybrid_search_news, store, query, None, limit)
+    return CollectionQueryResult(collection=collection, query=query, items=tuple(items))
+
+
+__all__ = ["forecast", "history", "search", "today"]

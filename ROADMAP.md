@@ -1219,9 +1219,19 @@
 > первая же запись следующего теста падала бы в закрытый поток.*
 
 ### 7.6. Команда `search`
-- [ ] `numenews search --query "число 7 и финансы"` · `M` 🧪
-- [ ] Гибридный поиск через `query_qdrant` · `S`
-- [ ] Коммит: `feat(cli): search command` · `M` 🧪
+- [x] `numenews search --query "число 7 и финансы"` · `M` 🧪
+- [x] Гибридный поиск через `query_qdrant` · `S`
+- [x] Коммит: `feat(cli): search command` · `M` 🧪
+
+> *Уточнения. Возврат — тот же `CollectionQueryResult` из `mcp/schemas.py`, что у инструмента 6.8, а
+> не новый тип: вопрос «что нашлось и по какому запросу» у обоих интерфейсов один. `--collection`
+> переиспользует `CollectionName` (`news` | `patterns`), `--limit` ограничен 1–50 (как у MCP), фильтры
+> payload'а сознательно не выставлены: это подмножество поверхности `query_qdrant`, и его можно
+> добавить позже, не ломая контракт. `news` идёт через `hybrid_search_news` (Prefetch + RRF), `patterns`
+> — через `find_similar_patterns`; и то, и другое только Qdrant, без модели. Отклонение от черновика:
+> в сигнатуре команды `--collection` описан как `Literal["news", "patterns"]`, потому что Typer не
+> разворачивает PEP 695-алиас `CollectionName` (`RuntimeError: Type not yet supported`); совпадение
+> двух литералов проверяет mypy на вызове `commands.search`.*
 
 ### 7.7. Команда `patterns`
 - [ ] `numenews patterns --type resonance --min-strength 0.7` · `S` 🧪

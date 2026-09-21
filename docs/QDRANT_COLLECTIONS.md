@@ -149,6 +149,7 @@ The pipeline's steps read three of them, and each has a read function rather tha
 | `read_news_range(store, date_from, date_to)` | "what was published in my window" — inclusive at both ends |
 | `get_activations(store, days, today=)` | "what was active recently" — the forecast step's memory |
 | `get_history(store, number, days, today=)` | "when was 11 active" — the exact question about one number |
+| `read_patterns(store, pattern_type=, min_strength=, limit=)` | "which strong resonance patterns do I have" — the exact read of phase 7.7 |
 | `get_forecast(store, day)` / `get_digest(store, start, end)` | "have I already read this day / summarised this period" |
 
 ## Searching

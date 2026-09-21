@@ -26,7 +26,7 @@ command must be idempotent and resumable (AGENTS.md).
 | Storage | `vector` | `models`, `embeddings`, `numerology` | Qdrant client, collections, payload indexes, hybrid search |
 | Reasoning | `agents` | `numerology`, `models` | `pydantic-ai` agents: extract, pattern, forecast, summarize |
 | Composition | `pipeline` | everything above | the RAG chain, the sliding window, step timing and retries |
-| Interfaces | `mcp`, `cli` | everything above | tool and command surfaces, JSON serialization |
+| Interfaces | `mcp`, `cli` | everything above; `cli` also uses `mcp` | tool and command surfaces, JSON serialization |
 
 Two rules keep this acyclic and testable:
 
@@ -44,6 +44,11 @@ once (ADR 0003).
 `pipeline` is the one layer that reads all of them, which is what makes the interfaces thin: it owns
 the order of the chain and nothing else — no numerology, no storage schema, no HTTP — and it is
 asynchronous while `vector` stays synchronous, bridged only by `asyncio.to_thread` (ADR 0011).
+
+`cli` is the one interface that imports the other: roadmap 7.8's `numenews mcp` proxies into
+`numenews.mcp.main`, and the one-shot commands share the MCP server's lazy `AppContext` as their
+container instead of growing a second one — the two surfaces build the store, the agents and the news
+client the same way, once (ADR 0006).
 
 `config` and `logging` sit below every layer: settings are validated once at start, and logs go to
 stderr so stdout stays machine-readable.
@@ -114,5 +119,10 @@ ADR 0011. Phase 6: the interface layer — `mcp/` builds one `MCPServer` over st
 tools, with an `AppContext` whose collaborators (the store, the extract agent, the pipeline and the
 cached news client) are built lazily on first use, JSON-shaped argument schemas that convert into the
 strict domain models, and a failure policy that turns expected domain errors into `ToolError`s the
-model can read; documented in `docs/MCP_TOOLS.md` with ADR 0010. `ROADMAP.md` is the authoritative
-status; `docs/adr/` records the decisions.
+model can read; documented in `docs/MCP_TOOLS.md` with ADR 0010. Phase 7: the second interface — the
+one-shot CLI (`cli/`) with six commands (`today`, `forecast`, `history`, `search`, `patterns`, `mcp`),
+one JSON document per command on stdout and logs on stderr, a `--date` grammar of absolute and
+relative days, an `ErrorReport` for expected failures, and the exact `read_patterns` read of the
+`patterns` collection; it reuses the MCP server's `AppContext` as its container and proxies
+`numenews mcp` into `numenews.mcp.main`; documented in `docs/USER_FLOW.md` with ADR 0005 and 0006.
+`ROADMAP.md` is the authoritative status; `docs/adr/` records the decisions.

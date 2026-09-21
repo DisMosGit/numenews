@@ -14,6 +14,8 @@ from typer.testing import CliRunner
 
 from numenews.cli import main as cli_main
 from numenews.cli.main import app
+from numenews.config import Settings
+from numenews.mcp.context import AppContext
 
 runner = CliRunner()
 
@@ -88,3 +90,11 @@ def test_mcp_refuses_an_unknown_transport() -> None:
 
     assert result.exit_code == 2
     assert result.stdout == ""
+
+
+def test_build_context_returns_a_lazy_container(settings: Settings) -> None:
+    """The default seam builds one ``AppContext`` and touches nothing: no Qdrant, no client."""
+    context = cli_main.build_context(settings)
+
+    assert isinstance(context, AppContext)
+    assert context.settings is settings

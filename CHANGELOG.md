@@ -108,10 +108,33 @@ Versioning: [Semantic Versioning](https://semver.org/).
   prerequisites, example `structuredContent`, failure semantics and the client configs) and ADR 0010
   (SDK v2 and the `FastMCP` → `MCPServer` rename, the lazy application context, the wire-DTO boundary,
   the error policy and the narrowed `query_qdrant`).
+- One-shot CLI (phases 7.1–7.9): `numenews.cli` — the Typer application `numenews` (and
+  `python -m numenews.cli`) with six commands: `today` (ingest the seven-day window, then the day's
+  reading), `forecast --date` (a stored/derived reading for a day, with `today`/`tomorrow`/`yesterday`/
+  `+Nd`/`-Nd`), `history --number --days`, `search -q --collection`, `patterns --type --min-strength`
+  and `mcp --transport stdio` (a proxy into `numenews.mcp.main`). Every command prints one JSON
+  document on stdout — `Forecast`, `CollectionQueryResult`, `HistoryResult` or `PatternsResult` — while
+  logs and progress go to stderr, and `--version` answers with JSON too.
+- CLI failure policy: an expected domain failure (`AgentError`, `NewsSourceError`, `PipelineError`,
+  `VectorStoreError`, the same set the MCP tools translate) is printed as
+  `{"error": …, "kind": …}` and exits `1`; usage errors exit `2` with an empty stdout; unexpected
+  exceptions stay loud with a traceback on stderr.
+- `read_patterns(store, pattern_type=, min_strength=, limit=)`: the exact read of the `patterns`
+  collection over its indexed `type` and `strength` fields, ordered by strength (then discovery time)
+  and cut to `limit` — the counterpart of the semantic `find_similar_patterns`, added for roadmap 7.7.
+- Documentation for the CLI: `docs/USER_FLOW.md` (every command, its options, example JSON, exit codes
+  and `jq` recipes), ADR 0005 (the JSON-only stdout contract and how a failure is reported) and
+  ADR 0006 (why one-shot, and the `AppContext` the CLI shares with the MCP server).
 
 ### Changed
-- Dependencies: `mcp>=2.2,<3` joins the runtime set in phase 6 — the official SDK v2 with the stdio
+- Dependencies: `typer>=0.27.2` joins the runtime set in phase 7 — the CLI framework, which brings
+  `rich` (for `--help`), `shellingham` and `annotated-doc` with it. The package now also installs a
+  `numenews` console script (`[project.scripts]`).
+- `mcp>=2.2,<3` joins the runtime set in phase 6 — the official SDK v2 with the stdio
   transport, and the `MCPServer` class that v1 called `FastMCP`.
+- `README.md`, `AGENTS.md` and the package docstring track phase 7; `make run` runs `numenews today`
+  (it needs Qdrant and an LLM endpoint) and the stale `master_number_active` example became the real
+  `master_active` field.
 - `README.md`, `AGENTS.md` and the package docstring track phase 6; `make mcp` no longer says
   "placeholder", and `docs/EMBEDDINGS.md`/`docs/NEWS_SOURCES.md` were corrected where they described
   the MCP layer as unbuilt.

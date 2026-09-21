@@ -53,9 +53,9 @@ Guidance for AI coding agents working in this repository.
 
 ## Commands
 
-Commands below are the target state; the CLI (`numenews today`, Phase 7) is still a placeholder until
-that phase lands, so `make run` exercises the placeholder. The MCP server and its nine tools are
-implemented (Phase 6): `make mcp` serves them over stdio.
+Both interfaces are implemented: the MCP server and its nine tools (Phase 6), served by `make mcp`
+over stdio, and the one-shot CLI (Phase 7), whose commands each print one JSON document on stdout.
+`make run` exercises `numenews today`, which needs Qdrant and an LLM endpoint.
 
 ```
 uv sync --all-extras           # install
@@ -65,8 +65,9 @@ uv run mypy .                  # typecheck (strict is configured in pyproject.to
 uv run pytest tests/unit tests/integration -v
 uv run pytest tests/eval -v --run-eval
 docker compose up -d --wait qdrant   # start Qdrant
-uv run numenews today          # sample one-shot CLI run (Phase 7)
-uv run numenews mcp            # start MCP server, stdio (Phase 6)
+uv run numenews today          # sample one-shot CLI run (needs Qdrant + an LLM endpoint)
+uv run numenews --help         # the six commands (today, forecast, history, search, patterns, mcp)
+uv run numenews mcp            # start MCP server, stdio
 make install lint test run mcp # shortcut targets
 ```
 

@@ -7,13 +7,14 @@ numerology (digit reduction, master numbers 11/22/33, gematria), finds patterns 
 vector search in Qdrant, and builds a daily forecast — while keeping every number activation as
 long-term memory.
 
-> **Status: Phase 6 — MCP server.** The tooling, configuration, logging, the domain models, the
+> **Status: Phase 7 — one-shot CLI.** The tooling, configuration, logging, the domain models, the
 > pure numerology layer, the five news sources behind one Protocol, the vector layer (the two local
 > `bge` models, the six Qdrant collections, semantic and hybrid search), the four `pydantic-ai`
 > agents (extract numbers, find patterns, build the forecast, summarise old news), the pipeline that
-> composes them (`ingest → analyze → forecast`, with the sliding window and the digest) and the MCP
-> server with its nine tools exist. The CLI lands in phases 7–10. See
-> [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is done.
+> composes them (`ingest → analyze → forecast`, with the sliding window and the digest), the MCP
+> server with its nine tools, and the one-shot CLI (`today`, `forecast`, `history`, `search`,
+> `patterns`, `mcp`) exist. See [`ROADMAP.md`](ROADMAP.md) for the phase-by-phase plan and what is
+> done.
 
 ## Quick start
 
@@ -25,6 +26,21 @@ make lint && make test      # ruff + mypy --strict, pytest with coverage
 ```
 
 Qdrant's dashboard is then at <http://localhost:6333/dashboard>.
+
+## Quick start over the CLI
+
+Every command answers with one JSON document on stdout and logs on stderr, so the output pipes
+straight into `jq`. `today` needs Qdrant and an LLM endpoint; `history`, `search` and `patterns` need
+Qdrant only. The full command surface is in [`docs/USER_FLOW.md`](docs/USER_FLOW.md).
+
+```bash
+uv run numenews today | jq .dominant_number   # ingest the window and read the day
+uv run numenews forecast --date tomorrow      # a stored/derived reading, no fetch
+uv run numenews history --number 11 --days 30 # when 11 was active
+uv run numenews search -q "число 7 и деньги"  # hybrid search over stored news
+uv run numenews patterns --min-strength 0.7   # the strong patterns, strongest first
+uv run numenews --help
+```
 
 ## Quick start over MCP
 
@@ -41,20 +57,23 @@ uv run pytest tests/integration/test_mcp_stdio.py   # the same handshake, as a t
 
 ## Example output
 
-This is the shape `numenews today` will produce once the CLI lands (Phase 7) — the pipeline that
-builds it already exists; stdout is always JSON, so it pipes straight into `jq`:
+This is the shape `numenews today` produces — the pipeline builds it, the CLI serializes it, and
+stdout is always JSON, so it pipes straight into `jq`:
 
 ```json
 {
   "date": "2026-09-21",
   "dominant_number": 11,
-  "master_number_active": true,
+  "master_active": true,
   "patterns": [
     {
+      "id": "8bb3a3e4-53cd-5333-92ab-5309c63d3b78",
       "type": "resonance",
       "numbers": [11, 22],
+      "news_ids": ["b371bc46-7b4b-5b38-92db-cdf94a550f33"],
       "strength": 0.87,
-      "interpretation": "Числа 11 и 22 резонируют в новостях о технологиях"
+      "interpretation": "Числа 11 и 22 резонируют в новостях о технологиях",
+      "discovered_at": "2026-09-21T12:00:00Z"
     }
   ],
   "forecast": "День благоприятен для начинаний, связанных с коммуникацией",
@@ -106,7 +125,7 @@ make test-eval     # ragas evaluation (needs --run-eval)
 make dev           # docker compose up -d --wait
 make dev-down      # stop Qdrant, keep the volume
 make clean         # stop Qdrant, delete volumes and caches
-make run           # sample one-shot CLI run
+make run           # sample one-shot CLI run (needs Qdrant and an LLM endpoint)
 make mcp           # start the MCP server (stdio)
 ```
 
@@ -122,6 +141,7 @@ make mcp           # start the MCP server (stdio)
 - [`docs/RAG_PIPELINE.md`](docs/RAG_PIPELINE.md) — the chain, its degradation rules and its tests
 - [`docs/CONTEXT_MANAGEMENT.md`](docs/CONTEXT_MANAGEMENT.md) — the window, the history and the digest
 - [`docs/MCP_TOOLS.md`](docs/MCP_TOOLS.md) — the nine MCP tools, their examples and the client configs
+- [`docs/USER_FLOW.md`](docs/USER_FLOW.md) — the one-shot CLI, its commands and their JSON
 - [`docs/adr/`](docs/adr/) — architecture decision records
 - [`AGENTS.md`](AGENTS.md) — how AI coding agents work in this repository
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — branches, commits, local workflow

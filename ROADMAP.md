@@ -1278,12 +1278,55 @@
 > `tests/unit/test_cli_dates.py` и `tests/integration/test_cli.py`.*
 
 ### 7.10. Документация CLI
-- [ ] `docs/USER_FLOW.md` — все команды + примеры JSON · `M` 📝
-- [ ] ADR `0005-json-only-output.md` · `M` 📝
-- [ ] ADR `0006-one-shot-vs-repl.md` · `M` 📝
-- [ ] Коммит: `docs: user flow + ADRs` · `M` 📝
+- [x] `docs/USER_FLOW.md` — все команды + примеры JSON · `M` 📝
+- [x] ADR `0005-json-only-output.md` · `M` 📝
+- [x] ADR `0006-one-shot-vs-repl.md` · `M` 📝
+- [x] Коммит: `docs: user flow + ADRs` · `M` 📝
 
 **✅ Phase 7 завершена, когда:** `numenews today | jq .dominant_number` работает.
+
+> *Уточнения. `docs/USER_FLOW.md` — контракт командной поверхности: таблица соответствия
+> «команда → что нужно», глобальные опции, раздел на команду с реальным JSON, грамматика `--date`,
+> коды выхода и форма `ErrorReport`, рецепты `jq`, соответствие MCP-инструментам и способ проверки.
+> ADR 0005 фиксирует «один JSON-документ в stdout», писателя `print_json`, политику отказов и два
+> исключения (Click `--help` и JSON-RPC у `numenews mcp`); ADR 0006 — почему one-shot, цену запуска,
+> идемпотентность через Qdrant и то, что CLI переиспользует `AppContext` сервера MCP, а не заводит
+> второй контейнер. В тот же коммит вошли обновления `README.md` (статус фазы 7, CLI-quick-start,
+> устаревшее `master_number_active` → реальное `master_active`, ссылка на `docs/USER_FLOW.md`),
+> `docs/ARCHITECTURE.md` (таблица слоёв: `cli` импортирует `mcp`; абзац «Implemented so far» про
+> фазу 7), `docs/QDRANT_COLLECTIONS.md` (в таблицу чтений добавлен `read_patterns`),
+> `docs/NEWS_SOURCES.md` (снята оговорка «no key handling in the CLI layer yet»),
+> `src/numenews/__init__.py`, `AGENTS.md` (команды больше не «target state»), `Makefile`
+> (`make run` → `uv run numenews today`), `CHANGELOG.md` и этот файл.*
+
+> **Итог phase 7 (2026-09-21).** Задачи 7.1–7.10 закрыты. Покрытие `src/numenews/cli/` — 100%
+> инструкций и ветвей у всех модулей, кроме `__main__.py` (раннер `python -m numenews.cli`, как и
+> `mcp/__main__.py`, исполняется вне in-process замера); весь `make test` — 664 теста, 8 пропущенных
+> Docker-тестов Qdrant (контейнер здесь доступен только без `LD_PRELOAD`, как в фазах 3–5),
+> суммарное покрытие пакета 99%. `ruff check`, `ruff format --check`, `mypy --strict` и
+> `pre-commit run --all-files` зелёные.
+>
+> DoD фазы проверен двумя способами. В тестах `tests/integration/test_cli.py` прогоняет каждую
+> команду через настоящий `CliRunner` на in-memory Qdrant с фейковыми эмбеддерами и скриптованными
+> агентами и утверждает, что `numenews today` даёт exit code 0 и целый `dominant_number`, а после
+> документа в stdout допустим только перевод строки. Живьём — против поднятого Docker Qdrant
+> (`numenews-qdrant`, healthy): `env -u LD_PRELOAD OPENAI_BASE_URL=http://127.0.0.1:9/v1 uv run
+> numenews today | jq .dominant_number` вернул `11` с кодом 0. В этом прогоне GDELT действительно
+> ответил (`fetched=75 stored=75`), извлечение ушло в regex-фолбэк (эндпоинт-заглушка), а шаг forecast
+> взял заранее засеянное чтение из `forecasts` (`cached=True`) — то есть живой ingest и живое чтение
+> из Qdrant проверены, а модельный прогноз нет.
+>
+> **Отклонения** отмечены по задачам выше: `print_json` и `cli/schemas.py` заведены в 7.1 (их требует
+> `--version`), `ErrorReport` — в 7.2, а его обработка (`run_command`) — в 7.3 вместе с первой
+> настоящей командой; `today` выполняет roadmap'ные «ingest + analyze + forecast» через
+> `Pipeline.ingest` + `Pipeline.forecast` (analyze внутри forecast, без второго прогона модели);
+> CLI переиспользует `mcp.context.AppContext` вместо второго контейнера; `typer` тянет `rich` сам, и
+> `rich` не объявлен отдельно; `search` не выставляет payload-фильтры; `patterns` потребовал новой
+> читающей функции `vector.read_patterns`; PEP 695-алиасы `CollectionName`/`PatternType` Typer не
+> разворачивает, поэтому в сигнатурах выписаны литералы; в `tests/conftest.py` добавлена
+> autouse-фикстура `_fresh_logging` (CliRunner закрывает подменённый stderr, на который продолжал
+> смотреть handler `structlog`). Живого прогона с настоящей LLM нет — ключа и `.env` в репозитории
+> нет, как и в фазах 2, 4, 5 и 6.
 
 ---
 

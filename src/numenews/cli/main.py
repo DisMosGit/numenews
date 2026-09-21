@@ -287,7 +287,7 @@ def mcp(
         typer.Option("--transport", help="Transport to serve (stdio only for now)."),
     ] = "stdio",
 ) -> None:
-    """Serve the nine MCP tools over ``--transport`` until the client disconnects.
+    """Serve the nine MCP tools over stdio until the client disconnects.
 
     This is the long-running counterpart of the one-shot commands, and the only one whose stdout
     is not a single JSON document: it carries the JSON-RPC wire. It is the same server as

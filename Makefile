@@ -2,8 +2,9 @@
 #
 # `make install` sets up the environment, `make dev` starts Qdrant, and
 # `make lint && make test` is the gate every commit has to pass. `make mcp` serves the nine
-# MCP tools over stdio (phase 6). The CLI and the ragas suite arrive in phases 7 and 9: until
-# then `make run` and `make test-eval` exercise the placeholders in `src/numenews/*/__main__.py`.
+# MCP tools over stdio (phase 6) and `make run` runs `numenews today` (phase 7), which needs
+# Qdrant and an LLM endpoint. The ragas suite arrives in phase 9: until then `make test-eval`
+# runs the scaffold in `tests/eval`.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
@@ -56,8 +57,8 @@ dev-down: ## Stop Qdrant, keep the volume
 mcp: ## Start the MCP server over stdio (nine tools, Ctrl-D to stop)
 	@uv run python -m numenews.mcp
 
-run: ## Run the sample one-shot CLI command (phase 7 placeholder)
-	@uv run python -m numenews.cli
+run: ## Run the sample one-shot CLI command (needs Qdrant and an LLM endpoint)
+	@uv run numenews today
 
 clean: ## Stop Qdrant, delete its volume and drop the local caches
 	$(COMPOSE) down -v --remove-orphans

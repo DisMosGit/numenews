@@ -14,11 +14,15 @@ network. The prompts live in :mod:`numenews.agents.prompts` and are documented i
 from __future__ import annotations
 
 from numenews.agents.errors import AgentError, AgentExecutionError, LLMConfigurationError
+from numenews.agents.extract import ExtractNumbersAgent
 from numenews.agents.llm import build_llm_model
+from numenews.agents.schemas import ExtractionDraft
 
 __all__ = [
     "AgentError",
     "AgentExecutionError",
+    "ExtractNumbersAgent",
+    "ExtractionDraft",
     "LLMConfigurationError",
     "build_llm_model",
 ]

@@ -11,8 +11,14 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from pydantic_ai import models
 
 from numenews.config import Settings, get_settings
+
+# The agent tests script `TestModel`/`FunctionModel`; a stray real model would be a network call to
+# an endpoint this suite does not have. This is pydantic-ai's own guard, and it does not affect the
+# test models, which are what every agent test hands to an agent.
+models.ALLOW_MODEL_REQUESTS = False
 
 # Every variable `Settings` reads, derived from the model so a new field cannot be forgotten.
 SETTING_ENV_VARS: tuple[str, ...] = tuple(name.upper() for name in Settings.model_fields)

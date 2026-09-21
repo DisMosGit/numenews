@@ -29,7 +29,11 @@ requires-python = ">=3.14"
 #              Phase 6: mcp, the official MCP Python SDK. It is v2, where the
 #              server class is `MCPServer` (v1's `FastMCP` was renamed); the
 #              stdio transport comes with it (see ADR 0010)
-#   Later      Phase 7 typer + rich, Phase 9 ragas — see the note
+#              Phase 7: typer, the CLI framework of `cli/`. It brings rich,
+#              shellingham and annotated-doc with it; rich paints the `--help`
+#              output and is never imported by this package, so it is not
+#              listed as a dependency of its own
+#   Later      Phase 9 ragas — see the note
 #              below; ragas stays out of the default sync
 #
 # `ragas` hard-depends on langchain, langchain-core, langchain-community and
@@ -47,10 +51,16 @@ dependencies = [
     "qdrant-client>=1.19",
     "structlog>=26.1",
     "tenacity>=9.1.4",
+    "typer>=0.27.2",
 ]
 
 [project.urls]
 Repository = "https://github.com/DisMosGit/numenews"
+
+# `uv run numenews …` is the installed form of `python -m numenews.cli`; both go
+# through the same Typer application (roadmap 7.1).
+[project.scripts]
+numenews = "numenews.cli.main:app"
 
 # Developer tools live in a dependency group rather than in `[project]`: they are
 # never imported by the package itself, and `uv sync` installs the group by default.

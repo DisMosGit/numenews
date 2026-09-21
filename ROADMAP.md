@@ -1145,10 +1145,18 @@
 > **Результат фазы:** `numenews today` возвращает валидный JSON в stdout.
 
 ### 7.1. Каркас CLI (Typer)
-- [ ] `cli/main.py` — `Typer` app с командой-заглушкой · `S` 🧪
-- [ ] Точка входа в `pyproject.toml` (`[project.scripts] numenews = ...`) · `S`
-- [ ] `numenews --version` работает · `S` 🧪
-- [ ] Коммит: `feat(cli): typer skeleton` · `S` 🧪
+- [x] `cli/main.py` — `Typer` app с командой-заглушкой · `S` 🧪
+- [x] Точка входа в `pyproject.toml` (`[project.scripts] numenews = ...`) · `S`
+- [x] `numenews --version` работает · `S` 🧪
+- [x] Коммит: `feat(cli): typer skeleton` · `S` 🧪
+
+> *Отклонения. Добавлена одна зависимость — `typer>=0.27.2`; `rich` приходит с ней (Typer рисует
+> `--help` сам и наш код его не импортирует), поэтому отдельно не объявлен. `cli/output.py` и
+> `cli/schemas.py` заведены уже здесь, а не в 7.2: `--version` обязан печатать JSON, и `print_json`
+> должен быть один. Команда-заглушка называется `today` (та же полезная нагрузка
+> `status: not_implemented`, что у placeholder'а phase 0) и будет заменена в 7.3; `--version`
+> печатает компактный `{"name": "numenews", "version": "0.1.0"}`. `python -m numenews.cli` и
+> установленный `numenews` идут через один `app`.*
 
 ### 7.2. JSON-вывод
 - [ ] `cli/output.py` — `print_json(model)` через `model_dump_json(indent=2)` · `S` 🧪

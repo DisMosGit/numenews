@@ -15,6 +15,7 @@ import pytest
 from pydantic import ValidationError
 
 from numenews.models import (
+    DateRange,
     ExtractedNumbers,
     Forecast,
     ForecastId,
@@ -24,6 +25,7 @@ from numenews.models import (
     NumberActivation,
     Pattern,
     PatternId,
+    Topic,
 )
 
 
@@ -187,3 +189,49 @@ def test_master_check_result_fields() -> None:
     assert result.has_master is True
     assert result.master_numbers == (11, 22)
     assert result.count == 3
+
+
+def test_topic_trims_surrounding_whitespace() -> None:
+    """A padded query means the same as a clean one, so it is normalised, not rejected."""
+    assert Topic(query="  politics  ").query == "politics"
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\n\t"])
+def test_topic_rejects_a_blank_query(blank: str) -> None:
+    """A blank query would ask for the firehose, not for news about something."""
+    with pytest.raises(ValidationError):
+        Topic(query=blank)
+
+
+def test_topic_is_frozen_and_strict() -> None:
+    """The query is a string and cannot be replaced after validation."""
+    with pytest.raises(ValidationError):
+        Topic.model_validate({"query": 7})
+
+    topic = Topic(query="politics")
+
+    with pytest.raises(ValidationError):
+        topic.query = "economy"  # type: ignore[misc]  # frozen model, mypy cannot see it
+
+
+def test_date_range_accepts_a_single_day() -> None:
+    """`start == end` is a valid one-day range."""
+    day = date(2026, 9, 21)
+
+    assert DateRange(start=day, end=day).start == day
+
+
+def test_date_range_rejects_a_reversed_range() -> None:
+    """A start after the end is refused at the boundary, not sorted silently."""
+    with pytest.raises(ValidationError):
+        DateRange(start=date(2026, 9, 22), end=date(2026, 9, 21))
+
+
+def test_date_range_is_strict_in_python_mode_and_parses_json() -> None:
+    """A Python `str` is not a `date`, but a JSON payload keeps working (it has no date type)."""
+    with pytest.raises(ValidationError):
+        DateRange.model_validate({"start": "2026-09-21", "end": "2026-09-22"})
+
+    restored = DateRange.model_validate_json('{"start": "2026-09-21", "end": "2026-09-22"}')
+
+    assert restored == DateRange(start=date(2026, 9, 21), end=date(2026, 9, 22))

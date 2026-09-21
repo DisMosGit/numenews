@@ -331,12 +331,21 @@
 > **Результат фазы:** `fetch_news(topic, date_range)` возвращает объединённый список из всех 5 API.
 
 ### 2.1. Protocol-интерфейс
-- [ ] `NewsSource(Protocol)` с `async def fetch(topic, date_range) -> list[NewsItem]` · `S` 🧪
-- [ ] `NewsSourceError` — базовое исключение · `S`
-- [ ] `Topic`, `DateRange` — Pydantic-модели · `S` 🧪
-- [ ] Коммит: `feat(news): source protocol` · `S` 🧪
+- [x] `NewsSource(Protocol)` с `async def fetch(topic, date_range) -> list[NewsItem]` · `S` 🧪
+- [x] `NewsSourceError` — базовое исключение · `S`
+- [x] `Topic`, `DateRange` — Pydantic-модели · `S` 🧪
+- [x] Коммит: `feat(news): source protocol` · `S` 🧪
 
 **DoD:** `mypy --strict` проверяет структурную типизацию.
+
+> *Отклонения. `Topic`/`DateRange` лежат в `models/query.py`, а не в `news/`: это словарь границ
+> (те же модели примут MCP-инструмент 6.2 и CLI 7.3), а `models` — единственный слой, который
+> разрешено импортировать всем. `NewsSourceError` — не одно исключение, а база с подклассами
+> `HTTPError`/`AuthError`/`RateLimitError`/`TransportError`/`ParseError`: агрегатору нужен один
+> `except`, а флаг `retryable` живёт на исключении, потому что «повторять ли» — свойство отказа, а
+> не места вызова. `NewsSource` объявляет `name` read-only property, чтобы класс-атрибут адаптера
+> структурно подходил под протокол. `test_news_protocol.py` доказывает, что обычный класс без
+> наследования удовлетворяет протоколу — и это же проверяет `mypy --strict`.*
 
 ### 2.2. HTTP-клиент с кэшем (hishel)
 - [ ] `httpx.AsyncClient` + `hishel.AsyncCacheClient` · `M` 🧪

@@ -59,6 +59,7 @@ class Settings(BaseSettings):
     # default demo path needs no configuration (AGENTS.md) and a half-configured machine still
     # produces a result from the feeds that are available.
     newsapi_key: SecretStr | None = None
+    gnews_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

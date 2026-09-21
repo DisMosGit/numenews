@@ -408,10 +408,16 @@
 > (заголовок уважается) и проверяет, что второй попытки достаточно.*
 
 ### 2.5. GNews adapter
-- [ ] `GNewsSource(NewsSource)` · `M` 🧪
-- [ ] Чтение `GNEWS_KEY` · `S`
-- [ ] Маппинг в `NewsItem` · `S` 🧪
-- [ ] Коммит: `feat(news): gnews adapter` · `M` 🧪
+- [x] `GNewsSource(NewsSource)` · `M` 🧪
+- [x] Чтение `GNEWS_KEY` · `S`
+- [x] Маппинг в `NewsItem` · `S` 🧪
+- [x] Коммит: `feat(news): gnews adapter` · `M` 🧪
+
+> *Отклонение. GNews отвечает на исчерпанную дневную квоту кодом **403**, который центральный
+> маппер (2.2) по HTTP-семантике читает как «запрещено»; адаптер переводит 403 в
+> `NewsSourceRateLimitError`, потому что это и есть отказ по лимиту, а 401 остаётся
+> `NewsSourceAuthError`. `from`/`to` уходят как RFC 3339 (`2026-09-15T00:00:00Z`), а не голыми
+> датами, `max=10` — потолок бесплатного плана. Ключ — в заголовке `X-Api-Key`.*
 
 ### 2.6. Mediastack adapter
 - [ ] `MediastackSource(NewsSource)` · `M` 🧪

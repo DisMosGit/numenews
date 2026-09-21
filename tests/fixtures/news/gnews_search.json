@@ -1,0 +1,66 @@
+{
+  "totalArticles": 4,
+  "articles": [
+    {
+      "id": "9f3c1c0a1b2c3d4e",
+      "title": "Twenty-two nations sign the accord",
+      "description": "The accord was signed by 22 nations.",
+      "content": "The accord was signed by 22 nations on Saturday.",
+      "url": "https://www.example.com/world/accord",
+      "image": "https://www.example.com/img/accord.jpg",
+      "publishedAt": "2026-09-21T09:15:00Z",
+      "lang": "en",
+      "source": {
+        "id": "example",
+        "name": "Example News",
+        "url": "https://www.example.com",
+        "country": "us"
+      }
+    },
+    {
+      "id": "0a1b2c3d4e5f6071",
+      "title": "A lonely headline",
+      "description": null,
+      "content": null,
+      "url": "https://news.example.org/lonely",
+      "image": null,
+      "publishedAt": "2026-09-20T22:45:00Z",
+      "lang": "en",
+      "source": {
+        "id": null,
+        "name": null,
+        "url": "https://news.example.org",
+        "country": null
+      }
+    },
+    {
+      "id": "1122334455667788",
+      "title": "An article with no date",
+      "description": "No timestamp here.",
+      "content": "No timestamp here.",
+      "url": "https://news.example.org/no-date",
+      "image": null,
+      "lang": "en",
+      "source": { "id": "nd", "name": "No Date", "url": "https://news.example.org", "country": "us" }
+    },
+    {
+      "id": "8877665544332211",
+      "title": "An article without a URL",
+      "description": "Nothing to link to.",
+      "content": "Nothing to link to.",
+      "publishedAt": "2026-09-20T10:00:00Z",
+      "lang": "en",
+      "source": { "id": "nu", "name": "No URL", "url": "https://news.example.org", "country": "us" }
+    },
+    {
+      "id": "6677889900112233",
+      "title": "An article with an unparsable date",
+      "description": "The date is a word.",
+      "content": "The date is a word.",
+      "url": "https://news.example.org/bad-date",
+      "publishedAt": "yesterday",
+      "lang": "en",
+      "source": { "id": "bd", "name": "Bad Date", "url": "https://news.example.org", "country": "us" }
+    }
+  ]
+}

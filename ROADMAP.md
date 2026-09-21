@@ -146,15 +146,22 @@
 **DoD:** `make test` зелёный, фикстура `qdrant_in_memory` доступна.
 
 ### 0.9. Документация фазы 0
-- [ ] `docs/ARCHITECTURE.md` — шаблон с заголовками · `S` 📝
-- [ ] `docs/NUMEROLOGY.md` — шаблон · `S` 📝
-- [ ] `docs/adr/0001-record-architecture-decisions.md` · `S` 📝
-- [ ] `docs/adr/template.md` · `S` 📝
-- [ ] `docs/agentic/AGENT_WORKFLOW.md` — как работаем с агентами · `M` 📝
-- [ ] `ROADMAP.md` (этот документ) · `M` 📝
-- [ ] Коммит: `docs: architecture, numerology, ADR templates, roadmap` · `M`
+- [x] `docs/ARCHITECTURE.md` — шаблон с заголовками · `S` 📝
+- [x] `docs/NUMEROLOGY.md` — шаблон · `S` 📝
+- [x] `docs/adr/0001-record-architecture-decisions.md` · `S` 📝
+- [x] `docs/adr/template.md` · `S` 📝
+- [x] `docs/agentic/AGENT_WORKFLOW.md` — как работаем с агентами · `M` 📝
+- [x] `ROADMAP.md` (этот документ) · `M` 📝
+- [x] Коммит: `docs: architecture, numerology, ADR templates, roadmap` · `M`
 
 **✅ Phase 0 завершена, когда:** `make dev` поднимает Qdrant, `make lint && make test` зелёные, `Settings()` работает.
+
+> **Итог phase 0 (2026-09-21).** Все задачи 0.1–0.9 закрыты, `make lint`, `make test`,
+> `make test-integration`, `make test-eval` и `pre-commit run --all-files` зелёные;
+> `make dev` поднимает Qdrant 1.19.1 в статусе `healthy` (`/readyz` и `/dashboard` отвечают 200);
+> `Settings()` читает `.env`, `structlog` пишет JSON в stderr при `ENVIRONMENT=prod`.
+> Отклонения от черновика отмечены в задачах выше (ruff `select`, `fail_under`, фикстуры
+> `event_loop`/`anyio_backend`, healthcheck без `curl`, ADR MCP → 0010).
 
 ---
 
@@ -562,7 +569,8 @@
 
 ### 6.12. Документация MCP
 - [ ] `docs/MCP_TOOLS.md` — 9 инструментов, сигнатуры, примеры · `L` 📝
-- [ ] ADR `0001-use-mcp-server.md` · `M` 📝
+- [ ] ADR `0010-use-mcp-server.md` · `M` 📝
+      *Номер изменён с `0001` (он занят записью о ведении ADR из 0.9); нумерация ADR — в `docs/adr/0001-record-architecture-decisions.md`.*
 - [ ] Коммит: `docs: mcp tools + ADR` · `M` 📝
 
 **✅ Phase 6 завершена, когда:** Claude Desktop видит 9 инструментов, `fetch_news` возвращает новости.

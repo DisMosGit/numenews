@@ -10,9 +10,11 @@ from __future__ import annotations
 
 from numenews.vector.client import VectorStore
 from numenews.vector.collections import (
+    FORECASTS_COLLECTION,
     NEWS_COLLECTION,
     NUMBERS_COLLECTION,
     PATTERNS_COLLECTION,
+    create_forecasts_collection,
     create_news_collection,
     create_numbers_collection,
     create_patterns_collection,
@@ -21,11 +23,13 @@ from numenews.vector.collections import (
 )
 from numenews.vector.errors import CollectionNotFoundError, VectorStoreError
 from numenews.vector.filters import build_news_filter
+from numenews.vector.forecasts import get_forecast, save_forecast
 from numenews.vector.news import search_news, upsert_news
 from numenews.vector.numbers import upsert_number_patterns
 from numenews.vector.patterns import find_similar_patterns, save_pattern
 
 __all__ = [
+    "FORECASTS_COLLECTION",
     "NEWS_COLLECTION",
     "NUMBERS_COLLECTION",
     "PATTERNS_COLLECTION",
@@ -33,12 +37,15 @@ __all__ = [
     "VectorStore",
     "VectorStoreError",
     "build_news_filter",
+    "create_forecasts_collection",
     "create_news_collection",
     "create_numbers_collection",
     "create_patterns_collection",
     "ensure_collections",
     "find_similar_patterns",
+    "get_forecast",
     "require_collection",
+    "save_forecast",
     "save_pattern",
     "search_news",
     "upsert_news",

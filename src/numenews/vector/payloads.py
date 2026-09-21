@@ -23,7 +23,7 @@ from collections.abc import Mapping
 from datetime import date
 from uuid import NAMESPACE_URL, uuid5
 
-from numenews.models import NewsItem, NumberActivation, Pattern
+from numenews.models import Forecast, NewsItem, NumberActivation, Pattern
 from numenews.numerology import is_master
 
 
@@ -137,6 +137,40 @@ def pattern_embedding_text(pattern: Pattern) -> str:
 def pattern_point_id(pattern: Pattern) -> str:
     """Return the point id of one pattern: its own ``PatternId``."""
     return str(pattern.id.root)
+
+
+def forecast_payload(forecast: Forecast) -> dict[str, object]:
+    """Return the payload of one forecast.
+
+    The nested patterns keep their own timestamps, which are already RFC 3339; only the outer
+    ``date`` is a calendar day and needs the same normalization as a news item's.
+    """
+    payload: dict[str, object] = dict(forecast.model_dump(mode="json", exclude_none=True))
+    payload["date"] = iso_day(forecast.date)
+    return payload
+
+
+def forecast_from_payload(payload: Mapping[str, object]) -> Forecast:
+    """Rebuild a :class:`~numenews.models.Forecast` from a stored payload."""
+    return Forecast.model_validate_json(json.dumps(_restore_day(dict(payload))))
+
+
+def forecast_embedding_text(forecast: Forecast) -> str:
+    """Return the text embedded for one forecast: its reading and its advice.
+
+    Similarity between forecasts is what would let a later run ask "was there a day like this",
+    so the text is the interpretive part, not the numbers that are filtered on instead.
+    """
+    return f"{forecast.forecast}\n\n{forecast.advice}".strip() or str(forecast.dominant_number)
+
+
+def forecast_point_id(day: date) -> str:
+    """Return the point id of one day's forecast.
+
+    ``Forecast`` carries no id of its own — a day has exactly one reading — so the date is the key,
+    and saving a forecast twice for the same day overwrites instead of duplicating.
+    """
+    return str(uuid5(NAMESPACE_URL, f"numenews:forecast:{day.isoformat()}"))
 
 
 def _restore_day(payload: dict[str, object]) -> dict[str, object]:

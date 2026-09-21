@@ -15,8 +15,15 @@ from collections.abc import Mapping
 import pytest
 from qdrant_client.models import PayloadSchemaType
 
-from numenews.vector import NEWS_COLLECTION, NUMBERS_COLLECTION, PATTERNS_COLLECTION, VectorStore
+from numenews.vector import (
+    FORECASTS_COLLECTION,
+    NEWS_COLLECTION,
+    NUMBERS_COLLECTION,
+    PATTERNS_COLLECTION,
+    VectorStore,
+)
 from numenews.vector.collections import (
+    FORECASTS_PAYLOAD_INDEXES,
     NEWS_PAYLOAD_INDEXES,
     NUMBERS_PAYLOAD_INDEXES,
     PATTERNS_PAYLOAD_INDEXES,
@@ -30,6 +37,7 @@ EXPECTED_INDEXES: Mapping[str, Mapping[str, PayloadSchemaType]] = {
     NEWS_COLLECTION: NEWS_PAYLOAD_INDEXES,
     NUMBERS_COLLECTION: NUMBERS_PAYLOAD_INDEXES,
     PATTERNS_COLLECTION: PATTERNS_PAYLOAD_INDEXES,
+    FORECASTS_COLLECTION: FORECASTS_PAYLOAD_INDEXES,
 }
 
 

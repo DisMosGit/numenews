@@ -10,12 +10,16 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from uuid import uuid4
 
-from numenews.models import NewsId, NewsItem, NumberActivation, Pattern, PatternId
+from numenews.models import Forecast, NewsId, NewsItem, NumberActivation, Pattern, PatternId
 from numenews.vector.payloads import (
     activation_embedding_text,
     activation_from_payload,
     activation_payload,
     activation_point_id,
+    forecast_embedding_text,
+    forecast_from_payload,
+    forecast_payload,
+    forecast_point_id,
     news_embedding_text,
     news_from_payload,
     news_payload,
@@ -183,3 +187,50 @@ def test_a_pattern_point_id_is_its_pattern_id() -> None:
     pattern = _pattern()
 
     assert pattern_point_id(pattern) == str(pattern.id.root)
+
+
+def _forecast(**overrides: object) -> Forecast:
+    """Return a forecast; ``overrides`` replace single fields."""
+    fields: dict[str, object] = {
+        "date": date(2026, 9, 21),
+        "dominant_number": 7,
+        "master_active": False,
+        "patterns": (),
+        "forecast": "A day of quiet progress.",
+        "advice": "Finish what is already open.",
+        "warnings": ("avoid new commitments",),
+    }
+    fields.update(overrides)
+    return Forecast.model_validate(fields)
+
+
+def test_a_stored_forecast_comes_back_unchanged() -> None:
+    """The nested patterns and the warnings survive the payload round trip too."""
+    forecast = _forecast(patterns=(_pattern(),))
+
+    assert forecast_from_payload(forecast_payload(forecast)) == forecast
+
+
+def test_a_forecast_date_is_stored_as_the_start_of_its_utc_day() -> None:
+    """`forecasts.date` is a DATETIME-indexed payload field, so it follows the same rule."""
+    payload = forecast_payload(_forecast(date=date(2026, 9, 21)))
+
+    assert payload["date"] == "2026-09-21T00:00:00Z"
+
+
+def test_a_forecast_is_embedded_by_its_reading_and_advice() -> None:
+    """The interpretable part is what a later similarity query should match."""
+    assert forecast_embedding_text(_forecast()) == (
+        "A day of quiet progress.\n\nFinish what is already open."
+    )
+
+
+def test_a_forecast_without_text_is_embedded_by_its_dominant_number() -> None:
+    """An empty reading still has to map to something rather than to an empty string."""
+    assert forecast_embedding_text(_forecast(forecast="", advice="", warnings=())) == "7"
+
+
+def test_one_forecast_point_id_per_day() -> None:
+    """A day has exactly one reading, so the date is the key and a re-save overwrites."""
+    assert forecast_point_id(date(2026, 9, 21)) == forecast_point_id(date(2026, 9, 21))
+    assert forecast_point_id(date(2026, 9, 21)) != forecast_point_id(date(2026, 9, 22))

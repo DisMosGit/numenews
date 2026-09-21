@@ -610,10 +610,18 @@
 > `strength` — задача CLI 7.x и может быть добавлена поверх индексов без изменения схемы.*
 
 ### 3.6. Коллекция `forecasts`
-- [ ] `create_forecasts_collection()` с 768d · `M` 🧪
-- [ ] Payload-индексы: `date`, `dominant_number` · `M` 🧪
-- [ ] `save_forecast`, `get_forecast(date)` · `M` 🧪
-- [ ] Коммит: `feat(vector): forecasts collection` · `M` 🧪
+- [x] `create_forecasts_collection()` с 768d · `M` 🧪
+- [x] Payload-индексы: `date`, `dominant_number` · `M` 🧪
+- [x] `save_forecast`, `get_forecast(date)` · `M` 🧪
+- [x] Коммит: `feat(vector): forecasts collection` · `M` 🧪
+
+> *Уточнения. У `Forecast` нет собственного id, и он не заводится: у дня ровно одно чтение, поэтому
+> point id — `uuid5` от даты, `save_forecast` перезаписывает день, а `get_forecast` делает точечное
+> чтение по этому id (это и нужно 5.4 для «повторный вызов возвращает из кэша»). Заодно остаются
+> индексы `date`/`dominant_number` для диапазонных запросов, которые понадобятся позже.
+> «День ещё не читали» — это `None`, а «коллекции нет вовсе» — `CollectionNotFoundError`: разные
+> ситуации с разными действиями. Вектор строится по `forecast` + `advice` (смысловая часть), а не по
+> числам, которые и так фильтруются по индексу.*
 
 ### 3.7. Коллекция `number_history`
 - [ ] Создание без вектора (payload-only) · `M` 🧪

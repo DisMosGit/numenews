@@ -31,6 +31,7 @@ logger = get_logger(__name__)
 NEWS_COLLECTION = "news"
 NUMBERS_COLLECTION = "numbers"
 PATTERNS_COLLECTION = "patterns"
+FORECASTS_COLLECTION = "forecasts"
 
 #: Payload fields of ``news`` that get an index, in creation order. ``master_number`` is derived
 #: from ``numerology_value`` by ``payloads.news_payload``: a filter on it must not have to fetch
@@ -58,6 +59,14 @@ PATTERNS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
     "discovered_at": PayloadSchemaType.DATETIME,
 }
 
+#: Payload fields of ``forecasts``. One forecast per day is stored under a date-derived point id,
+#: so ``get_forecast`` is a point lookup; the indexes are what a range query ("the last week's
+#: readings") will use.
+FORECASTS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
+    "date": PayloadSchemaType.DATETIME,
+    "dominant_number": PayloadSchemaType.INTEGER,
+}
+
 
 def create_news_collection(client: QdrantClient) -> None:
     """Create the 768d ``news`` collection and its payload indexes, unless it is already there."""
@@ -75,6 +84,12 @@ def create_patterns_collection(client: QdrantClient) -> None:
     """Create the 768d ``patterns`` collection and its payload indexes, unless already there."""
     _create_collection(client, PATTERNS_COLLECTION, BASE_DIMENSION)
     _create_indexes(client, PATTERNS_COLLECTION, PATTERNS_PAYLOAD_INDEXES)
+
+
+def create_forecasts_collection(client: QdrantClient) -> None:
+    """Create the 768d ``forecasts`` collection and its payload indexes, unless already there."""
+    _create_collection(client, FORECASTS_COLLECTION, BASE_DIMENSION)
+    _create_indexes(client, FORECASTS_COLLECTION, FORECASTS_PAYLOAD_INDEXES)
 
 
 def ensure_collections(client: QdrantClient) -> None:
@@ -122,4 +137,5 @@ COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (
     create_news_collection,
     create_numbers_collection,
     create_patterns_collection,
+    create_forecasts_collection,
 )

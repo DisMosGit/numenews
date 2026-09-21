@@ -2,7 +2,7 @@
 
 > **Phase 0 template.** The layer map, the boundary rules and the state model below are settled;
 > the data-flow diagram describes the *target* pipeline and is filled in as its steps land
-> (phases 2–5). The full document is written in phase 10.1.
+> (phases 2–5, of which 2 and 3 are done). The full document is written in phase 10.1.
 
 ## One pipeline, two interfaces
 
@@ -23,7 +23,7 @@ command must be idempotent and resumable (AGENTS.md).
 | Pure logic | `numerology` | `models` | reduction, master numbers, gematria, date resonance, regex fallback |
 | Boundaries | `models` | nothing | Pydantic v2 types crossing every module boundary |
 | Adapters | `news`, `embeddings` | `models` | five news APIs behind one Protocol; local `fastembed` vectors |
-| Storage | `vector` | `models` | Qdrant client, collections, payload indexes, hybrid search |
+| Storage | `vector` | `models`, `embeddings`, `numerology` | Qdrant client, collections, payload indexes, hybrid search |
 | Reasoning | `agents` | `numerology`, `models` | `pydantic-ai` agents: extract, pattern, forecast |
 | Interfaces | `mcp`, `cli` | everything above | tool and command surfaces, JSON serialization |
 
@@ -34,6 +34,11 @@ Two rules keep this acyclic and testable:
    without any infrastructure.
 2. State crosses boundaries as Pydantic models only — no dicts, no dataclasses, no free-form JSON
    from an LLM.
+
+`vector` is the one layer that reads two others: `embeddings` for the `Embedder` Protocol its
+collections embed with, and `numerology` for `is_master`, which derives the filterable
+`master_number` payload field. Both are leaves, so the graph stays acyclic and 11/22/33 stays defined
+once (ADR 0003).
 
 `config` and `logging` sit below every layer: settings are validated once at start, and logs go to
 stderr so stdout stays machine-readable.
@@ -70,6 +75,10 @@ Payload indexes are created **before** ingest: with an index Qdrant pre-filters 
 walk, without one it degrades to post-filtering. In multi-stage (hybrid) queries the filter belongs
 inside each `Prefetch`.
 
+A `date` payload field holds the RFC 3339 start of the day (`2026-09-21T00:00:00Z`), because the
+`datetime` index accepts nothing shorter; `vector/payloads.py` writes that shape and reads it back
+as the domain models' `date`. `docs/QDRANT_COLLECTIONS.md` documents every payload field.
+
 ## Implemented so far
 
 Phase 0: configuration (`config.py`), logging (`logging.py`), the package skeleton and the test
@@ -77,5 +86,10 @@ scaffolding. Phase 1: the domain models (`models/`, frozen and strict) and the p
 (`numerology/`, 100% covered) with `docs/NUMEROLOGY.md` and ADR 0002. Phase 2: the news layer
 (`news/`, 100% covered) — one `NewsSource` Protocol, five adapters (GDELT, NewsAPI, GNews,
 Mediastack, Currents), one `hishel`-cached `httpx` client with a `tenacity` retry policy, and
-`fetch_news` as the aggregating entry point, documented in `docs/NEWS_SOURCES.md`. `ROADMAP.md` is
-the authoritative status; `docs/adr/` records the decisions.
+`fetch_news` as the aggregating entry point, documented in `docs/NEWS_SOURCES.md`. Phase 3: the
+vector layer — `embeddings/` wraps the two local `bge` models behind an `Embedder` Protocol
+(downloaded once into `.cache/fastembed`, never at import), and `vector/` owns the Qdrant connection,
+the five collections with their payload indexes, the model↔payload conversion and the four search
+paths (`search_news`, `hybrid_search_news`, `find_similar_patterns`, `get_history`), documented in
+`docs/QDRANT_COLLECTIONS.md` and `docs/EMBEDDINGS.md` with ADR 0003. `ROADMAP.md` is the
+authoritative status; `docs/adr/` records the decisions.

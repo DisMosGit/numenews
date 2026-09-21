@@ -40,14 +40,31 @@ Versioning: [Semantic Versioning](https://semver.org/).
   `(title, source, date)`.
 - Configuration for the four optional news keys (`NEWSAPI_KEY`, `GNEWS_KEY`, `MEDIASTACK_KEY`,
   `CURRENTS_KEY`); GDELT needs none, so the demo path still runs unconfigured.
+- Embeddings (phase 3.1): `numenews.embeddings` — an `Embedder` Protocol and the two local
+  `fastembed` wrappers (`bge-small-en-v1.5` 384d, `bge-base-en-v1.5` 768d) that build their ONNX
+  session on the first `embed`, never at import, and keep the weights in
+  `Settings.embedding_cache_dir`.
+- Vector layer (phases 3.2–3.8): `numenews.vector` — `VectorStore` (a health-checked `QdrantClient`
+  plus both embedders, with an in-memory form for tests), the five collections with their payload
+  indexes created before the first point (`news`, `numbers`, `patterns`, `forecasts`,
+  `number_history`), model⇄payload conversion with RFC 3339 dates and deterministic point ids, the
+  typed `NewsFilter`, and the search paths: `search_news`, `hybrid_search_news` (filter inside
+  `Prefetch` plus RRF fusion), `find_similar_patterns` and `get_history` (a calendar-day window with
+  an injectable `today`). `Pattern` gains the `discovered_at` field its collection indexes.
+- Documentation for the vector layer: `docs/QDRANT_COLLECTIONS.md` (payload schemas, point ids,
+  search examples, the local-mode caveat) and `docs/EMBEDDINGS.md` (models, cache, lazy loading,
+  threading), with ADR 0003 recording the local-embeddings and layer decisions.
 
 ### Changed
 - `docs/ARCHITECTURE.md`: the `numerology` layer may import `models` (the result types it returns),
-  and the "implemented so far" section now covers phases 0–1 (ADR 0002); it now covers phase 2 as
-  well.
-- Dependencies: `httpx`, `hishel[httpx]` and `tenacity` join the runtime set, `respx` the dev group.
+  the "implemented so far" section now covers phases 0–2, and the `vector` layer may import
+  `models`, `embeddings` and `numerology` (ADR 0003).
+- Dependencies: `httpx`, `hishel[httpx]` and `tenacity` join the runtime set, `respx` the dev group;
+  `fastembed` joins the runtime set in phase 3, bringing ONNX Runtime and the Hugging Face hub client
+  with it.
 - `.env.example` ships the four news keys uncommented and explains that a missing key means the
-  source is not queried at all; `README.md` and the package docstring track the implemented phases.
+  source is not queried at all; `EMBEDDING_CACHE_DIR` joins the template in phase 3. `README.md` and
+  the package docstring track the implemented phases.
 - Documentation for the news layer: `docs/NEWS_SOURCES.md` records the five APIs, their free tiers
   and request shapes, the cache design and what the layer deliberately leaves out.
 

@@ -662,12 +662,33 @@
 > фильтром, и показывает, что без фильтра он возвращается.*
 
 ### 3.9. Документация Qdrant
-- [ ] `docs/QDRANT_COLLECTIONS.md` — 5 коллекций, payload-схемы, примеры · `M` 📝
-- [ ] `docs/EMBEDDINGS.md` — почему 384d и 768d, fastembed · `M` 📝
-- [ ] ADR `0003-local-embeddings.md` · `M` 📝
-- [ ] Коммит: `docs: qdrant + embeddings` · `M` 📝
+- [x] `docs/QDRANT_COLLECTIONS.md` — 5 коллекций, payload-схемы, примеры · `M` 📝
+- [x] `docs/EMBEDDINGS.md` — почему 384d и 768d, fastembed · `M` 📝
+- [x] ADR `0003-local-embeddings.md` · `M` 📝
+- [x] Коммит: `docs: qdrant + embeddings` · `M` 📝
 
 **✅ Phase 3 завершена, когда:** новости индексируются, гибридный поиск возвращает релевантные результаты.
+
+> **Итог phase 3 (2026-09-21).** Задачи 3.1–3.9 закрыты. Векторный слой: `embeddings/` — 100%
+> инструкций и ветвей (44 инструкции, 4 ветви), `vector/` — 93–100% (`forecasts.py` 93%,
+> `history.py` 97%, `payloads.py` 99%, остальные 100%), весь `make test` — 370 тестов, включая
+> шесть Docker-тестов схемы. `ruff check`, `ruff format --check`, `mypy --strict` и
+> `pre-commit run --all-files` зелёные.
+>
+> Условие фазы проверено: `FastEmbedBase().embed(["hello"])` → 768 `float` (детерминированно,
+> `FastEmbedSmall` → 384); `make dev` поднимает Qdrant 1.19.1, `ensure_collections()` создаёт пять
+> коллекций, а `test_vector_docker.py` сверяет `payload_schema` каждой из них с объявленными
+> индексами (в local mode индексы не действуют, поэтому проверка идёт по серверу); гибридный поиск
+> с `NewsFilter(numerology_value=7)` возвращает только подходящие новости, хотя «векторный близнец»
+> запроса отсекается именно фильтром.
+>
+> **Отклонения** отмечены по задачам выше и перечислены в ADR 0003: два `bge`-модели вместо одной,
+> ленивая инициализация и `EMBEDDING_CACHE_DIR`, `VectorStore` вместо класса с именем `QdrantClient`,
+> синхронный векторный слой, RFC 3339 для дат в payload, «гибрид» как dense + filter (не dense +
+> sparse), `NewsFilter` вместо сырого `qdrant_client.Filter`, `Pattern.discovered_at`,
+> `record_activation(NumberActivation)` и `get_history(..., today=)`, `upsert_number_patterns`
+> с активациями. Живого прогона на реальных новостях нет — он появится в 5.2, когда `Pipeline.ingest`
+> начнёт писать эти коллекции; здесь проверены индексация на моках, семантика и схема на сервере.
 
 ---
 

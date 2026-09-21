@@ -28,6 +28,7 @@ def _activation(
     number: int = 7,
     news_url: str = "https://example.test/a",
     activated: date = date(2026, 9, 21),
+    numerology_value: int | None = None,
 ) -> NumberActivation:
     """Return an activation with a deterministic news id, so re-upserts hit the same point."""
     return NumberActivation(
@@ -35,6 +36,7 @@ def _activation(
         date=activated,
         news_id=NewsId(uuid5(NAMESPACE_URL, news_url)),
         context=context,
+        numerology_value=numerology_value,
     )
 
 
@@ -96,4 +98,27 @@ def test_the_payload_keeps_the_number_the_day_and_the_context(
         "date": "2026-09-21T00:00:00Z",
         "news_id": str(activation.news_id.root),
         "context": "seven markets closed higher",
+    }
+
+
+def test_the_payload_keeps_the_items_reduced_value_when_it_has_one(
+    vector_store: VectorStore,
+) -> None:
+    """The value is written only when it exists, so "not computed" is never an indexed null."""
+    activation = _activation("seven markets closed higher", number=11, numerology_value=11)
+
+    upsert_number_patterns(vector_store, [activation])
+
+    stored = vector_store.client.retrieve(
+        NUMBERS_COLLECTION,
+        [activation_point_id(activation)],
+        with_payload=True,
+    )
+
+    assert stored[0].payload == {
+        "number": 11,
+        "date": "2026-09-21T00:00:00Z",
+        "news_id": str(activation.news_id.root),
+        "context": "seven markets closed higher",
+        "numerology_value": 11,
     }

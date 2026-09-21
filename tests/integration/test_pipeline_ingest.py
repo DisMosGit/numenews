@@ -143,6 +143,8 @@ async def test_the_history_row_carries_the_snippet_around_the_number(
     assert payload["date"] == "2026-09-21T00:00:00Z"
     assert payload["news_id"] == str(item.id.root)
     assert "11th hour" in str(payload["context"])
+    # The row carries the item's own reduced value, so the memory is readable on its own (8.1).
+    assert payload["numerology_value"] == stored_items[0].numerology_value
 
 
 async def test_a_repeated_ingest_adds_nothing_and_calls_no_model(

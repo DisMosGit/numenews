@@ -54,9 +54,14 @@ Both store the same payload — one `NumberActivation`:
   "number": 11,
   "date": "2026-09-21T00:00:00Z",
   "news_id": "b371bc46-7b4b-5b38-92db-cdf94a550f33",
-  "context": "eleven ministers resigned"
+  "context": "eleven ministers resigned",
+  "numerology_value": 11
 }
 ```
+
+`numerology_value` is the *item's* reduced value, copied onto the activation in phase 8.1 so a
+history read answers "what was that day read under" without a second lookup in `news`. It is absent
+when the item has none (a headline with no letters), exactly like the `news` payload.
 
 They answer different questions, which is why both exist:
 

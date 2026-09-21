@@ -1336,10 +1336,10 @@
 > **Результат фазы:** `get_history(11, days=30)` возвращает все активации из `number_history`.
 
 ### 8.1. Запись активаций
-- [ ] `record_activation` вызывается при ingest каждой новости · `M` 🧪
-- [ ] Сохранение: `number, date, news_id, context, numerology_value` · `S` 🧪
-- [ ] Идемпотентность по `(number, news_id)` · `M` 🧪
-- [ ] Коммит: `feat(memory): record activations` · `M` 🧪
+- [x] `record_activation` вызывается при ingest каждой новости · `M` 🧪
+- [x] Сохранение: `number, date, news_id, context, numerology_value` · `S` 🧪
+- [x] Идемпотентность по `(number, news_id)` · `M` 🧪
+- [x] Коммит: `feat(memory): record activations` · `M` 🧪
 
 ### 8.2. Чтение истории
 - [ ] `get_history(number, days)` с payload-фильтром · `M` 🧪

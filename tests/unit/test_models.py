@@ -184,6 +184,24 @@ def test_number_activation_requires_the_news_it_came_from() -> None:
     assert activation.context == "the 11th hour"
 
 
+def test_number_activation_records_the_items_value_when_it_has_one() -> None:
+    """The item's value rides along (8.1); `None` is "not computed", as on `NewsItem`."""
+    news_id = NewsId(uuid4())
+    uncomputed = NumberActivation(
+        number=11, date=date(2026, 9, 21), news_id=news_id, context="the 11th hour"
+    )
+    computed = NumberActivation(
+        number=11,
+        date=date(2026, 9, 21),
+        news_id=news_id,
+        context="the 11th hour",
+        numerology_value=22,
+    )
+
+    assert uncomputed.numerology_value is None
+    assert computed.numerology_value == 22
+
+
 def test_master_check_result_fields() -> None:
     """The check result keeps distinct masters and the occurrence count apart."""
     result = MasterCheckResult(has_master=True, master_numbers=(11, 22), count=3)

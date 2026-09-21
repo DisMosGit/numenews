@@ -114,6 +114,24 @@ def test_a_stored_activation_comes_back_unchanged() -> None:
     assert activation_from_payload(activation_payload(activation)) == activation
 
 
+def test_a_stored_activation_keeps_the_items_reduced_value() -> None:
+    """The value rides in the payload, so a history read needs no lookup in `news` (phase 8.1)."""
+    activation = _activation(numerology_value=11)
+
+    payload = activation_payload(activation)
+
+    assert payload["numerology_value"] == 11
+    assert activation_from_payload(payload) == activation
+
+
+def test_an_uncomputed_activation_value_is_absent_from_the_payload() -> None:
+    """`None` must not become an indexed null: "not computed" has no key, like a news item's."""
+    payload = activation_payload(_activation())
+
+    assert "numerology_value" not in payload
+    assert activation_from_payload(payload).numerology_value is None
+
+
 def test_an_activation_date_is_stored_as_the_start_of_its_utc_day() -> None:
     """`number_history` indexes `date` as a DATETIME, so the same RFC 3339 rule applies."""
     payload = activation_payload(_activation(date=date(2026, 9, 21)))

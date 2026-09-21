@@ -50,7 +50,8 @@ def record_activation(store: VectorStore, activation: NumberActivation) -> None:
 
     Args:
         store: The connection. The history has no vectors, so neither embedder is used.
-        activation: What to remember — the number, the day and the snippet it was read in.
+        activation: What to remember — the number, the day, the item it was read in, the snippet
+            around it and the item's reduced value (phase 8.1).
     """
     create_number_history_collection(store.client)
     store.client.upsert(

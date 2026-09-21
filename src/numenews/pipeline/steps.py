@@ -140,11 +140,11 @@ def context_snippet(text: str, number: int) -> str:
 def activate(item: NewsItem, numbers: tuple[int, ...]) -> list[NumberActivation]:
     """Return one :class:`~numenews.models.NumberActivation` per distinct number of ``item``.
 
-    Roadmap 8.1's record: the number, the day the article was published, the item it was read in and
-    the snippet around it. One point per ``(news_id, number)`` pair — the vector layer's
-    ``activation_point_id`` — so a repeated ingest overwrites its activations instead of piling them
-    up. Numbers that are not written in the text still get a context: the fallback of
-    :func:`context_snippet` keeps the embedded text non-empty.
+    Roadmap 8.1's record: the number, the day the article was published, the item it was read in,
+    the snippet around it and the item's reduced value. One point per ``(news_id, number)`` pair —
+    the vector layer's ``activation_point_id`` — so a repeated ingest overwrites its activations
+    instead of piling them up. Numbers that are not written in the text still get a context: the
+    fallback of :func:`context_snippet` keeps the embedded text non-empty.
     """
     return [
         NumberActivation(
@@ -152,6 +152,7 @@ def activate(item: NewsItem, numbers: tuple[int, ...]) -> list[NumberActivation]
             date=item.date,
             news_id=item.id,
             context=context_snippet(f"{item.title}. {item.text}", number),
+            numerology_value=item.numerology_value,
         )
         for number in dict.fromkeys(numbers)
     ]

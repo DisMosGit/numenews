@@ -70,7 +70,8 @@ def activation_payload(activation: NumberActivation) -> dict[str, object]:
 
     The same shape serves ``numbers`` (vector-backed, the semantic index over contexts) and
     ``number_history`` (payload only, the exact log); the collections differ in what they can be
-    asked, not in what they store.
+    asked, not in what they store. ``numerology_value`` is dropped when it is ``None`` — the rule of
+    this module, so "not computed" stays unindexed rather than becoming an indexed null.
     """
     payload: dict[str, object] = dict(activation.model_dump(mode="json", exclude_none=True))
     payload["date"] = iso_day(activation.date)

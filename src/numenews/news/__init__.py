@@ -12,6 +12,7 @@ their key is present.
 
 from __future__ import annotations
 
+from numenews.news.currents import CurrentsSource
 from numenews.news.errors import (
     NewsSourceAuthError,
     NewsSourceError,
@@ -29,6 +30,7 @@ from numenews.news.protocol import NewsSource
 
 __all__ = [
     "NEWS_CACHE_TTL_SECONDS",
+    "CurrentsSource",
     "GDELTSource",
     "GNewsSource",
     "MediastackSource",

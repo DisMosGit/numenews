@@ -1,0 +1,54 @@
+{
+  "status": "ok",
+  "page": 1,
+  "news": [
+    {
+      "id": "abc123",
+      "title": "The thirty-third rescue",
+      "description": "Thirty-three miners were rescued.",
+      "url": "https://www.example.com/world/miners",
+      "author": "Jane Doe",
+      "image": "https://www.example.com/img/miners.jpg",
+      "language": "en",
+      "category": ["general", "world"],
+      "published": "2026-09-21 12:05:00 +0000"
+    },
+    {
+      "id": "def456",
+      "title": "A headline with no description",
+      "description": null,
+      "url": "https://news.example.org/headline",
+      "author": null,
+      "image": null,
+      "language": "en",
+      "category": ["general"],
+      "published": "2026-09-20 23:30:00 +0000"
+    },
+    {
+      "id": "ghi789",
+      "title": null,
+      "description": "No title here.",
+      "url": "https://news.example.org/no-title",
+      "language": "en",
+      "category": [],
+      "published": "2026-09-20 23:30:00 +0000"
+    },
+    {
+      "id": "jkl012",
+      "title": "A headline with an ISO timestamp",
+      "description": "Currents does not use ISO here.",
+      "url": "https://news.example.org/iso-time",
+      "language": "en",
+      "category": [],
+      "published": "2026-09-20T23:30:00Z"
+    },
+    {
+      "id": "mno345",
+      "title": "A headline with no timestamp",
+      "description": "No published field.",
+      "url": "https://news.example.org/no-time",
+      "language": "en",
+      "category": []
+    }
+  ]
+}

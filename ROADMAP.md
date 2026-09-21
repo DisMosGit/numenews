@@ -434,9 +434,17 @@
 > строка `source`.*
 
 ### 2.7. Currents API adapter
-- [ ] `CurrentsSource(NewsSource)` · `M` 🧪
-- [ ] Чтение `CURRENTS_KEY` · `S`
-- [ ] Коммит: `feat(news): currents adapter` · `M` 🧪
+- [x] `CurrentsSource(NewsSource)` · `M` 🧪
+- [x] Чтение `CURRENTS_KEY` · `S`
+- [x] Коммит: `feat(news): currents adapter` · `M` 🧪
+
+> *Уточнения. У Currents нет поля издателя — только `author`, а это человек; `source` берётся из хоста
+> URL, потому что агрегатор дедуплицирует по `(title, source, date)` и подпись автора издателем не
+> является. Диапазон уходит строгим RFC 3339 (`2026-09-15T00:00:00Z`): голая дата у Currents — это
+> 400. `published` приходит как `2026-03-24 12:05:00 +0000`, поэтому парсится явным форматом, а не
+> `fromisoformat`. Ключ — в заголовке `Authorization: Bearer`; `keywords` используется вместо
+> `query` (при обоих Currents отдаёт приоритет `keywords`). `page_size=20` — потолок бесплатного
+> плана.*
 
 ### 2.8. Агрегатор
 - [ ] `NewsAggregator` — параллельный опрос через `asyncio.gather` · `M` 🧪

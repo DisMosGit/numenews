@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     newsapi_key: SecretStr | None = None
     gnews_key: SecretStr | None = None
     mediastack_key: SecretStr | None = None
+    currents_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

@@ -18,7 +18,7 @@ from types import TracebackType
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from numenews.models import NewsItem
+from numenews.models import NewsItem, Pattern
 from numenews.pipeline.clock import Clock
 
 
@@ -41,12 +41,14 @@ class PipelineRun(BaseModel):
 
     A frozen model rather than a tuple, because the CLI of phase 7 serializes it and roadmap 5.1's
     timings belong in that answer. ``news`` carries the items as they were stored — extraction and
-    reduction already applied — so a caller can read the numbers without a second lookup.
+    reduction already applied — and ``patterns`` the connections the analyze step found, so a caller
+    can read both without a second lookup.
     """
 
     model_config = ConfigDict(frozen=True, strict=True)
 
     news: tuple[NewsItem, ...] = ()
+    patterns: tuple[Pattern, ...] = ()
     activations: int = Field(default=0, ge=0)
     timings: tuple[Timing, ...] = ()
 

@@ -20,6 +20,12 @@ from __future__ import annotations
 from numenews.pipeline.clock import Clock, SystemClock
 from numenews.pipeline.errors import PipelineError, PipelineRetryError
 from numenews.pipeline.pipeline import DEFAULT_WINDOW_DAYS, NewsFetcher, Pipeline
+from numenews.pipeline.steps import (
+    activate,
+    context_snippet,
+    reading_text,
+    reduced_value,
+)
 from numenews.pipeline.timings import PipelineRun, StepTimer, Timing
 
 __all__ = [
@@ -33,4 +39,8 @@ __all__ = [
     "StepTimer",
     "SystemClock",
     "Timing",
+    "activate",
+    "context_snippet",
+    "reading_text",
+    "reduced_value",
 ]

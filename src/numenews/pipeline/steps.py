@@ -39,6 +39,7 @@ from numenews.vector import (
     create_news_collection,
     get_news_items,
     record_activation,
+    save_pattern,
     upsert_news,
     upsert_number_patterns,
 )
@@ -249,9 +250,45 @@ async def ingest(pipeline: Pipeline, topic: Topic, date_range: DateRange) -> Pip
 async def analyze(pipeline: Pipeline, news_ids: tuple[NewsId, ...]) -> PipelineRun:
     """Find the patterns among ``news_ids`` and store them.
 
-    Roadmap 5.3. Implemented in this phase's 5.3 commit.
+    Roadmap 5.3 is two steps: ``find`` (the pattern agent of phase 4.3 over the items the ids name)
+    and ``store`` (``save_pattern``, which stamps ``discovered_at``). The ids come from a previous
+    search or from an ingest run, so a caller that only holds ids — the MCP tool of phase 6.5, the
+    CLI of phase 7 — does not have to read the collection itself.
+
+    An unknown or empty ``news_ids`` is not an error: ``find_patterns`` answers an empty list
+    without calling the model, and the step stores nothing. A model failure is retried once and then
+    surfaces as :class:`PipelineRetryError`, because an empty list must stay distinguishable from
+    "the model never answered" (phase 4.3).
+
+    Args:
+        pipeline: The orchestrator whose store, pattern agent and clock the step uses.
+        news_ids: The items to connect, in the order the prompt should show them.
+
+    Returns:
+        The items that were analysed (read back from the store) and the patterns that were saved.
+
+    Raises:
+        PipelineRetryError: when the pattern agent failed twice.
+        CollectionNotFoundError: when the ``news`` collection was never created.
     """
-    raise PipelineError("pipeline.steps.analyze lands in roadmap 5.3")
+    with StepTimer(pipeline.clock, "find") as find_timer:
+        items = await pipeline.run_blocking(lambda: get_news_items(pipeline.store, news_ids))
+        patterns = await retrying("find_patterns", lambda: pipeline.patterns.find_patterns(items))
+    log_step(find_timer, items=len(items), patterns=len(patterns))
+
+    with StepTimer(pipeline.clock, "store") as store_timer:
+        saved = [
+            await pipeline.run_blocking(partial(save_pattern, pipeline.store, pattern))
+            for pattern in patterns
+        ]
+    log_step(store_timer, patterns=len(saved))
+
+    logger.info("pipeline.analyze.complete", items=len(items), patterns=len(saved))
+    return PipelineRun(
+        news=tuple(items),
+        patterns=tuple(saved),
+        timings=timings(find_timer.timing, store_timer.timing),
+    )
 
 
 async def forecast(pipeline: Pipeline, day: date, *, rerun_analysis: bool = True) -> Forecast:

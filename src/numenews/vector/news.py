@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from qdrant_client.models import PointStruct
+from qdrant_client.models import Fusion, FusionQuery, PointStruct, Prefetch
 
 from numenews.logging import get_logger
 from numenews.models import NewsFilter, NewsItem
@@ -92,6 +92,56 @@ def search_news(
         collection_name=NEWS_COLLECTION,
         query=vectors[0],
         query_filter=build_news_filter(filters),
+        limit=limit,
+        with_payload=True,
+    )
+    return [news_from_payload(point.payload or {}) for point in response.points]
+
+
+def hybrid_search_news(
+    store: VectorStore,
+    query: str,
+    filters: NewsFilter | None = None,
+    limit: int = 10,
+) -> list[NewsItem]:
+    """Return the items nearest to ``query`` using the multi-stage (Query API) form.
+
+    Where :func:`search_news` passes the filter alongside a single dense query, this builds the
+    question the way a hybrid retriever has to: each retriever runs inside a
+    :class:`~qdrant_client.models.Prefetch` with its own filter, and a
+    :class:`~qdrant_client.models.FusionQuery` merges their rankings. With the filter inside the
+    prefetch, Qdrant narrows the candidate set before the HNSW walk of that retriever, which is the
+    pre-filtering the payload indexes exist for (roadmap 3.8).
+
+    Phase 3 has one dense retriever, so the fusion receives a single ranking; the shape is what
+    matters, because a sparse/BM25 prefetch is a second entry in the same list. The consequence is
+    that the returned order is by reciprocal-rank fusion (``1 / (60 + rank)``) rather than by cosine
+    similarity, and the ranks are relative within the prefetch's own ``limit``.
+
+    Args:
+        store: The connection and the 768d embedder.
+        query: Free text, embedded with the same model as the stored items.
+        filters: Payload constraints; ``None`` searches everything.
+        limit: Maximum number of items to return, and the size of the candidate set each retriever
+            ranks.
+
+    Raises:
+        ValueError: when ``limit`` is not positive.
+        CollectionNotFoundError: when the ``news`` collection was never created.
+
+    Returns:
+        The matching items, best fused rank first.
+    """
+    if limit < 1:
+        raise ValueError("search limit must be positive")
+    require_collection(store.client, NEWS_COLLECTION)
+    vector = store.base.embed([query])[0]
+    response = store.client.query_points(
+        collection_name=NEWS_COLLECTION,
+        prefetch=[
+            Prefetch(query=vector, filter=build_news_filter(filters), limit=limit),
+        ],
+        query=FusionQuery(fusion=Fusion.RRF),
         limit=limit,
         with_payload=True,
     )

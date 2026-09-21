@@ -643,12 +643,23 @@
 > `iso_day` — раньше границу дня считал приватный `filters._day_start`.*
 
 ### 3.8. Гибридный поиск
-- [ ] `hybrid_search_news(query, filter_, limit)` — dense + filter · `M` 🧪
-- [ ] Фильтр внутри `Prefetch` при multi-stage запросе · `M` 🧪
-- [ ] Тест: фильтр по `numerology_value=7` + семантический запрос · `M` 🧪
-- [ ] Коммит: `feat(vector): hybrid search` · `M` 🧪
+- [x] `hybrid_search_news(query, filter_, limit)` — dense + filter · `M` 🧪
+- [x] Фильтр внутри `Prefetch` при multi-stage запросе · `M` 🧪
+- [x] Тест: фильтр по `numerology_value=7` + семантический запрос · `M` 🧪
+- [x] Коммит: `feat(vector): hybrid search` · `M` 🧪
 
 **DoD:** pre-filtering работает, тест с комбинацией dense + payload зелёный.
+
+> *Уточнения. «Гибридный» здесь прочитан буквально по этому файлу — «dense + filter», а не
+> dense + sparse из `.docs/plan.md`: sparse/BM25 потребовал бы второго векторного поля и обёртки
+> `SparseTextEmbedding`, которых нет ни в 3.1, ни в списке коллекций. Реализация — Query API:
+> `prefetch=[Prefetch(query=vector, filter=..., limit=limit)]` + `FusionQuery(Fusion.RRF)`, то есть
+> форма, в которую второй ретривер (BM25) добавляется ещё одним элементом списка, а фильтр уже
+> лежит внутри каждого `Prefetch`. Следствие, которое надо помнить вызывающему: порядок — по RRF
+> (`1 / (60 + rank)`), а не по косинусу, и ранги относительны внутри `limit` префетча.
+> `search_news` (3.3) остаётся формой с `query_filter`: обе разновидности pre-filtering есть и
+> покрыты тестами. DoD-тест строит «векторного близнеца» запроса, который отсекается только
+> фильтром, и показывает, что без фильтра он возвращается.*
 
 ### 3.9. Документация Qdrant
 - [ ] `docs/QDRANT_COLLECTIONS.md` — 5 коллекций, payload-схемы, примеры · `M` 📝

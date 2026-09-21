@@ -30,6 +30,7 @@ logger = get_logger(__name__)
 
 NEWS_COLLECTION = "news"
 NUMBERS_COLLECTION = "numbers"
+PATTERNS_COLLECTION = "patterns"
 
 #: Payload fields of ``news`` that get an index, in creation order. ``master_number`` is derived
 #: from ``numerology_value`` by ``payloads.news_payload``: a filter on it must not have to fetch
@@ -48,6 +49,15 @@ NUMBERS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
     "context": PayloadSchemaType.KEYWORD,
 }
 
+#: Payload fields of ``patterns``. ``discovered_at`` is always written by ``save_pattern``, so the
+#: datetime index never sees a null; ``strength`` is a float so phase 7 can ask for the strong
+#: patterns without scanning the collection.
+PATTERNS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
+    "type": PayloadSchemaType.KEYWORD,
+    "strength": PayloadSchemaType.FLOAT,
+    "discovered_at": PayloadSchemaType.DATETIME,
+}
+
 
 def create_news_collection(client: QdrantClient) -> None:
     """Create the 768d ``news`` collection and its payload indexes, unless it is already there."""
@@ -59,6 +69,12 @@ def create_numbers_collection(client: QdrantClient) -> None:
     """Create the 384d ``numbers`` collection and its payload indexes, unless already there."""
     _create_collection(client, NUMBERS_COLLECTION, SMALL_DIMENSION)
     _create_indexes(client, NUMBERS_COLLECTION, NUMBERS_PAYLOAD_INDEXES)
+
+
+def create_patterns_collection(client: QdrantClient) -> None:
+    """Create the 768d ``patterns`` collection and its payload indexes, unless already there."""
+    _create_collection(client, PATTERNS_COLLECTION, BASE_DIMENSION)
+    _create_indexes(client, PATTERNS_COLLECTION, PATTERNS_PAYLOAD_INDEXES)
 
 
 def ensure_collections(client: QdrantClient) -> None:
@@ -105,4 +121,5 @@ def _create_indexes(
 COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (
     create_news_collection,
     create_numbers_collection,
+    create_patterns_collection,
 )

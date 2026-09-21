@@ -8,7 +8,7 @@ cannot change after it crossed one).
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, date, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -268,3 +268,34 @@ def test_news_filter_is_frozen_and_strict() -> None:
 
     with pytest.raises(ValidationError):
         filters.numerology_value = 11  # type: ignore[misc]  # frozen model, mypy cannot see it
+
+
+def test_a_pattern_is_undiscovered_until_it_is_saved() -> None:
+    """The agent describes a connection; `save_pattern` is what gives it a discovery time."""
+    pattern = Pattern(
+        id=PatternId(uuid4()),
+        type="resonance",
+        numbers=(7,),
+        news_ids=(),
+        strength=0.5,
+        interpretation="7 repeats",
+    )
+
+    assert pattern.discovered_at is None
+
+
+def test_a_pattern_keeps_the_discovery_time_it_was_given() -> None:
+    """A given timestamp survives validation and a JSON round trip, so storage cannot reset it."""
+    discovered = datetime(2026, 9, 21, 12, 0, tzinfo=UTC)
+    pattern = Pattern(
+        id=PatternId(uuid4()),
+        type="resonance",
+        numbers=(7,),
+        news_ids=(),
+        strength=0.5,
+        interpretation="7 repeats",
+        discovered_at=discovered,
+    )
+
+    assert pattern.discovered_at == discovered
+    assert Pattern.model_validate_json(pattern.model_dump_json()).discovered_at == discovered

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,8 +19,12 @@ class Pattern(BaseModel):
     """A connection between news items with a confidence.
 
     ``strength`` is bounded to ``[0, 1]`` here rather than in the agent, so a model output that
-    leaves the range is rejected at the boundary (phase 4). ``discovered_at`` is deliberately absent
-    until the ``patterns`` collection of phase 3.5 introduces it with its payload index.
+    leaves the range is rejected at the boundary (phase 4).
+
+    ``discovered_at`` is when the pattern was written to Qdrant and is indexed there. It is optional
+    because the pattern agent (4.3) describes a connection, not a moment: ``save_pattern`` stamps an
+    unstamped pattern with the current UTC time, and a pattern that already carries a timestamp —
+    read back from storage, or built by a test — keeps it.
     """
 
     model_config = ConfigDict(frozen=True, strict=True)
@@ -30,3 +35,4 @@ class Pattern(BaseModel):
     news_ids: tuple[NewsId, ...]
     strength: float = Field(ge=0.0, le=1.0)
     interpretation: str
+    discovered_at: datetime | None = None

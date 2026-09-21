@@ -594,10 +594,20 @@
 > журнал активаций; этот коммит пишет только первую.*
 
 ### 3.5. Коллекция `patterns`
-- [ ] `create_patterns_collection()` с 768d · `M` 🧪
-- [ ] Payload-индексы: `type`, `strength`, `discovered_at` · `M` 🧪
-- [ ] `save_pattern(pattern)`, `find_similar_patterns(query)` · `M` 🧪
-- [ ] Коммит: `feat(vector): patterns collection` · `M` 🧪
+- [x] `create_patterns_collection()` с 768d · `M` 🧪
+- [x] Payload-индексы: `type`, `strength`, `discovered_at` · `M` 🧪
+- [x] `save_pattern(pattern)`, `find_similar_patterns(query)` · `M` 🧪
+- [x] Коммит: `feat(vector): patterns collection` · `M` 🧪
+
+> *Отклонения. `Pattern` получил поле `discovered_at: datetime | None = None` — так его анонсировал
+> docstring модели в 1.1, и без него нечего индексировать. Проставляет его `save_pattern`, а не
+> агент: «когда найден» — факт о записи в Qdrant, а не о связи между новостями, и уже
+> проставленный timestamp не перезаписывается (повторный `save_pattern` не переписывает историю).
+> `save_pattern` возвращает сохранённую версию модели — вызывающему (5.3) нужен именно объект с
+> заполненным временем. Вектор строится по `interpretation`, а при пустой интерпретации — по типу и
+> числам, чтобы пустая строка не сделала все паттерны одним и тем же вектором. Point id — `PatternId`.
+> `find_similar_patterns` не принимает фильтров: 3.5 просит только семантику, а отбор по `type`/
+> `strength` — задача CLI 7.x и может быть добавлена поверх индексов без изменения схемы.*
 
 ### 3.6. Коллекция `forecasts`
 - [ ] `create_forecasts_collection()` с 768d · `M` 🧪

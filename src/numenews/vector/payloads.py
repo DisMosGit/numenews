@@ -23,7 +23,7 @@ from collections.abc import Mapping
 from datetime import date
 from uuid import NAMESPACE_URL, uuid5
 
-from numenews.models import NewsItem, NumberActivation
+from numenews.models import NewsItem, NumberActivation, Pattern
 from numenews.numerology import is_master
 
 
@@ -104,6 +104,39 @@ def activation_point_id(activation: NumberActivation) -> str:
 def iso_day(day: date) -> str:
     """Return the RFC 3339 UTC start of ``day``, the only shape a ``DATETIME`` index accepts."""
     return f"{day.isoformat()}T00:00:00Z"
+
+
+def pattern_payload(pattern: Pattern) -> dict[str, object]:
+    """Return the payload of one pattern.
+
+    No date normalization is needed here: ``discovered_at`` is a ``datetime``, so its own JSON form
+    is already the RFC 3339 timestamp the ``discovered_at`` index expects.
+    """
+    return dict(pattern.model_dump(mode="json", exclude_none=True))
+
+
+def pattern_from_payload(payload: Mapping[str, object]) -> Pattern:
+    """Rebuild a :class:`~numenews.models.Pattern` from a stored payload."""
+    return Pattern.model_validate_json(json.dumps(dict(payload)))
+
+
+def pattern_embedding_text(pattern: Pattern) -> str:
+    """Return the text embedded for one pattern: its interpretation.
+
+    An interpretation is the pattern's meaning in words, which is what a later query ("master
+    numbers around money") should match. When it is blank, the type and the numbers are the only
+    content left and are used instead of an empty string.
+    """
+    interpretation = pattern.interpretation.strip()
+    if interpretation:
+        return interpretation
+    numbers = " ".join(str(number) for number in pattern.numbers)
+    return f"{pattern.type} {numbers}".strip()
+
+
+def pattern_point_id(pattern: Pattern) -> str:
+    """Return the point id of one pattern: its own ``PatternId``."""
+    return str(pattern.id.root)
 
 
 def _restore_day(payload: dict[str, object]) -> dict[str, object]:

@@ -7,10 +7,10 @@ date and the dropped ``None`` — are pinned by a fast unit test.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from uuid import uuid4
 
-from numenews.models import NewsId, NewsItem, NumberActivation
+from numenews.models import NewsId, NewsItem, NumberActivation, Pattern, PatternId
 from numenews.vector.payloads import (
     activation_embedding_text,
     activation_from_payload,
@@ -20,6 +20,10 @@ from numenews.vector.payloads import (
     news_from_payload,
     news_payload,
     news_point_id,
+    pattern_embedding_text,
+    pattern_from_payload,
+    pattern_payload,
+    pattern_point_id,
 )
 
 
@@ -133,3 +137,49 @@ def test_an_activation_id_is_one_per_news_item_and_number() -> None:
 
     assert activation_point_id(first) == activation_point_id(same)
     assert len({activation_point_id(item) for item in (first, other_number, other_news)}) == 3
+
+
+def _pattern(**overrides: object) -> Pattern:
+    """Return a pattern; ``overrides`` replace single fields."""
+    fields: dict[str, object] = {
+        "id": PatternId(uuid4()),
+        "type": "resonance",
+        "numbers": (7,),
+        "news_ids": (NewsId(uuid4()),),
+        "strength": 0.5,
+        "interpretation": "7 repeats across the week",
+        "discovered_at": datetime(2026, 9, 21, 12, 0, tzinfo=UTC),
+    }
+    fields.update(overrides)
+    return Pattern.model_validate(fields)
+
+
+def test_a_stored_pattern_comes_back_unchanged() -> None:
+    """Ids, news ids and the discovery timestamp all survive the payload round trip."""
+    pattern = _pattern()
+
+    assert pattern_from_payload(pattern_payload(pattern)) == pattern
+
+
+def test_an_undiscovered_pattern_is_stored_without_a_timestamp() -> None:
+    """`save_pattern` fills the timestamp; the payload builder does not invent one."""
+    payload = pattern_payload(_pattern(discovered_at=None))
+
+    assert "discovered_at" not in payload
+
+
+def test_a_pattern_is_embedded_by_its_interpretation() -> None:
+    """The interpretation is the pattern's meaning in words, which is what a query should match."""
+    assert pattern_embedding_text(_pattern()) == "7 repeats across the week"
+
+
+def test_a_pattern_without_an_interpretation_is_embedded_by_type_and_numbers() -> None:
+    """An empty interpretation would give every such pattern the same vector."""
+    assert pattern_embedding_text(_pattern(interpretation="  ")) == "resonance 7"
+
+
+def test_a_pattern_point_id_is_its_pattern_id() -> None:
+    """Storing the same pattern twice overwrites the point instead of adding a twin."""
+    pattern = _pattern()
+
+    assert pattern_point_id(pattern) == str(pattern.id.root)

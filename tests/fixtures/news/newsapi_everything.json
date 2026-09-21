@@ -1,0 +1,65 @@
+{
+  "status": "ok",
+  "totalResults": 4,
+  "articles": [
+    {
+      "source": { "id": "the-verge", "name": "The Verge" },
+      "author": "Jane Doe",
+      "title": "The 11th hour deal",
+      "description": "A budget deal arrived in the 11th hour.",
+      "url": "https://www.theverge.com/2026/9/21/deal",
+      "urlToImage": "https://www.theverge.com/img/deal.jpg",
+      "publishedAt": "2026-09-21T14:30:00Z",
+      "content": "A budget deal arrived in the 11th hour. [+2345 chars]"
+    },
+    {
+      "source": { "id": null, "name": null },
+      "author": null,
+      "title": "Resonance in the markets",
+      "description": null,
+      "url": "https://news.example.net/markets/resonance",
+      "urlToImage": null,
+      "publishedAt": "2026-09-20T08:00:00Z",
+      "content": "Markets closed at 7777 points. [+120 chars]"
+    },
+    {
+      "source": { "id": "removed", "name": "Removed" },
+      "author": null,
+      "title": null,
+      "description": "An article the API no longer has",
+      "url": "https://news.example.net/removed",
+      "urlToImage": null,
+      "publishedAt": "2026-09-20T09:00:00Z",
+      "content": "[Removed]"
+    },
+    {
+      "source": { "id": "broken", "name": "Broken" },
+      "author": null,
+      "title": "An article with an unparsable date",
+      "description": null,
+      "url": "https://news.example.net/broken-date",
+      "urlToImage": null,
+      "publishedAt": "yesterday",
+      "content": "No usable timestamp."
+    },
+    {
+      "source": { "id": "no-date", "name": "No Date" },
+      "author": null,
+      "title": "An article with no timestamp field at all",
+      "description": null,
+      "url": "https://news.example.net/no-date",
+      "urlToImage": null,
+      "content": null
+    },
+    {
+      "source": { "id": "textless", "name": "Textless" },
+      "author": null,
+      "title": "A headline with neither description nor content",
+      "description": null,
+      "url": "https://news.example.net/textless",
+      "urlToImage": null,
+      "publishedAt": "2026-09-19T12:00:00Z",
+      "content": null
+    }
+  ]
+}

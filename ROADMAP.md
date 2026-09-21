@@ -390,13 +390,22 @@
 > тело (нет совпадений) — это результат, а не ошибка, HTML/текст при 200 — `NewsSourceParseError`.*
 
 ### 2.4. NewsAPI.org adapter
-- [ ] `NewsAPISource(NewsSource)` · `M` 🧪
-- [ ] Чтение `NEWSAPI_KEY` из `Settings` · `S`
-- [ ] Обработка 429 (rate limit) через `tenacity` · `M` 🧪
-- [ ] Тест через `respx` · `M` 🧪
-- [ ] Коммит: `feat(news): newsapi adapter` · `M` 🧪
+- [x] `NewsAPISource(NewsSource)` · `M` 🧪
+- [x] Чтение `NEWSAPI_KEY` из `Settings` · `S`
+- [x] Обработка 429 (rate limit) через `tenacity` · `M` 🧪
+- [x] Тест через `respx` · `M` 🧪
+- [x] Коммит: `feat(news): newsapi adapter` · `M` 🧪
 
 **DoD:** тест на 429 покрыт, retry срабатывает.
+
+> *Уточнения. Ключ уходит в заголовке `X-Api-Key`, а не в query-параметре `apiKey`: так он не
+> попадает ни в URL, ни в лог, ни в ключ кэша. Чтение `NEWSAPI_KEY` живёт в самом адаптере —
+> классметод `from_settings(settings, client)` возвращает `None`, если ключа нет (2.8 соберёт из них
+> список). NewsAPI умеет отдавать `{"status":"error", ...}` с HTTP 200 — это тоже `NewsSourceError`,
+> а не пустая страница. `description` предпочтительнее `content`: последний обрезан маркером
+> `[+N chars]`, который снимается, когда кроме него текста нет. camelCase-поля ответа проходят через
+> `Field(alias=...)`, чтобы не отключать правило ruff N815. Тест 429 использует `Retry-After: 0`
+> (заголовок уважается) и проверяет, что второй попытки достаточно.*
 
 ### 2.5. GNews adapter
 - [ ] `GNewsSource(NewsSource)` · `M` 🧪

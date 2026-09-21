@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     # hishel's RFC 9111 cache directory for news HTTP responses.
     cache_dir: Path = Path(".cache/hishel")
 
+    # News APIs — every key is optional. A source without its key is simply not queried, so the
+    # default demo path needs no configuration (AGENTS.md) and a half-configured machine still
+    # produces a result from the feeds that are available.
+    newsapi_key: SecretStr | None = None
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

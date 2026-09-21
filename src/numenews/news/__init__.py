@@ -22,11 +22,13 @@ from numenews.news.errors import (
 )
 from numenews.news.gdelt import GDELTSource
 from numenews.news.http import NEWS_CACHE_TTL_SECONDS, build_news_client
+from numenews.news.newsapi import NewsAPISource
 from numenews.news.protocol import NewsSource
 
 __all__ = [
     "NEWS_CACHE_TTL_SECONDS",
     "GDELTSource",
+    "NewsAPISource",
     "NewsSource",
     "NewsSourceAuthError",
     "NewsSourceError",

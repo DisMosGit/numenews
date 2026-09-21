@@ -27,7 +27,14 @@ from numenews.vector.errors import CollectionNotFoundError, VectorStoreError
 from numenews.vector.filters import build_news_filter
 from numenews.vector.forecasts import get_forecast, save_forecast
 from numenews.vector.history import get_history, record_activation
-from numenews.vector.news import hybrid_search_news, search_news, upsert_news
+from numenews.vector.news import (
+    READ_PAGE,
+    get_news_items,
+    hybrid_search_news,
+    read_news_range,
+    search_news,
+    upsert_news,
+)
 from numenews.vector.numbers import upsert_number_patterns
 from numenews.vector.patterns import find_similar_patterns, save_pattern
 
@@ -37,6 +44,7 @@ __all__ = [
     "NUMBERS_COLLECTION",
     "NUMBER_HISTORY_COLLECTION",
     "PATTERNS_COLLECTION",
+    "READ_PAGE",
     "CollectionNotFoundError",
     "VectorStore",
     "VectorStoreError",
@@ -50,7 +58,9 @@ __all__ = [
     "find_similar_patterns",
     "get_forecast",
     "get_history",
+    "get_news_items",
     "hybrid_search_news",
+    "read_news_range",
     "record_activation",
     "require_collection",
     "save_forecast",

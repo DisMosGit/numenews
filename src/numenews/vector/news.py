@@ -12,11 +12,21 @@ repeated ingest of the same article overwrites its point instead of adding a sec
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import date, timedelta
+from uuid import UUID
 
-from qdrant_client.models import Fusion, FusionQuery, PointStruct, Prefetch
+from qdrant_client.models import (
+    DatetimeRange,
+    FieldCondition,
+    Filter,
+    Fusion,
+    FusionQuery,
+    PointStruct,
+    Prefetch,
+)
 
 from numenews.logging import get_logger
-from numenews.models import NewsFilter, NewsItem
+from numenews.models import NewsFilter, NewsId, NewsItem
 from numenews.vector.client import VectorStore
 from numenews.vector.collections import (
     NEWS_COLLECTION,
@@ -25,6 +35,7 @@ from numenews.vector.collections import (
 )
 from numenews.vector.filters import build_news_filter
 from numenews.vector.payloads import (
+    day_start,
     news_embedding_text,
     news_from_payload,
     news_payload,
@@ -32,6 +43,10 @@ from numenews.vector.payloads import (
 )
 
 logger = get_logger(__name__)
+
+#: How many points one scroll page of :func:`read_news_range` asks for. The read paginates until
+#: Qdrant stops handing back an offset, so this only bounds the round trips (as in ``history``).
+READ_PAGE = 256
 
 
 def upsert_news(store: VectorStore, items: Sequence[NewsItem]) -> int:
@@ -146,3 +161,87 @@ def hybrid_search_news(
         with_payload=True,
     )
     return [news_from_payload(point.payload or {}) for point in response.points]
+
+
+def get_news_items(store: VectorStore, ids: Sequence[NewsId]) -> list[NewsItem]:
+    """Return the stored items whose ids are in ``ids``, in the order ``ids`` gives.
+
+    This is the read an id-only caller needs: the MCP ``find_patterns`` tool and the CLI receive a
+    list of news ids from a previous search, and the pattern agent (phase 4.3) has to be shown the
+    items those ids name. The ids come from ``uuid5`` over a URL (phase 2.3), so asking for a
+    missing one is a normal outcome of a mistyped request rather than an error: it is skipped, like
+    an id the pattern agent invented.
+
+    Args:
+        store: The connection. The items are read by id, so no embedder is used.
+        ids: The ids to fetch, in the order the result should have.
+
+    Raises:
+        CollectionNotFoundError: when the ``news`` collection was never created.
+
+    Returns:
+        The items found, in ``ids`` order; ``[]`` for an empty ``ids``, without touching Qdrant.
+    """
+    if not ids:
+        return []
+    require_collection(store.client, NEWS_COLLECTION)
+    records = store.client.retrieve(
+        NEWS_COLLECTION,
+        [str(item_id.root) for item_id in ids],
+        with_payload=True,
+    )
+    items = [news_from_payload(record.payload or {}) for record in records]
+    by_id = {str(item.id.root): item for item in items}
+    found = [by_id[str(item_id.root)] for item_id in ids if str(item_id.root) in by_id]
+    logger.debug("vector.news.read", requested=len(ids), found=len(found))
+    return found
+
+
+def read_news_range(store: VectorStore, date_from: date, date_to: date) -> list[NewsItem]:
+    """Return every stored item published between ``date_from`` and ``date_to``, both inclusive.
+
+    The window of roadmap 5.5: a caller asks for the last seven days and gets exactly those days,
+    because the published dates and this filter are built from the same ``day_start`` (the inclusive
+    upper bound is the start of the day *after* ``date_to``). The result is ordered by date and then
+    by id, so the same window always reads back in the same order — a prompt built from it is
+    stable.
+
+    Args:
+        store: The connection. The items are read by date, so no embedder is used.
+        date_from: First day of the window.
+        date_to: Last day of the window.
+
+    Raises:
+        CollectionNotFoundError: when the ``news`` collection was never created.
+
+    Returns:
+        The items of the window, oldest first.
+    """
+    require_collection(store.client, NEWS_COLLECTION)
+    scroll_filter = Filter(
+        must=[
+            FieldCondition(
+                key="date",
+                range=DatetimeRange(
+                    gte=day_start(date_from),
+                    lt=day_start(date_to + timedelta(days=1)),
+                ),
+            )
+        ]
+    )
+    items: list[NewsItem] = []
+    offset: int | str | UUID | None = None
+    while True:
+        records, offset = store.client.scroll(
+            NEWS_COLLECTION,
+            scroll_filter=scroll_filter,
+            limit=READ_PAGE,
+            offset=offset,
+            with_payload=True,
+        )
+        items.extend(news_from_payload(record.payload or {}) for record in records)
+        if offset is None:
+            break
+    items.sort(key=lambda item: (item.date, str(item.id.root)))
+    logger.debug("vector.news.window_read", date_from=str(date_from), items=len(items))
+    return items

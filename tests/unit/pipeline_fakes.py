@@ -22,6 +22,7 @@ from pydantic_ai.messages import ModelMessage, ModelResponse
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from numenews.agents import ExtractNumbersAgent, ForecastAgent, PatternAgent
+from numenews.models import ExtractedNumbers
 from numenews.pipeline import Pipeline
 
 from .agent_fakes import Recorder
@@ -156,6 +157,24 @@ def broken_model() -> FunctionModel:
         raise ModelAPIError("test-model", "the endpoint is unreachable")
 
     return FunctionModel(respond)
+
+
+class ScriptedExtract:
+    """An ``ExtractNumbersAgent`` that answers per text instead of per model script.
+
+    It is a subclass, so it stands in wherever the real class is expected (the pipeline takes it by
+    annotation, not by runtime check), and it records the texts it was shown — which is how a test
+    proves the pipeline reads a headline together with its body.
+    """
+
+    def __init__(self, answers: dict[str, tuple[int, ...]] | None = None) -> None:
+        self._answers = dict(answers or {})
+        self.texts: list[str] = []
+
+    async def extract(self, text: str, *, symbols: Sequence[str] = ()) -> ExtractedNumbers:
+        """Record ``text`` and return the scripted numbers, empty for an unscripted text."""
+        self.texts.append(text)
+        return ExtractedNumbers(numbers=self._answers.get(text, ()), sources=("llm",))
 
 
 def fetcher_returning(items: Sequence[Any], *, seen: list[tuple[Any, Any]] | None = None) -> Any:

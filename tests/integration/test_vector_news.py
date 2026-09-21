@@ -19,6 +19,8 @@ from numenews.vector import (
     NEWS_COLLECTION,
     CollectionNotFoundError,
     VectorStore,
+    get_news_items,
+    read_news_range,
     search_news,
     upsert_news,
 )
@@ -190,3 +192,86 @@ def test_a_non_positive_limit_is_refused(vector_store: VectorStore) -> None:
     """`limit` is a count, and zero or negative would ask the engine for nothing sensible."""
     with pytest.raises(ValueError, match="limit must be positive"):
         search_news(vector_store, "anything", limit=0)
+
+
+def test_reading_items_by_id_returns_them_in_the_requested_order(
+    vector_store: VectorStore,
+) -> None:
+    """Phase 5.3 gets a list of ids from a search and has to show the items those ids name."""
+    first = _item("alpha")
+    second = _item("beta")
+    upsert_news(vector_store, [first, second])
+
+    found = get_news_items(vector_store, [second.id, first.id])
+
+    assert [item.title for item in found] == ["beta", "alpha"]
+
+
+def test_reading_items_by_id_skips_an_id_that_is_not_stored(vector_store: VectorStore) -> None:
+    """A mistyped id is a normal outcome of an id-only request, not an error."""
+    stored = _item("alpha")
+    upsert_news(vector_store, [stored])
+
+    missing = _item("nowhere")
+
+    assert get_news_items(vector_store, [missing.id, stored.id]) == [stored]
+
+
+def test_reading_no_ids_touches_nothing(vector_store: VectorStore) -> None:
+    """An empty request needs no collection to exist."""
+    assert get_news_items(vector_store, []) == []
+    assert not vector_store.client.collection_exists(NEWS_COLLECTION)
+
+
+def test_reading_an_absent_collection_by_id_explains_the_setup(vector_store: VectorStore) -> None:
+    """Unlike an unknown id, a missing collection is a setup error and says so."""
+    with pytest.raises(CollectionNotFoundError, match="ensure_collections"):
+        get_news_items(vector_store, [_item("alpha").id])
+
+
+def test_the_window_reads_both_ends_inclusively(vector_store: VectorStore) -> None:
+    """Roadmap 5.5: seven days means the seven days, starting and ending where the caller asked."""
+    upsert_news(
+        vector_store,
+        [
+            _item("before", published=date(2026, 9, 14)),
+            _item("first", published=date(2026, 9, 15)),
+            _item("middle", published=date(2026, 9, 18)),
+            _item("last", published=date(2026, 9, 21)),
+            _item("after", published=date(2026, 9, 22)),
+        ],
+    )
+
+    window = read_news_range(vector_store, date(2026, 9, 15), date(2026, 9, 21))
+
+    assert [item.title for item in window] == ["first", "middle", "last"]
+
+
+def test_the_window_is_ordered_by_date_oldest_first(vector_store: VectorStore) -> None:
+    """A prompt built from the window is stable because the order does not depend on the engine."""
+    upsert_news(
+        vector_store,
+        [
+            _item("last", published=date(2026, 9, 21)),
+            _item("first", published=date(2026, 9, 15)),
+        ],
+    )
+
+    assert [
+        item.title for item in read_news_range(vector_store, date(2026, 9, 15), date(2026, 9, 21))
+    ] == ["first", "last"]
+
+
+def test_an_empty_window_returns_nothing(vector_store: VectorStore) -> None:
+    """A quiet day is an empty list, not a missing collection (the collection exists by then)."""
+    upsert_news(vector_store, [_item("older", published=date(2026, 9, 1))])
+
+    assert read_news_range(vector_store, date(2026, 9, 15), date(2026, 9, 21)) == []
+
+
+def test_reading_a_window_from_an_absent_collection_explains_the_setup(
+    vector_store: VectorStore,
+) -> None:
+    """The window read runs on a store that was never initialised."""
+    with pytest.raises(CollectionNotFoundError, match="ensure_collections"):
+        read_news_range(vector_store, date(2026, 9, 15), date(2026, 9, 21))

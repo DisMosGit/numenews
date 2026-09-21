@@ -18,13 +18,30 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from datetime import date
+from functools import partial
 
 from numenews.agents import AgentError
 from numenews.logging import get_logger
-from numenews.models import DateRange, Forecast, NewsId, Topic
+from numenews.models import (
+    DateRange,
+    ExtractedNumbers,
+    Forecast,
+    NewsId,
+    NewsItem,
+    NumberActivation,
+    Topic,
+)
+from numenews.numerology import compute_numerology
 from numenews.pipeline.errors import PipelineError, PipelineRetryError
 from numenews.pipeline.pipeline import Pipeline
-from numenews.pipeline.timings import PipelineRun, Timing
+from numenews.pipeline.timings import PipelineRun, StepTimer, Timing
+from numenews.vector import (
+    create_news_collection,
+    get_news_items,
+    record_activation,
+    upsert_news,
+    upsert_number_patterns,
+)
 
 logger = get_logger(__name__)
 
@@ -32,6 +49,11 @@ logger = get_logger(__name__)
 #: dropped connection or a single malformed answer; more than one turns a broken endpoint into a
 #: long, expensive run.
 ATTEMPTS = 2
+
+#: How much of a news item an activation's context keeps, in characters. It is the snippet the
+#: ``numbers`` collection embeds and the forecast prompt later shows (``HISTORY_CONTEXT_LIMIT``), so
+#: one long article cannot crowd the memory out.
+CONTEXT_LIMIT = 160
 
 
 async def retrying[ResultT](step: str, run: Callable[[], Awaitable[ResultT]]) -> ResultT:
@@ -59,13 +81,169 @@ async def retrying[ResultT](step: str, run: Callable[[], Awaitable[ResultT]]) ->
     raise PipelineRetryError(step, str(last))
 
 
+def log_step(timer: StepTimer, **counters: object) -> None:
+    """Write the one log line a finished step owes roadmap 5.1.
+
+    ``failed`` decides the level: a step that raised is the interesting one, so it is a warning with
+    the same counters, and the exception itself is logged by the caller's traceback.
+    """
+    timing = timer.timing
+    duration_ms = round(timing.duration_seconds * 1000, 3) if timing is not None else None
+    if timer.failed:
+        logger.warning("pipeline.step.failed", step=timer.step, duration_ms=duration_ms, **counters)
+        return
+    logger.info("pipeline.step", step=timer.step, duration_ms=duration_ms, **counters)
+
+
+def timings(*taken: Timing | None) -> tuple[Timing, ...]:
+    """Return the recorded timings, in step order, dropping the ones a step did not reach."""
+    return tuple(timing for timing in taken if timing is not None)
+
+
+def context_snippet(text: str, number: int) -> str:
+    """Return the snippet of ``text`` around the first written form of ``number``.
+
+    The ``context`` of a :class:`~numenews.models.NumberActivation` is what the ``numbers``
+    collection embeds, so it has to be a phrase about the world — "eleven ministers resigned" — and
+    not the whole article or an empty string. The snippet runs from the start of the sentence that
+    contains the number, or from the beginning of the text when the number is in its first sentence,
+    and is cut to :data:`CONTEXT_LIMIT` characters. A number that is not written in the text (the
+    model read "eleven" where the regex read nothing) falls back to the opening of the text, which
+    still says what the article is about.
+
+    Args:
+        text: The item's text.
+        number: The value whose mention should be found.
+
+    Returns:
+        A non-empty snippet: whitespace-collapsed, cut to :data:`CONTEXT_LIMIT` characters.
+    """
+    collapsed = " ".join(text.split())
+    marker = str(number)
+    position = collapsed.find(marker)
+    if position == -1:
+        return collapsed[:CONTEXT_LIMIT] or marker
+    sentence_break = max(collapsed.rfind(". ", 0, position), collapsed.rfind("! ", 0, position))
+    start = 0 if sentence_break == -1 else sentence_break + 2
+    return collapsed[start : start + CONTEXT_LIMIT] or marker
+
+
+def activate(item: NewsItem, numbers: tuple[int, ...]) -> list[NumberActivation]:
+    """Return one :class:`~numenews.models.NumberActivation` per distinct number of ``item``.
+
+    Roadmap 8.1's record: the number, the day the article was published, the item it was read in and
+    the snippet around it. One point per ``(news_id, number)`` pair — the vector layer's
+    ``activation_point_id`` — so a repeated ingest overwrites its activations instead of piling them
+    up. Numbers that are not written in the text still get a context: the fallback of
+    :func:`context_snippet` keeps the embedded text non-empty.
+    """
+    return [
+        NumberActivation(
+            number=number,
+            date=item.date,
+            news_id=item.id,
+            context=context_snippet(f"{item.title}. {item.text}", number),
+        )
+        for number in dict.fromkeys(numbers)
+    ]
+
+
+def reading_text(item: NewsItem) -> str:
+    """Return the text the day's number is computed from: the headline and the body."""
+    return f"{item.title}\n\n{item.text}".strip()
+
+
+def reduced_value(item: NewsItem) -> int | None:
+    """Return the item's reduced value, or ``None`` when there is nothing to read.
+
+    Gematria has no letters to sum in a headline that is only a number or an emoji, and
+    ``compute_numerology`` reports that as ``0``. ``None`` is the model's documented "not computed"
+    — the payload writes no key at all for it (phase 3.3) — and the two must not be confused.
+    """
+    value = compute_numerology(reading_text(item)).value
+    return value if value > 0 else None
+
+
 async def ingest(pipeline: Pipeline, topic: Topic, date_range: DateRange) -> PipelineRun:
     """Fetch the news and store everything the extraction step read out of it.
 
-    The chain of roadmap 5.2 — fetch → extract → compute → embed → upsert — with each link timed.
-    Implemented in this phase's 5.2 commit.
+    The chain of roadmap 5.2: ``news`` → ``extract`` → ``compute`` → ``embed``. The last step covers
+    the whole write side — the ``news`` collection, the semantic ``numbers`` index and the exact
+    ``number_history`` log — because all three are written from the same computed items and a
+    profile that split them would report one embedding batch three times.
+
+    Idempotency is by ``news_id``: an item whose point is already stored is skipped before its
+    extraction, so a repeated ingest costs no model call and writes nothing while a run whose page
+    is only partly known still adds the new articles.
+
+    Args:
+        pipeline: The orchestrator whose store, agents and clock the step uses.
+        topic: What to search the feeds for.
+        date_range: The inclusive UTC range to ingest.
+
+    Returns:
+        The stored items (with their numbers and reduced value), how many activations were written,
+        and one timing per step.
+
+    Raises:
+        NewsSourceError: when no source is configured at all.
+        VectorStoreError: when Qdrant does not answer.
     """
-    raise PipelineError("pipeline.steps.ingest lands in roadmap 5.2")
+    with StepTimer(pipeline.clock, "news") as news_timer:
+        fetched = await pipeline.fetcher(topic, date_range)
+    log_step(news_timer, items=len(fetched))
+
+    if fetched:
+        # The idempotency check reads the ``news`` collection, and a first run has none yet. The
+        # guard is here rather than in the read so an empty page touches the store not at all;
+        # ``upsert_news`` would have created the schema a moment later anyway (phase 3.3).
+        await pipeline.run_blocking(lambda: create_news_collection(pipeline.store.client))
+    known = await pipeline.run_blocking(
+        lambda: get_news_items(pipeline.store, [item.id for item in fetched])
+    )
+    known_ids = {str(item.id.root) for item in known}
+    fresh = [item for item in fetched if str(item.id.root) not in known_ids]
+    logger.debug("pipeline.ingest.known", fetched=len(fetched), already_stored=len(known_ids))
+
+    with StepTimer(pipeline.clock, "extract") as extract_timer:
+        readings: list[ExtractedNumbers] = []
+        for item in fresh:
+            readings.append(await pipeline.extract.extract(reading_text(item)))
+    log_step(extract_timer, items=len(readings), numbers=sum(len(r.numbers) for r in readings))
+
+    with StepTimer(pipeline.clock, "compute") as compute_timer:
+        items = [
+            item.model_copy(
+                update={"numbers": reading.numbers, "numerology_value": reduced_value(item)}
+            )
+            for item, reading in zip(fresh, readings, strict=True)
+        ]
+        activations = [activation for item in items for activation in activate(item, item.numbers)]
+    log_step(compute_timer, items=len(items), activations=len(activations))
+
+    with StepTimer(pipeline.clock, "embed") as embed_timer:
+        stored = await pipeline.run_blocking(lambda: upsert_news(pipeline.store, items))
+        await pipeline.run_blocking(lambda: upsert_number_patterns(pipeline.store, activations))
+        for activation in activations:
+            await pipeline.run_blocking(partial(record_activation, pipeline.store, activation))
+    log_step(embed_timer, items=stored, activations=len(activations))
+
+    logger.info(
+        "pipeline.ingest.complete",
+        fetched=len(fetched),
+        stored=stored,
+        activations=len(activations),
+    )
+    return PipelineRun(
+        news=tuple(items),
+        activations=len(activations),
+        timings=timings(
+            news_timer.timing,
+            extract_timer.timing,
+            compute_timer.timing,
+            embed_timer.timing,
+        ),
+    )
 
 
 async def analyze(pipeline: Pipeline, news_ids: tuple[NewsId, ...]) -> PipelineRun:
@@ -84,9 +262,17 @@ async def forecast(pipeline: Pipeline, day: date, *, rerun_analysis: bool = True
     raise PipelineError("pipeline.steps.forecast lands in roadmap 5.4")
 
 
-def timings(*taken: Timing | None) -> tuple[Timing, ...]:
-    """Return the recorded timings, in step order, dropping the ones a step did not reach."""
-    return tuple(timing for timing in taken if timing is not None)
-
-
-__all__ = ["ATTEMPTS", "analyze", "forecast", "ingest", "retrying", "timings"]
+__all__ = [
+    "ATTEMPTS",
+    "CONTEXT_LIMIT",
+    "activate",
+    "analyze",
+    "context_snippet",
+    "forecast",
+    "ingest",
+    "log_step",
+    "reading_text",
+    "reduced_value",
+    "retrying",
+    "timings",
+]

@@ -20,7 +20,7 @@ command must be idempotent and resumable (AGENTS.md).
 
 | Layer | Package | May import | Responsibility |
 |---|---|---|---|
-| Pure logic | `numerology` | nothing | reduction, master numbers, gematria, date resonance, regex fallback |
+| Pure logic | `numerology` | `models` | reduction, master numbers, gematria, date resonance, regex fallback |
 | Boundaries | `models` | nothing | Pydantic v2 types crossing every module boundary |
 | Adapters | `news`, `embeddings` | `models` | five news APIs behind one Protocol; local `fastembed` vectors |
 | Storage | `vector` | `models` | Qdrant client, collections, payload indexes, hybrid search |
@@ -29,8 +29,9 @@ command must be idempotent and resumable (AGENTS.md).
 
 Two rules keep this acyclic and testable:
 
-1. `numerology` is pure — no I/O, and never imports `news`, `vector`, `agents` or `mcp`, so its
-   invariants can be property-tested without any infrastructure.
+1. `numerology` is pure — no I/O, and never imports `news`, `vector`, `agents` or `mcp`; it depends
+   only on `models` for the types of its results (ADR 0002), so its invariants can be property-tested
+   without any infrastructure.
 2. State crosses boundaries as Pydantic models only — no dicts, no dataclasses, no free-form JSON
    from an LLM.
 
@@ -71,5 +72,7 @@ inside each `Prefetch`.
 
 ## Implemented so far
 
-Phase 0 only: configuration (`config.py`), logging (`logging.py`), the package skeleton and the
-test scaffolding. `ROADMAP.md` is the authoritative status; `docs/adr/` records the decisions.
+Phase 0: configuration (`config.py`), logging (`logging.py`), the package skeleton and the test
+scaffolding. Phase 1: the domain models (`models/`, frozen and strict) and the pure numerology layer
+(`numerology/`, 100% covered) with `docs/NUMEROLOGY.md` and ADR 0002. `ROADMAP.md` is the
+authoritative status; `docs/adr/` records the decisions.

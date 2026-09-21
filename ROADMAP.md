@@ -299,11 +299,29 @@
 > `agents`, `mcp`, `cli`, а `numenews.models` не импортирует ничего, кроме самого себя.*
 
 ### 1.8. Документация нумерологии
-- [ ] `docs/NUMEROLOGY.md` — редукция, мастер-числа, гематрия с примерами · `M` 📝
-- [ ] `docs/adr/0002-numerology-scope.md` — почему только редукция + мастер + гематрия · `M` 📝
-- [ ] Коммит: `docs: numerology rules and scope` · `M` 📝
+- [x] `docs/NUMEROLOGY.md` — редукция, мастер-числа, гематрия с примерами · `M` 📝
+- [x] `docs/adr/0002-numerology-scope.md` — почему только редукция + мастер + гематрия · `M` 📝
+- [x] Коммит: `docs: numerology rules and scope` · `M` 📝
 
 **✅ Phase 1 завершена, когда:** покрытие `numerology/` ≥ 95%, `mypy --strict` зелёный, property-based тесты проходят.
+
+> *В этот же коммит вошли: правка строки `numerology` в таблице слоёв `docs/ARCHITECTURE.md`
+> («May import: nothing» → `models`, обоснование в ADR 0002), обновлённый раздел «Implemented so far»,
+> docstring пакета `numenews/__init__.py` и запись в `CHANGELOG.md`. ADR 0002 фиксирует пять правил
+> слоя, кириллический офсет `А=1 … Я=33` (`Ё=7`), семантику `MasterCheckResult`, сентинелы `0`/`None`,
+> инъекцию `today` и то, что `compute_numerology` читает буквы, а не извлекает числа.*
+
+> **Итог phase 1 (2026-09-21).** Задачи 1.1–1.8 закрыты. Покрытие `src/numenews/numerology/` — 100%
+> инструкций и ветвей (130 инструкций, 26 ветвей), `src/numenews/models/` — 100%; всего `make test` —
+> 177 тестов, включая property-based на hypothesis (`max_examples=1000` для редукции). `ruff check`,
+> `ruff format --check`, `mypy --strict`, `pre-commit run --all-files` зелёные;
+> `compute_numerology("Sun rises")` → `gematria=124`, `value=7`; `compute_numerology("солнце")` →
+> `gematria=93`, `value=3`; `compute_numerology("k")` → `value=11`, `is_master=True`. Отклонения от
+> черновика отмечены в задачах выше: модульная раскладка `models/`, `MasterCheckResult` и
+> дополнительные поля `NumerologyResult` в 1.1, `constants.py` и публичная `reduction_steps` в 1.2,
+> `per-file-ignores` для `RUF001/002/003` в 1.4, keyword-only `today` и «присутствие, а не частота»
+> в `extract_symbols` в 1.6, `numerology/api.py` и границы слоя в 1.7, строка `numerology` в
+> `docs/ARCHITECTURE.md` в 1.8.
 
 ---
 

@@ -39,6 +39,7 @@ Repository = "https://github.com/DisMosGit/numenews"
 # never imported by the package itself, and `uv sync` installs the group by default.
 [dependency-groups]
 dev = [
+    "hypothesis>=6.168.0",
     "mypy>=2.3.1",
     "pre-commit>=4.6.0",
     "pytest>=9.1.1",

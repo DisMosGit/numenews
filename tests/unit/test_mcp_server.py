@@ -23,6 +23,7 @@ EXPECTED_TOOLS: tuple[str, ...] = (
     "find_patterns",
     "check_master_numbers",
     "build_forecast",
+    "query_qdrant",
 )
 
 

@@ -19,15 +19,24 @@ can import and call the ones that need no context directly.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import asyncio
+from collections.abc import Callable, Sequence
 from datetime import date
+from typing import Annotated
 from uuid import UUID
 
 from mcp.server.mcpserver import Context
+from mcp.server.mcpserver.exceptions import ToolError
+from pydantic import Field
 
 from numenews.mcp.context import AppContext
 from numenews.mcp.errors import tool_errors
-from numenews.mcp.schemas import DateRangeInput
+from numenews.mcp.schemas import (
+    CollectionName,
+    CollectionQueryResult,
+    DateRangeInput,
+    NewsFilterInput,
+)
 from numenews.models import (
     ExtractedNumbers,
     Forecast,
@@ -40,6 +49,7 @@ from numenews.models import (
 )
 from numenews.numerology import check_master_numbers as master_check
 from numenews.numerology import compute_numerology as read_numerology
+from numenews.vector import find_similar_patterns, hybrid_search_news
 
 
 def context_of(ctx: Context[AppContext]) -> AppContext:
@@ -131,6 +141,39 @@ async def build_forecast(day: date, ctx: Context[AppContext]) -> Forecast:
         return await pipeline.forecast(day)
 
 
+async def query_qdrant(
+    collection: CollectionName,
+    query: Annotated[
+        str, Field(min_length=1, description="What to look for, in natural language.")
+    ],
+    ctx: Context[AppContext],
+    filters: NewsFilterInput | None = None,
+    limit: Annotated[int, Field(ge=1, le=50, description="Maximum results.")] = 10,
+) -> CollectionQueryResult:
+    """Search the stored news or patterns by meaning and return the matching entities.
+
+    ``collection="news"`` runs the hybrid (multi-stage) search over stored articles and honours the
+    optional payload ``filters`` — publication window, source, reduced value or master number.
+    ``collection="patterns"`` finds saved pattern interpretations and takes no filters: passing any
+    is an error rather than a silently ignored argument. Needs Qdrant only; nothing is embedded
+    remotely and no model is called.
+
+    The returned ``items`` are the typed entities themselves (``NewsItem`` or ``Pattern``), best
+    match first; the scores stay in Qdrant because the callers work with the entities.
+    """
+    with tool_errors():
+        store = await context_of(ctx).store()
+        items: Sequence[NewsItem | Pattern]
+        if collection == "patterns":
+            if filters is not None:
+                raise ToolError("filters apply to the news collection only")
+            items = await asyncio.to_thread(find_similar_patterns, store, query, limit)
+        else:
+            news_filter = filters.to_domain() if filters is not None else None
+            items = await asyncio.to_thread(hybrid_search_news, store, query, news_filter, limit)
+        return CollectionQueryResult(collection=collection, query=query, items=tuple(items))
+
+
 #: Every tool the server registers, in roadmap order.
 TOOLS: tuple[Callable[..., object], ...] = (
     fetch_news,
@@ -139,6 +182,7 @@ TOOLS: tuple[Callable[..., object], ...] = (
     find_patterns,
     check_master_numbers,
     build_forecast,
+    query_qdrant,
 )
 
 
@@ -151,4 +195,5 @@ __all__ = [
     "extract_numbers",
     "fetch_news",
     "find_patterns",
+    "query_qdrant",
 ]

@@ -24,10 +24,11 @@ from mcp.types import CallToolResult, TextContent
 
 from numenews.config import Settings
 from numenews.mcp import AppContext, build_server
-from numenews.models import NewsId, NewsItem
+from numenews.models import NewsId, NewsItem, Pattern, PatternId
 from numenews.news import NewsAggregator
 from numenews.pipeline import Pipeline
-from numenews.vector import VectorStore, upsert_news
+from numenews.vector import VectorStore, save_pattern, upsert_news
+from numenews.vector.payloads import news_embedding_text, pattern_embedding_text
 
 from ..unit.pipeline_fakes import (
     FrozenClock,
@@ -39,6 +40,7 @@ from ..unit.pipeline_fakes import (
     summarize_agent,
 )
 from .conftest import news_fixture
+from .fakes import FakeEmbedder
 
 pytestmark = pytest.mark.integration
 
@@ -268,3 +270,116 @@ async def test_build_forecast_reads_the_day_and_caches_it(
     assert reading["advice"] == "Слушайте интуицию."
     assert forecast_counter.calls == 1
     assert second.structured_content == reading
+
+
+async def test_query_qdrant_ranks_the_stored_news(
+    settings: Settings, vector_store: VectorStore, fake_base_embedder: FakeEmbedder
+) -> None:
+    """ROADMAP 6.8: the tool searches the news collection and returns typed entities."""
+    near = _item("budget deal signed")
+    far = _item("weather report published")
+    fake_base_embedder.register_axis(news_embedding_text(near), 0)
+    fake_base_embedder.register_axis(news_embedding_text(far), 1)
+    fake_base_embedder.register_axis("budget", 0)
+    upsert_news(vector_store, [near, far])
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool("query_qdrant", {"collection": "news", "query": "budget"})
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    assert result.structured_content["collection"] == "news"
+    assert result.structured_content["query"] == "budget"
+    items = result.structured_content["items"]
+    assert [item["title"] for item in items] == ["budget deal signed", "weather report published"]
+
+
+async def test_query_qdrant_honours_the_news_filter(
+    settings: Settings, vector_store: VectorStore, fake_base_embedder: FakeEmbedder
+) -> None:
+    """The payload filter narrows the candidate set before the ranking, as phase 3.8 requires."""
+    seven = _item("seven seats lost").model_copy(update={"numerology_value": 7})
+    eleven = _item("eleven seats lost").model_copy(update={"numerology_value": 11})
+    fake_base_embedder.register_axis(news_embedding_text(seven), 0)
+    fake_base_embedder.register_axis(news_embedding_text(eleven), 1)
+    fake_base_embedder.register_axis("seats", 0)
+    upsert_news(vector_store, [seven, eleven])
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool(
+            "query_qdrant",
+            {"collection": "news", "query": "seats", "filters": {"numerology_value": 11}},
+        )
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    assert [item["title"] for item in result.structured_content["items"]] == ["eleven seats lost"]
+
+
+async def test_query_qdrant_searches_the_patterns_collection(
+    settings: Settings, vector_store: VectorStore, fake_base_embedder: FakeEmbedder
+) -> None:
+    """The second searchable collection answers with ``Pattern`` entities."""
+    pattern = Pattern(
+        id=PatternId(uuid4()),
+        type="resonance",
+        numbers=(11, 22),
+        news_ids=(NewsId(uuid4()),),
+        strength=0.8,
+        interpretation="Числа 11 и 22 резонируют.",
+    )
+    fake_base_embedder.register_axis(pattern_embedding_text(pattern), 0)
+    fake_base_embedder.register_axis("резонанс", 0)
+    save_pattern(vector_store, pattern)
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool(
+            "query_qdrant", {"collection": "patterns", "query": "резонанс"}
+        )
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    items = result.structured_content["items"]
+    assert [item["id"] for item in items] == [str(pattern.id.root)]
+    assert items[0]["numbers"] == [11, 22]
+
+
+async def test_query_qdrant_refuses_filters_on_patterns(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """Ignoring a filter silently would promise a narrowing the call did not do."""
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool(
+            "query_qdrant",
+            {"collection": "patterns", "query": "резонанс", "filters": {"source": "example.com"}},
+        )
+
+    assert result.is_error is True
+    assert "filters apply to the news collection only" in text_of(result)
+
+
+async def test_query_qdrant_refuses_an_unknown_collection(settings: Settings) -> None:
+    """The Literal is the contract: a collection without a read path is not a valid argument."""
+    async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
+        result = await client.call_tool("query_qdrant", {"collection": "numbers", "query": "x"})
+
+    assert result.is_error is True
+    assert "news" in text_of(result)
+
+
+async def test_query_qdrant_reports_a_missing_collection(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """A store without the news collection is a setup problem the model can be told about."""
+    context = AppContext(settings, store=vector_store)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool("query_qdrant", {"collection": "news", "query": "budget"})
+
+    assert result.is_error is True
+    assert "does not exist" in text_of(result)

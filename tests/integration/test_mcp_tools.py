@@ -13,6 +13,7 @@ The subprocess/stdio form of the same server is checked separately in ``test_mcp
 from __future__ import annotations
 
 from datetime import date
+from uuid import uuid4
 
 import httpx
 import pytest
@@ -23,9 +24,20 @@ from mcp.types import CallToolResult, TextContent
 
 from numenews.config import Settings
 from numenews.mcp import AppContext, build_server
+from numenews.models import NewsId, NewsItem
 from numenews.news import NewsAggregator
+from numenews.pipeline import Pipeline
+from numenews.vector import VectorStore, upsert_news
 
-from ..unit.pipeline_fakes import extract_agent
+from ..unit.pipeline_fakes import (
+    FrozenClock,
+    ModelCounter,
+    extract_agent,
+    fetcher_returning,
+    forecast_agent,
+    pattern_agent,
+    summarize_agent,
+)
 from .conftest import news_fixture
 
 pytestmark = pytest.mark.integration
@@ -50,6 +62,51 @@ def text_of(result: CallToolResult) -> str:
     block = result.content[0]
     assert isinstance(block, TextContent)
     return block.text
+
+
+def _item(title: str, *, published: date = date(2026, 9, 21)) -> NewsItem:
+    """Return a stored-able news item with a deterministic id and just enough variety."""
+    return NewsItem(
+        id=NewsId(uuid4()),
+        title=title,
+        text=f"{title} body",
+        source="example.com",
+        date=published,
+        url=f"https://example.test/{title.replace(' ', '-').lower()}",
+    )
+
+
+def _pattern_draft(items: list[NewsItem]) -> dict[str, object]:
+    """Return a scripted ``PatternDraft`` connecting ``items`` over the number 11."""
+    return {
+        "type": "repetition",
+        "numbers": [11],
+        "news_ids": [str(item.id.root) for item in items],
+        "strength": 0.9,
+        "interpretation": "Число 11 повторяется в новостях.",
+    }
+
+
+def _pipeline(
+    store: VectorStore,
+    *,
+    patterns: list[dict[str, object]] | None = None,
+) -> tuple[Pipeline, ModelCounter]:
+    """Return a pipeline over ``store`` whose every collaborator is a scripted double."""
+    extract, _ = extract_agent([11])
+    pattern_reader, pattern_counter = pattern_agent(patterns or [])
+    forecaster, _ = forecast_agent()
+    summarizer, _ = summarize_agent()
+    pipeline = Pipeline(
+        store=store,
+        extract=extract,
+        patterns=pattern_reader,
+        forecast_agent=forecaster,
+        summarizer=summarizer,
+        fetcher=fetcher_returning([]),
+        clock=FrozenClock(),
+    )
+    return pipeline, pattern_counter
 
 
 async def test_fetch_news_returns_the_aggregated_items(
@@ -124,3 +181,52 @@ async def test_compute_numerology_needs_no_service(settings: Settings) -> None:
     assert result.structured_content["value"] == 9
     assert result.structured_content["gematria"] == 54
     assert result.structured_content["is_master"] is False
+
+
+async def test_find_patterns_connects_the_stored_items(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """ROADMAP 6.5: the tool runs ``Pipeline.analyze`` and returns the saved patterns."""
+    items = [_item(f"story {number}") for number in range(3)]
+    upsert_news(vector_store, items)
+    pipeline, counter = _pipeline(vector_store, patterns=[_pattern_draft(items)])
+    context = AppContext(settings, pipeline=pipeline)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool(
+            "find_patterns", {"news_ids": [str(item.id.root) for item in items]}
+        )
+
+    assert result.is_error is False
+    assert counter.calls == 1
+    assert result.structured_content is not None
+    patterns = result.structured_content["result"]
+    assert len(patterns) == 1
+    assert patterns[0]["type"] == "repetition"
+    assert patterns[0]["numbers"] == [11]
+    assert patterns[0]["news_ids"] == [str(item.id.root) for item in items]
+    assert patterns[0]["discovered_at"] is not None
+
+
+async def test_find_patterns_without_ids_answers_empty(
+    settings: Settings, vector_store: VectorStore
+) -> None:
+    """An empty list never reaches the model: "nothing to look at" is not "nothing connects"."""
+    pipeline, counter = _pipeline(vector_store)
+    context = AppContext(settings, pipeline=pipeline)
+
+    async with Client(build_server(context=context), raise_exceptions=True) as client:
+        result = await client.call_tool("find_patterns", {"news_ids": []})
+
+    assert result.is_error is False
+    assert result.structured_content == {"result": []}
+    assert counter.calls == 0
+
+
+async def test_find_patterns_refuses_a_malformed_id_before_running(settings: Settings) -> None:
+    """Argument validation is the SDK's job, and its message names the offending field."""
+    async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
+        result = await client.call_tool("find_patterns", {"news_ids": ["not-a-uuid"]})
+
+    assert result.is_error is True
+    assert "valid UUID" in text_of(result)

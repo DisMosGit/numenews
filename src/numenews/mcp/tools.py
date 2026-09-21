@@ -20,13 +20,21 @@ can import and call the ones that need no context directly.
 from __future__ import annotations
 
 from collections.abc import Callable
+from uuid import UUID
 
 from mcp.server.mcpserver import Context
 
 from numenews.mcp.context import AppContext
 from numenews.mcp.errors import tool_errors
 from numenews.mcp.schemas import DateRangeInput
-from numenews.models import ExtractedNumbers, NewsItem, NumerologyResult, Topic
+from numenews.models import (
+    ExtractedNumbers,
+    NewsId,
+    NewsItem,
+    NumerologyResult,
+    Pattern,
+    Topic,
+)
 from numenews.numerology import compute_numerology as read_numerology
 
 
@@ -80,8 +88,35 @@ def compute_numerology(text: str) -> NumerologyResult:
     return read_numerology(text)
 
 
+async def find_patterns(news_ids: list[UUID], ctx: Context[AppContext]) -> list[Pattern]:
+    """Find the connections among the stored news items with these ids, save them and return them.
+
+    The ids come from an earlier ``fetch_news``/ingest run or from ``query_qdrant``. An id that is
+    not in the store is skipped rather than refused, and an empty list answers ``[]`` without asking
+    the model — "nothing connects" and "nothing to look at" stay tellable apart. Each returned
+    pattern carries the ``discovered_at`` timestamp ``save_pattern`` stamped. Needs Qdrant and an
+    LLM endpoint.
+    """
+    with tool_errors():
+        pipeline = await context_of(ctx).pipeline()
+        run = await pipeline.analyze(tuple(NewsId(value) for value in news_ids))
+        return list(run.patterns)
+
+
 #: Every tool the server registers, in roadmap order.
-TOOLS: tuple[Callable[..., object], ...] = (fetch_news, extract_numbers, compute_numerology)
+TOOLS: tuple[Callable[..., object], ...] = (
+    fetch_news,
+    extract_numbers,
+    compute_numerology,
+    find_patterns,
+)
 
 
-__all__ = ["TOOLS", "compute_numerology", "context_of", "extract_numbers", "fetch_news"]
+__all__ = [
+    "TOOLS",
+    "compute_numerology",
+    "context_of",
+    "extract_numbers",
+    "fetch_news",
+    "find_patterns",
+]

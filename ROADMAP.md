@@ -89,17 +89,22 @@
 **DoD:** `pre-commit run --all-files` — все хуки passed.
 
 ### 0.5. Makefile
-- [ ] `make install` — `uv sync --all-extras` · `S`
-- [ ] `make lint` — ruff + mypy --strict · `S`
-- [ ] `make format` — ruff format + ruff check --fix · `S`
-- [ ] `make test` / `test-unit` / `test-integration` / `test-eval` · `M`
-- [ ] `make dev` — `docker compose up -d` · `S` 🔌
-- [ ] `make dev-down` — `docker compose down` · `S`
-- [ ] `make mcp` — запуск MCP-сервера (заглушка) · `S`
-- [ ] `make clean` — stop + rm volumes + rm caches · `S`
-- [ ] Коммит: `chore: Makefile with dev/lint/test/mcp/clean` · `M`
+- [x] `make install` — `uv sync --all-extras` · `S`
+- [x] `make lint` — ruff + mypy --strict · `S`
+- [x] `make format` — ruff format + ruff check --fix · `S`
+- [x] `make test` / `test-unit` / `test-integration` / `test-eval` · `M`
+- [x] `make dev` — `docker compose up -d` · `S` 🔌
+- [x] `make dev-down` — `docker compose down` · `S`
+- [x] `make mcp` — запуск MCP-сервера (заглушка) · `S`
+- [x] `make clean` — stop + rm volumes + rm caches · `S`
+- [x] Коммит: `chore: Makefile with dev/lint/test/mcp/clean` · `M`
 
 **DoD:** `make lint && make test` проходят на пустом проекте.
+
+> *В этот же коммит добавлены минимальные `tests/conftest.py` (флаг `--run-eval`) и smoke-тесты
+> юнита/интеграции/eval, иначе `make test`, `make test-integration` и `make test-eval` падают
+> с «no tests ran»; тесты не заглушки-пустышки, а проверки контрактов (JSON в stdout у CLI,
+> пустой stdout у MCP, in-memory Qdrant). Фикстуры добавляет 0.8.*
 
 ### 0.6. Конфиг через pydantic-settings
 - [ ] `src/numenews/config.py` — `Settings(BaseSettings)` · `M` 🧪

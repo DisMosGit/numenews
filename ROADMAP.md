@@ -64,12 +64,13 @@
 **DoD:** `uv sync` проходит, структура директорий на месте.
 
 ### 0.3. Инфраструктура (Docker Compose + Qdrant)
-- [ ] `docker-compose.yml` с Qdrant · `S` 🔌
-- [ ] Volume `qdrant_storage` для персистентности · `S` 🔌
-- [ ] Healthcheck через HTTP API Qdrant · `S` 🔌
-- [ ] Порт `:6333` (HTTP) и `:6334` (gRPC) · `S`
-- [ ] `docker compose up -d` поднимает Qdrant · `S` 🔌
-- [ ] Коммит: `chore(infra): qdrant via docker compose` · `S`
+- [x] `docker-compose.yml` с Qdrant · `S` 🔌
+- [x] Volume `qdrant_storage` для персистентности · `S` 🔌
+- [x] Healthcheck через HTTP API Qdrant · `S` 🔌
+      *В образе `qdrant/qdrant` нет `curl`, поэтому проверка — TCP-проба HTTP-порта через `bash /dev/tcp`; сам HTTP API (`/readyz`, `/collections`) проверен с хоста.*
+- [x] Порт `:6333` (HTTP) и `:6334` (gRPC) · `S`
+- [x] `docker compose up -d` поднимает Qdrant · `S` 🔌
+- [x] Коммит: `chore(infra): qdrant via docker compose` · `S`
 
 **DoD:** `docker compose up -d` — контейнер `healthy`, Web UI на `:6333/dashboard`.
 

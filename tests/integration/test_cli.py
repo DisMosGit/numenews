@@ -14,7 +14,7 @@ scripted agents) rather than the store afterwards.
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -25,11 +25,11 @@ from numenews.cli import main as cli_main
 from numenews.cli.main import app
 from numenews.config import Settings
 from numenews.mcp.context import AppContext
-from numenews.models import DateRange, Forecast, NewsId, NewsItem, Topic
+from numenews.models import DateRange, Forecast, NewsId, NewsItem, NumberActivation, Topic
 from numenews.news.errors import NewsSourceError
 from numenews.numerology import compute_numerology
 from numenews.pipeline import NewsFetcher, Pipeline, reading_text
-from numenews.vector import VectorStore, save_forecast, upsert_news
+from numenews.vector import VectorStore, record_activation, save_forecast, upsert_news
 
 from ..unit.pipeline_fakes import (
     FrozenClock,
@@ -296,3 +296,89 @@ def test_forecast_rejects_an_unknown_date_as_a_usage_error(
     assert result.exit_code == 2
     assert result.stdout == ""
     assert "--date" in result.stderr
+
+
+def _activation(number: int, *, day: date) -> NumberActivation:
+    """Return one activation row for a number on a day."""
+    return NumberActivation(
+        number=number,
+        date=day,
+        news_id=NewsId(uuid4()),
+        context=f"the {number} appeared here",
+    )
+
+
+def test_history_reads_the_window_newest_first(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ROADMAP 7.5: the activations of one number come back newest first, with the question."""
+    today = datetime.now(UTC).date()
+    record_activation(vector_store, _activation(11, day=today))
+    record_activation(vector_store, _activation(11, day=today - timedelta(days=2)))
+    record_activation(vector_store, _activation(7, day=today))
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["history", "--number", "11"])
+
+    assert result.exit_code == 0, result.stderr
+    report = json.loads(result.stdout)
+    assert report["number"] == 11
+    assert report["days"] == 30
+    assert [entry["date"] for entry in report["activations"]] == [
+        today.isoformat(),
+        (today - timedelta(days=2)).isoformat(),
+    ]
+    assert {entry["number"] for entry in report["activations"]} == {11}
+
+
+def test_history_excludes_activations_outside_the_window(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``--days 1`` is today: an activation from forty days ago is not in the answer."""
+    today = datetime.now(UTC).date()
+    record_activation(vector_store, _activation(11, day=today))
+    record_activation(vector_store, _activation(11, day=today - timedelta(days=40)))
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["history", "--number", "11", "--days", "1"])
+
+    assert result.exit_code == 0, result.stderr
+    assert len(json.loads(result.stdout)["activations"]) == 1
+
+
+def test_history_reads_a_wide_window(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``--days 365`` reaches back a year, which is the read of the whole memory."""
+    today = datetime.now(UTC).date()
+    record_activation(vector_store, _activation(11, day=today - timedelta(days=40)))
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["history", "--number", "11", "--days", "365"])
+
+    assert result.exit_code == 0, result.stderr
+    assert len(json.loads(result.stdout)["activations"]) == 1
+
+
+def test_history_without_the_collection_is_an_error_report(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A store that never recorded an activation says so instead of crashing."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["history", "--number", "11"])
+
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["kind"] == "CollectionNotFoundError"
+
+
+def test_history_refuses_a_window_without_days(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``--days 0`` is a call-site bug the parser catches before the read."""
+    _install(monkeypatch, AppContext(settings, store=vector_store))
+
+    result = runner.invoke(app, ["history", "--number", "11", "--days", "0"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""

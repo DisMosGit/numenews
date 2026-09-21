@@ -1207,8 +1207,16 @@
 > Параметр назван `day` (как аргумент MCP-инструмента 6.7), а опция — `--date`.*
 
 ### 7.5. Команда `history`
-- [ ] `numenews history --number 11 --days 30` · `S` 🧪
-- [ ] Коммит: `feat(cli): history command` · `S` 🧪
+- [x] `numenews history --number 11 --days 30` · `S` 🧪
+- [x] Коммит: `feat(cli): history command` · `S` 🧪
+
+> *Уточнения. `history` читает `number_history` через `get_history` (никакого LLM, только Qdrant) и
+> печатает `HistoryResult(number, days, activations)`: список без вопроса, на который он отвечает,
+> пришлось бы угадывать. `--days` ограничен 1–365 (как у MCP-инструмента 6.10), по умолчанию 30;
+> `--number` обязателен. В том же коммите в `tests/conftest.py` появилась autouse-фикстура
+> `_fresh_logging`: `CliRunner` выполняет callback группы с подменённым stderr, Click закрывает этот
+> поток после вызова, а корневой handler `structlog` продолжает на него смотреть — без перепривязки
+> первая же запись следующего теста падала бы в закрытый поток.*
 
 ### 7.6. Команда `search`
 - [ ] `numenews search --query "число 7 и финансы"` · `M` 🧪

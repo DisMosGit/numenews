@@ -191,3 +191,21 @@ def forecast(
     and an LLM endpoint.
     """
     run_command(ctx, lambda context: commands.forecast(context, day=day))
+
+
+@app.command()
+def history(
+    ctx: typer.Context,
+    number: Annotated[int, typer.Option("--number", help="The number whose activations to read.")],
+    days: Annotated[
+        int,
+        typer.Option("--days", min=1, max=365, help="Length of the window in days, ending today."),
+    ] = 30,
+) -> None:
+    """Print when a number was activated in the news, newest first, inside a recent window.
+
+    One entry per ``(news item, number)`` pair a previous ingest stored: the publication day, the
+    item's id and the sentence the number was read in. ``--days`` ends today and includes it, so
+    ``--days 1`` is today. Needs Qdrant only.
+    """
+    run_command(ctx, lambda context: commands.history(context, number=number, days=days))

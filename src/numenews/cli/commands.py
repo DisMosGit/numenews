@@ -14,10 +14,14 @@ pipeline, two interfaces".
 
 from __future__ import annotations
 
+import asyncio
+
 from numenews.cli.dates import parse_day
+from numenews.cli.schemas import HistoryResult
 from numenews.mcp.context import AppContext
 from numenews.models import DateRange, Forecast, Topic
 from numenews.pipeline import window_start
+from numenews.vector import get_history
 
 
 async def today(context: AppContext, *, topic: str) -> Forecast:
@@ -68,4 +72,24 @@ async def forecast(context: AppContext, *, day: str) -> Forecast:
     return await pipeline.forecast(parse_day(day, today=pipeline.clock.now().date()))
 
 
-__all__ = ["forecast", "today"]
+async def history(context: AppContext, *, number: int, days: int) -> HistoryResult:
+    """Return the activations of ``number`` inside the last ``days`` days, newest first.
+
+    This is the read of ``number_history``, the project's long-term memory: one entry per
+    ``(news item, number)`` pair an ingest stored, with the day the article was published and the
+    snippet the number was read in. It needs Qdrant only — no news API, no model.
+
+    Args:
+        context: The application context; its store is built on first use.
+        number: Which number's activations to read.
+        days: Length of the window in calendar days, ending today and including it.
+
+    Returns:
+        The window's activations, newest first, plus the arguments that produced them.
+    """
+    store = await context.store()
+    activations = await asyncio.to_thread(get_history, store, number, days)
+    return HistoryResult(number=number, days=days, activations=tuple(activations))
+
+
+__all__ = ["forecast", "history", "today"]

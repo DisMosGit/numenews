@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
+from numenews.models import NumberActivation
+
 
 class VersionInfo(BaseModel):
     """What ``numenews --version`` prints: the package name and its version, as JSON."""
@@ -20,6 +22,21 @@ class VersionInfo(BaseModel):
 
     name: str
     version: str
+
+
+class HistoryResult(BaseModel):
+    """The activations of one number inside a window, with the question that produced them.
+
+    A list alone would leave the caller guessing which number and window it belongs to, so the
+    arguments are echoed back the way ``CollectionQueryResult`` echoes its own. ``activations`` is
+    newest first, as :func:`numenews.vector.get_history` returns them.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    number: int
+    days: int
+    activations: tuple[NumberActivation, ...] = ()
 
 
 class ErrorReport(BaseModel):
@@ -37,4 +54,4 @@ class ErrorReport(BaseModel):
     kind: str
 
 
-__all__ = ["ErrorReport", "VersionInfo"]
+__all__ = ["ErrorReport", "HistoryResult", "VersionInfo"]

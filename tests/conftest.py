@@ -14,6 +14,7 @@ import pytest
 from pydantic_ai import models
 
 from numenews.config import Settings, get_settings
+from numenews.logging import configure_logging
 
 # The agent tests script `TestModel`/`FunctionModel`; a stray real model would be a network call to
 # an endpoint this suite does not have. This is pydantic-ai's own guard, and it does not affect the
@@ -42,6 +43,20 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     for item in items:
         if "eval" in item.keywords:
             item.add_marker(skip_eval)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_logging() -> Iterator[None]:
+    """Point structlog at this process's stderr before every test.
+
+    The CLI tests run the real Typer application through ``CliRunner``, whose group callback calls
+    :func:`~numenews.logging.configure_logging` while Click's captured stream is installed. Click
+    restores and closes that stream when the invocation ends, but the root handler keeps pointing at
+    it; without this fixture the next test's first record would be written to a closed stream. In
+    production the handler is configured once per process, so this is purely a test concern.
+    """
+    configure_logging()
+    yield
 
 
 @pytest.fixture

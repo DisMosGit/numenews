@@ -31,6 +31,7 @@ from ..unit.pipeline_fakes import (
     fetcher_returning,
     forecast_agent,
     pattern_agent,
+    summarize_agent,
 )
 
 pytestmark = pytest.mark.integration
@@ -79,6 +80,7 @@ def _pipeline(
         extract=extract,
         patterns=patterns_agent if patterns_agent is not None else agent,
         forecast_agent=forecaster,
+        summarizer=summarize_agent()[0],
         fetcher=fetcher_returning([]),
         clock=FrozenClock(),
     )

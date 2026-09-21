@@ -119,11 +119,11 @@ PATTERN_INSTRUCTIONS = f"{PATTERN_RULES}\n\n{PATTERN_FEW_SHOT}"
 PATTERN_TEXT_LIMIT = 1000
 
 
-def _news_block(index: int, item: NewsItem) -> str:
-    """Render one news item for the pattern prompt."""
+def _news_block(index: int, item: NewsItem, *, text_limit: int = PATTERN_TEXT_LIMIT) -> str:
+    """Render one news item for a prompt that lists them."""
     numbers = ", ".join(str(number) for number in item.numbers) or "none"
     value = item.numerology_value if item.numerology_value is not None else "not computed"
-    text = item.text[:PATTERN_TEXT_LIMIT]
+    text = item.text[:text_limit]
     return (
         f"{index}. id: {item.id.root}\n"
         f"   date: {item.date.isoformat()} · source: {item.source} · numerology_value: {value}\n"
@@ -236,4 +236,68 @@ def build_forecast_prompt(
             "Number activations of the recent past:",
             format_history(history),
         )
+    )
+
+
+SUMMARIZE_RULES = """\
+You compress a stretch of older news into one numerological digest. The window of recent days is
+kept in full elsewhere; this summary is what survives of the time before it.
+
+Write in Russian:
+- "summary": three to five sentences on what the period was about through its numbers — which
+  reduced values dominated, which master numbers returned, which symbols or themes recurred. Name
+  the numbers you rest on.
+- Take the numbers you are given as given — never compute, reduce or change one — and never mention
+  a number that does not occur in the input.
+- Do not list the items one by one and do not repeat a headline verbatim; say what the period was
+  like as a whole.
+"""
+
+SUMMARIZE_FEW_SHOT = """\
+Example
+
+Input:
+Period: 2026-09-01 to 2026-09-07
+Items to summarise: 4
+
+1. date: 2026-09-01 · source: example.com · numerology_value: 11
+   title: Eleven ministers resign
+   numbers: 11
+   text: Eleven ministers resigned over the budget.
+
+Output:
+{"summary": "Период прошёл под числом 11: три из четырёх новостей сводились к нему или называли
+одиннадцать прямо. Мастер-число возвращалось к теме бюджета и отставок, и ни один другой
+показатель не повторялся так настойчиво."}
+
+Only numbers that occur in the input appear, and the period is described as a whole rather than
+item by item.
+"""
+
+SUMMARIZE_INSTRUCTIONS = f"{SUMMARIZE_RULES}\n\n{SUMMARIZE_FEW_SHOT}"
+
+#: How many items one digest prompt shows, and how much of each item's text, in characters.
+DIGEST_ITEM_LIMIT = 50
+DIGEST_TEXT_LIMIT = 300
+
+
+def build_digest_prompt(news: Sequence[NewsItem]) -> str:
+    """Return the prompt summarising ``news`` as one period.
+
+    The period is the range of the items' own days, so the model is told what it is compressing
+    before it reads a single headline. Older items are shown first, and a long list is cut to
+    :data:`DIGEST_ITEM_LIMIT` so one busy week cannot build a prompt of unbounded size.
+    """
+    ordered = sorted(news, key=lambda item: item.date)
+    shown = ordered[:DIGEST_ITEM_LIMIT]
+    if not shown:
+        return "Period: (no news)\nItems to summarise: 0"
+    blocks = "\n\n".join(
+        _news_block(index, item, text_limit=DIGEST_TEXT_LIMIT)
+        for index, item in enumerate(shown, start=1)
+    )
+    period = f"{shown[0].date.isoformat()} to {shown[-1].date.isoformat()}"
+    return (
+        f"Period: {period}\nItems to summarise: {len(shown)}\n\n"
+        f"News items to summarise:\n\n{blocks}"
     )

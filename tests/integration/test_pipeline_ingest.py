@@ -35,6 +35,7 @@ from ..unit.pipeline_fakes import (
     fetcher_returning,
     forecast_agent,
     pattern_agent,
+    summarize_agent,
 )
 
 pytestmark = pytest.mark.integration
@@ -79,6 +80,7 @@ def _pipeline(
         extract=extract,
         patterns=patterns,
         forecast_agent=forecaster,
+        summarizer=summarize_agent()[0],
         fetcher=fetcher_returning(items) if fetcher is None else fetcher,  # type: ignore[arg-type]
         clock=FrozenClock(),
     )
@@ -204,6 +206,7 @@ async def test_the_extraction_reads_the_headline_and_the_body(vector_store: Vect
         extract=extract,  # type: ignore[arg-type]
         patterns=pattern_agent([])[0],
         forecast_agent=forecast_agent()[0],
+        summarizer=summarize_agent()[0],
         fetcher=fetcher_returning([item]),
         clock=FrozenClock(),
     )

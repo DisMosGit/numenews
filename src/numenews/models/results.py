@@ -7,7 +7,10 @@ that decides a day's number from the numbers of that day's news.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from datetime import date
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class NumerologyResult(BaseModel):
@@ -58,3 +61,29 @@ class DominantResult(BaseModel):
     is_master: bool
     votes: int
     considered: int
+
+
+class Digest(BaseModel):
+    """A compressed reading of the news outside the pipeline's sliding window.
+
+    Roadmap 5.5 keeps the recent window raw and summarises the older items into one numerological
+    digest per period, so the memory of an earlier stretch survives in a sentence instead of a page
+    of articles. ``period_start`` and ``period_end`` are the publication days the summary covers and
+    are what identify the digest (there is no id of its own), ``summary`` is the prose, and
+    ``numbers`` are the reduced values the period was read under, so a later query can find the
+    digest of a master week without embedding a question about it.
+    """
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    period_start: date
+    period_end: date
+    summary: str
+    numbers: tuple[int, ...] = ()
+
+    @model_validator(mode="after")
+    def _reject_a_reversed_period(self) -> Self:
+        """Refuse a period whose start lies after its end, as :class:`DateRange` does."""
+        if self.period_start > self.period_end:
+            raise ValueError("digest period_start must not be after period_end")
+        return self

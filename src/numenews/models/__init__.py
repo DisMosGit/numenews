@@ -17,10 +17,11 @@ from numenews.models.memory import NumberActivation
 from numenews.models.news import ExtractedNumbers, NewsItem
 from numenews.models.patterns import Pattern, PatternType
 from numenews.models.query import DateRange, NewsFilter, Topic
-from numenews.models.results import DominantResult, MasterCheckResult, NumerologyResult
+from numenews.models.results import Digest, DominantResult, MasterCheckResult, NumerologyResult
 
 __all__ = [
     "DateRange",
+    "Digest",
     "DominantResult",
     "ExtractedNumbers",
     "Forecast",

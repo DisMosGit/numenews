@@ -21,7 +21,7 @@ from pydantic_ai.exceptions import ModelAPIError
 from pydantic_ai.messages import ModelMessage, ModelResponse
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
-from numenews.agents import ExtractNumbersAgent, ForecastAgent, PatternAgent
+from numenews.agents import ExtractNumbersAgent, ForecastAgent, PatternAgent, SummarizeAgent
 from numenews.models import ExtractedNumbers
 from numenews.pipeline import Pipeline
 
@@ -85,7 +85,10 @@ def orchestration_pipeline(**kwargs: object) -> Pipeline:
 
     The single place a test double is passed where a ``VectorStore`` is expected, so the
     inconvenient downcast exists once instead of in every test that only cares about the wiring.
+    A summarizer is supplied unless the caller passes one, because the constructor would otherwise
+    build a real agent from ``Settings`` — and the suite has no LLM endpoint (phase 4.1).
     """
+    kwargs.setdefault("summarizer", summarize_agent()[0])
     return Pipeline(store=FakeStore(), **kwargs)  # type: ignore[arg-type]
 
 
@@ -146,6 +149,14 @@ def forecast_agent(
     }
     model, counter = counting_model(payload)
     return ForecastAgent(model), counter
+
+
+def summarize_agent(
+    summary: str = "Период прошёл под числом 11.",
+) -> tuple[SummarizeAgent, ModelCounter]:
+    """Return a real ``SummarizeAgent`` whose model answers with ``summary``."""
+    model, counter = counting_model({"summary": summary})
+    return SummarizeAgent(model), counter
 
 
 def broken_model() -> FunctionModel:

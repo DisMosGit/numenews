@@ -24,9 +24,9 @@ from datetime import date
 from types import TracebackType
 from typing import Self
 
-from numenews.agents import ExtractNumbersAgent, ForecastAgent, PatternAgent
+from numenews.agents import ExtractNumbersAgent, ForecastAgent, PatternAgent, SummarizeAgent
 from numenews.config import Settings, get_settings
-from numenews.models import DateRange, Forecast, NewsId, NewsItem, Topic
+from numenews.models import DateRange, Digest, Forecast, NewsId, NewsItem, Topic
 from numenews.news import fetch_news
 from numenews.pipeline.clock import Clock, SystemClock
 from numenews.pipeline.errors import PipelineError
@@ -52,6 +52,8 @@ class Pipeline:
         extract: The numbers reader. Built from ``settings`` when omitted.
         patterns: The connector of news items. Built from ``settings`` when omitted.
         forecast_agent: The prose writer. Built from ``settings`` when omitted.
+        summarizer: The compressor of the news outside the window. Built from ``settings`` when
+            omitted.
         fetcher: The news step. Defaults to :func:`numenews.news.fetch_news`, which builds and
             closes its own cached HTTP client.
         clock: The only source of wall-clock and monotonic readings. Defaults to
@@ -72,6 +74,7 @@ class Pipeline:
         extract: ExtractNumbersAgent | None = None,
         patterns: PatternAgent | None = None,
         forecast_agent: ForecastAgent | None = None,
+        summarizer: SummarizeAgent | None = None,
         fetcher: NewsFetcher | None = None,
         clock: Clock | None = None,
         window_days: int = DEFAULT_WINDOW_DAYS,
@@ -89,6 +92,9 @@ class Pipeline:
         self._patterns = patterns if patterns is not None else PatternAgent(settings=self._settings)
         self._forecast_agent = (
             forecast_agent if forecast_agent is not None else ForecastAgent(settings=self._settings)
+        )
+        self._summarizer = (
+            summarizer if summarizer is not None else SummarizeAgent(settings=self._settings)
         )
         self._fetcher = fetcher if fetcher is not None else fetch_news
         self._clock = clock if clock is not None else SystemClock()
@@ -124,6 +130,11 @@ class Pipeline:
     def forecast_agent(self) -> ForecastAgent:
         """The prose writer used by the forecast step."""
         return self._forecast_agent
+
+    @property
+    def summarizer(self) -> SummarizeAgent:
+        """The compressor used by the context step for the news outside the window."""
+        return self._summarizer
 
     @property
     def fetcher(self) -> NewsFetcher:
@@ -174,6 +185,22 @@ class Pipeline:
         from numenews.pipeline import steps
 
         return await steps.forecast(self, day, rerun_analysis=rerun_analysis, today=today)
+
+    async def summarize(
+        self,
+        topic: Topic,
+        date_range: DateRange,
+        *,
+        today: date | None = None,
+    ) -> Digest | None:
+        """Ingest ``topic`` and compress everything older than the window into one digest.
+
+        Delegates to :func:`numenews.pipeline.steps.summarize`; ``None`` means the range was
+        entirely inside the window, which is what a daily run produces.
+        """
+        from numenews.pipeline import steps
+
+        return await steps.summarize(self, topic, date_range, today=today)
 
     async def run_blocking[ResultT](self, call: Callable[[], ResultT]) -> ResultT:
         """Run the synchronous ``call`` in a worker thread, keeping the event loop free.

@@ -149,8 +149,8 @@ that eleven items agree on from a day that had one item.
 
 ```python
 dominant_number([11, 11, 11, 7, 3])  # 11, votes 3, considered 5
-dominant_number([7, 7, 11, 11])      # 11: the tie goes to the larger value
-dominant_number([])                  # 0, votes 0, considered 0
+dominant_number([7, 7, 11, 11])  # 11: the tie goes to the larger value
+dominant_number([])  # 0, votes 0, considered 0
 ```
 
 `0` is again the sentinel, because no reduced value is ever `0`; a day with no news has no dominant

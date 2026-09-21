@@ -24,6 +24,7 @@ from numenews.agents import AgentError
 from numenews.logging import get_logger
 from numenews.models import (
     DateRange,
+    Digest,
     ExtractedNumbers,
     Forecast,
     NewsId,
@@ -44,6 +45,7 @@ from numenews.vector import (
     get_news_items,
     read_news_range,
     record_activation,
+    save_digest,
     save_forecast,
     save_pattern,
     upsert_news,
@@ -385,6 +387,54 @@ async def forecast(
     return reading
 
 
+async def summarize(
+    pipeline: Pipeline,
+    topic: Topic,
+    date_range: DateRange,
+    *,
+    today: date | None = None,
+) -> Digest | None:
+    """Ingest ``topic`` for ``date_range`` and compress everything older than the window.
+
+    Roadmap 5.5's public entry: a caller with a month of news to bring in runs this once. The range
+    is ingested first (so the window and the older half are both in the store), then the news of the
+    range is partitioned: the items inside the window are left alone and the older ones become one
+    digest. A range that is entirely inside the window produces no digest, which is the normal
+    result of a daily run.
+
+    Args:
+        pipeline: The orchestrator whose store, agents and clock the step uses.
+        topic: What to fetch.
+        date_range: The inclusive UTC range to ingest before summarising.
+        today: The last day of the window. Defaults to the current UTC day from the injected clock.
+    """
+    from numenews.pipeline.context import build_digest, partition
+
+    await ingest(pipeline, topic, date_range)
+    end = today if today is not None else pipeline.clock.now().date()
+    with StepTimer(pipeline.clock, "summarize") as summarize_timer:
+        items = await _window_items(pipeline, date_range.start, date_range.end)
+        _recent, older = partition(items, end=end, window_days=pipeline.window_days)
+        # The limit bounds the *prompt*, not the period: the digest still covers every older item,
+        # while the model is shown the oldest of them. Labelling a digest with a period it only
+        # partly read would make the stored memory claim more than it knows.
+        digest = await build_digest(pipeline, older[: pipeline.summary_limit])
+        if digest is not None and older:
+            digest = Digest(
+                period_start=older[0].date,
+                period_end=older[-1].date,
+                summary=digest.summary,
+                numbers=tuple(
+                    dict.fromkeys(
+                        item.numerology_value for item in older if item.numerology_value is not None
+                    )
+                ),
+            )
+            await pipeline.run_blocking(lambda: save_digest(pipeline.store, digest))
+    log_step(summarize_timer, older=len(older), summarized=digest is not None)
+    return digest
+
+
 async def _cached_forecast(pipeline: Pipeline, day: date) -> Forecast | None:
     """Return the stored reading for ``day``, or ``None`` when there is none.
 
@@ -450,5 +500,6 @@ __all__ = [
     "reading_text",
     "reduced_value",
     "retrying",
+    "summarize",
     "timings",
 ]

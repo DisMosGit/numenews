@@ -71,3 +71,18 @@ class ForecastDraft(BaseModel):
     forecast: str = Field(min_length=1)
     advice: str = Field(min_length=1)
     warnings: list[str] = Field(default_factory=list)
+
+
+class DigestDraft(BaseModel):
+    """The summary of a stretch of older news.
+
+    Only the prose: the period it covers is the caller's fact (the range of the items that were
+    passed), and the numbers it rests on are read back from those items by the layer that stores the
+    digest — a model asked to repeat them would only have another chance to get one wrong. The
+    summary may not be blank, for the same reason as ``ForecastDraft``'s fields, and is written in
+    Russian.
+    """
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    summary: str = Field(min_length=1)

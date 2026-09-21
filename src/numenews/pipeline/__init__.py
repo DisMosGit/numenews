@@ -18,6 +18,7 @@ one-shot command is idempotent and resumable (AGENTS.md).
 from __future__ import annotations
 
 from numenews.pipeline.clock import Clock, SystemClock
+from numenews.pipeline.context import build_digest, partition, window_start
 from numenews.pipeline.errors import PipelineError, PipelineRetryError
 from numenews.pipeline.pipeline import DEFAULT_WINDOW_DAYS, NewsFetcher, Pipeline
 from numenews.pipeline.steps import (
@@ -40,7 +41,10 @@ __all__ = [
     "SystemClock",
     "Timing",
     "activate",
+    "build_digest",
     "context_snippet",
+    "partition",
     "reading_text",
     "reduced_value",
+    "window_start",
 ]

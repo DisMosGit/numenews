@@ -40,6 +40,7 @@ from ..unit.pipeline_fakes import (
     fetcher_returning,
     forecast_agent,
     pattern_agent,
+    summarize_agent,
 )
 
 pytestmark = pytest.mark.integration
@@ -91,6 +92,7 @@ def _pipeline(
             extract=extract,
             patterns=pattern_agent_instance,
             forecast_agent=forecast_agent_instance if forecaster is None else forecaster,
+            summarizer=summarize_agent()[0],
             fetcher=fetcher_returning([]),
             clock=FrozenClock(now=NOW),
         ),
@@ -209,6 +211,7 @@ async def test_the_history_shown_to_the_model_is_the_day_s_numbers(
         extract=pipeline.extract,
         patterns=pipeline.patterns,
         forecast_agent=ForecastAgent(model),
+        summarizer=summarize_agent()[0],
         fetcher=fetcher_returning([]),
         clock=FrozenClock(now=NOW),
     )

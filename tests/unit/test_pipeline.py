@@ -35,6 +35,7 @@ from .pipeline_fakes import (
     forecast_agent,
     orchestration_pipeline,
     pattern_agent,
+    summarize_agent,
 )
 
 
@@ -82,6 +83,7 @@ def test_the_constructor_keeps_the_collaborators_it_was_given() -> None:
         extract=extract,
         patterns=patterns,
         forecast_agent=forecaster,
+        summarizer=summarize_agent()[0],
         fetcher=fetcher_returning([]),
         clock=clock,
     )
@@ -90,6 +92,7 @@ def test_the_constructor_keeps_the_collaborators_it_was_given() -> None:
     assert pipeline.extract is extract
     assert pipeline.patterns is patterns
     assert pipeline.forecast_agent is forecaster
+    assert pipeline.summarizer is not None
     assert pipeline.fetcher is not None
     assert pipeline.window_days == 7
     assert pipeline.summary_limit == 50

@@ -18,11 +18,13 @@ from numenews.agents.extract import ExtractNumbersAgent
 from numenews.agents.forecast import ForecastAgent
 from numenews.agents.llm import build_llm_model
 from numenews.agents.pattern import PatternAgent, pattern_id
-from numenews.agents.schemas import ExtractionDraft, ForecastDraft, PatternDraft
+from numenews.agents.schemas import DigestDraft, ExtractionDraft, ForecastDraft, PatternDraft
+from numenews.agents.summarize import SummarizeAgent, digest_of
 
 __all__ = [
     "AgentError",
     "AgentExecutionError",
+    "DigestDraft",
     "ExtractNumbersAgent",
     "ExtractionDraft",
     "ForecastAgent",
@@ -30,6 +32,8 @@ __all__ = [
     "LLMConfigurationError",
     "PatternAgent",
     "PatternDraft",
+    "SummarizeAgent",
     "build_llm_model",
+    "digest_of",
     "pattern_id",
 ]

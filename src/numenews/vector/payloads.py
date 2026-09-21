@@ -23,7 +23,7 @@ from collections.abc import Mapping
 from datetime import UTC, date, datetime, time
 from uuid import NAMESPACE_URL, uuid5
 
-from numenews.models import Forecast, NewsItem, NumberActivation, Pattern
+from numenews.models import Digest, Forecast, NewsItem, NumberActivation, Pattern
 from numenews.numerology import is_master
 
 
@@ -180,6 +180,48 @@ def forecast_point_id(day: date) -> str:
     and saving a forecast twice for the same day overwrites instead of duplicating.
     """
     return str(uuid5(NAMESPACE_URL, f"numenews:forecast:{day.isoformat()}"))
+
+
+def digest_payload(digest: Digest) -> dict[str, object]:
+    """Return the payload of one digest.
+
+    Both ends of the period are stored in the same RFC 3339 shape as every other day in the store,
+    because the two fields are indexed as ``DATETIME``.
+    """
+    payload: dict[str, object] = dict(digest.model_dump(mode="json", exclude_none=True))
+    payload["period_start"] = iso_day(digest.period_start)
+    payload["period_end"] = iso_day(digest.period_end)
+    return payload
+
+
+def digest_from_payload(payload: Mapping[str, object]) -> Digest:
+    """Rebuild a :class:`~numenews.models.Digest` from a stored payload."""
+    restored = dict(payload)
+    for key in ("period_start", "period_end"):
+        value = restored.get(key)
+        if isinstance(value, str):
+            restored[key] = value[:10]
+    return Digest.model_validate_json(json.dumps(restored))
+
+
+def digest_embedding_text(digest: Digest) -> str:
+    """Return the text embedded for one digest: its summary.
+
+    A digest is only worth storing if a later question can find it, and the question is about what
+    the period was like — so the summary is what is embedded. A blank summary cannot be written
+    (``DigestDraft.summary`` has ``min_length=1``), and the numbers are the only text left if one
+    ever is, because an empty string would map every digest to the same point.
+    """
+    return digest.summary.strip() or " ".join(str(number) for number in digest.numbers)
+
+
+def digest_point_id(start: date, end: date) -> str:
+    """Return the point id of one digest: the period it covers.
+
+    A period has one summary, so re-summarising the same range replaces the point instead of adding
+    a second copy of it.
+    """
+    return str(uuid5(NAMESPACE_URL, f"numenews:digest:{start.isoformat()}:{end.isoformat()}"))
 
 
 def _restore_day(payload: dict[str, object]) -> dict[str, object]:

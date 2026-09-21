@@ -16,6 +16,7 @@ import pytest
 from qdrant_client.models import PayloadSchemaType
 
 from numenews.vector import (
+    DIGESTS_COLLECTION,
     FORECASTS_COLLECTION,
     NEWS_COLLECTION,
     NUMBER_HISTORY_COLLECTION,
@@ -24,6 +25,7 @@ from numenews.vector import (
     VectorStore,
 )
 from numenews.vector.collections import (
+    DIGESTS_PAYLOAD_INDEXES,
     FORECASTS_PAYLOAD_INDEXES,
     NEWS_PAYLOAD_INDEXES,
     NUMBER_HISTORY_PAYLOAD_INDEXES,
@@ -34,13 +36,15 @@ from numenews.vector.collections import (
 pytestmark = pytest.mark.integration
 
 #: Collection → the payload indexes it must have on a real server. This is the one place where the
-#: indexes of phase 3 are checked for real; every collection added to the schema is added here.
+#: indexes of phases 3 and 5 are checked for real; every collection added to the schema is added
+#: here.
 EXPECTED_INDEXES: Mapping[str, Mapping[str, PayloadSchemaType]] = {
     NEWS_COLLECTION: NEWS_PAYLOAD_INDEXES,
     NUMBERS_COLLECTION: NUMBERS_PAYLOAD_INDEXES,
     PATTERNS_COLLECTION: PATTERNS_PAYLOAD_INDEXES,
     FORECASTS_COLLECTION: FORECASTS_PAYLOAD_INDEXES,
     NUMBER_HISTORY_COLLECTION: NUMBER_HISTORY_PAYLOAD_INDEXES,
+    DIGESTS_COLLECTION: DIGESTS_PAYLOAD_INDEXES,
 }
 
 

@@ -33,6 +33,7 @@ NUMBERS_COLLECTION = "numbers"
 PATTERNS_COLLECTION = "patterns"
 FORECASTS_COLLECTION = "forecasts"
 NUMBER_HISTORY_COLLECTION = "number_history"
+DIGESTS_COLLECTION = "digests"
 
 #: Payload fields of ``news`` that get an index, in creation order. ``master_number`` is derived
 #: from ``numerology_value`` by ``payloads.news_payload``: a filter on it must not have to fetch
@@ -76,6 +77,14 @@ NUMBER_HISTORY_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
     "date": PayloadSchemaType.DATETIME,
 }
 
+#: Payload fields of ``digests``. The interesting question about a digest is a period ("what did the
+#: first week of September look like"), which is a range over ``period_start``; the end is indexed
+#: for the same reason, so a period can also be found by its last day.
+DIGESTS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
+    "period_start": PayloadSchemaType.DATETIME,
+    "period_end": PayloadSchemaType.DATETIME,
+}
+
 
 def create_news_collection(client: QdrantClient) -> None:
     """Create the 768d ``news`` collection and its payload indexes, unless it is already there."""
@@ -109,6 +118,12 @@ def create_number_history_collection(client: QdrantClient) -> None:
     """
     _create_collection(client, NUMBER_HISTORY_COLLECTION, None)
     _create_indexes(client, NUMBER_HISTORY_COLLECTION, NUMBER_HISTORY_PAYLOAD_INDEXES)
+
+
+def create_digests_collection(client: QdrantClient) -> None:
+    """Create the 768d ``digests`` collection and its payload indexes, unless already there."""
+    _create_collection(client, DIGESTS_COLLECTION, BASE_DIMENSION)
+    _create_indexes(client, DIGESTS_COLLECTION, DIGESTS_PAYLOAD_INDEXES)
 
 
 def ensure_collections(client: QdrantClient) -> None:
@@ -158,4 +173,5 @@ COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (
     create_patterns_collection,
     create_forecasts_collection,
     create_number_history_collection,
+    create_digests_collection,
 )

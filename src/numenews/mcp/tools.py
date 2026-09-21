@@ -26,7 +26,8 @@ from mcp.server.mcpserver import Context
 from numenews.mcp.context import AppContext
 from numenews.mcp.errors import tool_errors
 from numenews.mcp.schemas import DateRangeInput
-from numenews.models import ExtractedNumbers, NewsItem, Topic
+from numenews.models import ExtractedNumbers, NewsItem, NumerologyResult, Topic
+from numenews.numerology import compute_numerology as read_numerology
 
 
 def context_of(ctx: Context[AppContext]) -> AppContext:
@@ -69,8 +70,18 @@ async def extract_numbers(text: str, ctx: Context[AppContext]) -> ExtractedNumbe
         return await reader.extract(text)
 
 
+def compute_numerology(text: str) -> NumerologyResult:
+    """Reduce a text to its numerological value.
+
+    Returns the raw gematria sum, the digit-reduced value (``11``, ``22`` and ``33`` are master
+    numbers and are not reduced further), whether the value is master, and the rendered calculation
+    steps. Pure logic: no Qdrant, no model, no configuration.
+    """
+    return read_numerology(text)
+
+
 #: Every tool the server registers, in roadmap order.
-TOOLS: tuple[Callable[..., object], ...] = (fetch_news, extract_numbers)
+TOOLS: tuple[Callable[..., object], ...] = (fetch_news, extract_numbers, compute_numerology)
 
 
-__all__ = ["TOOLS", "context_of", "extract_numbers", "fetch_news"]
+__all__ = ["TOOLS", "compute_numerology", "context_of", "extract_numbers", "fetch_news"]

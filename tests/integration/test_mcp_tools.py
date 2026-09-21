@@ -112,3 +112,15 @@ async def test_extract_numbers_reports_a_missing_llm_endpoint(settings: Settings
 
     assert result.is_error is True
     assert "No LLM endpoint configured" in text_of(result)
+
+
+async def test_compute_numerology_needs_no_service(settings: Settings) -> None:
+    """ROADMAP 6.4: a pure tool answers on a server that has nothing configured at all."""
+    async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
+        result = await client.call_tool("compute_numerology", {"text": "sun"})
+
+    assert result.is_error is False
+    assert result.structured_content is not None
+    assert result.structured_content["value"] == 9
+    assert result.structured_content["gematria"] == 54
+    assert result.structured_content["is_master"] is False

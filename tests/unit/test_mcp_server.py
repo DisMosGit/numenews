@@ -16,7 +16,7 @@ from numenews.mcp.server import SERVER_NAME, build_server
 from numenews.mcp.tools import TOOLS
 
 #: Every tool the finished server exposes, in roadmap order (6.2-6.10).
-EXPECTED_TOOLS: tuple[str, ...] = ("fetch_news", "extract_numbers")
+EXPECTED_TOOLS: tuple[str, ...] = ("fetch_news", "extract_numbers", "compute_numerology")
 
 
 async def test_the_registry_and_the_server_agree_on_the_tools(settings: Settings) -> None:

@@ -145,7 +145,7 @@ Two decisions are worth knowing about:
   header (`Cache-Control`/`Expires`) that the specification policy could use, so it treats every
   stored response as stale and the cache never answers a request — measured: two identical requests,
   two network calls. `FilterPolicy` plus the storage's `default_ttl` is what makes the roadmap's
-  fifteen minutes real. (ADR 0009, in phase 10.3, is where this becomes a recorded decision.)
+  fifteen minutes real. See [ADR 0009](adr/0009-hishel-caching.md), which records this decision.
 - **Only 2xx responses are stored.** `hishel` stores whatever the transport returned, so without
   `_CacheOnlySuccesses` a cached 503 would be replayed for the whole TTL instead of being retried,
   and a 429 would hide the moment the quota reset.

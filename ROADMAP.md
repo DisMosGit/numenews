@@ -1473,10 +1473,10 @@
 - [ ] Коммит: `docs(agentic): workflow and guardrails` · `L` 📝
 
 ### 10.3. ADR
-- [ ] ADR `0007-qdrant-hybrid-search.md` · `M` 📝
-- [ ] ADR `0008-fastembed-vs-openai.md` · `M` 📝
-- [ ] ADR `0009-hishel-caching.md` · `M` 📝
-- [ ] Коммит: `docs(adr): vector, embeddings, cache` · `M` 📝
+- [x] ADR `0007-qdrant-hybrid-search.md` · `M` 📝
+- [x] ADR `0008-fastembed-vs-openai.md` · `M` 📝
+- [x] ADR `0009-hishel-caching.md` · `M` 📝
+- [x] Коммит: `docs(adr): vector, embeddings, cache` · `M` 📝
 
 ### 10.4. Покрытие тестами
 - [ ] Coverage: `numerology/` ≥ 95% · `M` 🧪

@@ -29,12 +29,13 @@ Every architecturally significant decision is recorded as an Architecture Decisi
 - the template lives in [`template.md`](template.md).
 
 `AGENTS.md` and `CONTRIBUTING.md` both require an ADR for an architectural change. The roadmap
-reserves the numbers: 0002 numerology scope (1.8), 0003 local embeddings (3.9), 0004
+reserved the numbers: 0002 numerology scope (1.8), 0003 local embeddings (3.9), 0004
 `pydantic-ai` (4.6), 0005 JSON-only output and 0006 one-shot vs REPL (7.10), 0007 Qdrant hybrid
 search, 0008 `fastembed` vs OpenAI embeddings and 0009 `hishel` caching (10.3), 0010 the MCP
-server (6.12). 0011 records the RAG pipeline of phase 5 and 0012 the long-term memory of phase 8,
-neither of which the roadmap reserved a number for; the phase that needs one takes the next free
-number and records it here. 0013 records the isolation of the ragas evaluation of phase 9.
+server (6.12). All of them are written, together with 0011 for the RAG pipeline of phase 5, 0012 for
+the long-term memory of phase 8 and 0013 for the isolation of the ragas evaluation of phase 9,
+neither of the last three reserved by the roadmap; the phase that needs a number takes the next free
+one and records it here.
 
 ## Consequences
 

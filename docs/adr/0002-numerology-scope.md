@@ -85,8 +85,9 @@ with the extraction functions and the agent, because those are different questio
   its own parsing; phase 5 must not compute numbers in the pipeline; the `Pattern.type` vocabulary in
   `numenews.models` is the one place the *kinds* of pattern are named, and adding a member there is
   additive. Extraction results and readings stay separate in the JSON the CLI prints.
-- **Follow-up work.** Phase 10.3 still owes ADR 0008 (`fastembed` vs OpenAI) and 0009 (`hishel`); this
-  ADR supersedes nothing and is not superseded.
+- **Follow-up work.** Phase 10.3 wrote ADR 0007 (Qdrant hybrid search), 0008 (`fastembed` vs OpenAI)
+  and 0009 (`hishel`), the numbers this phase reserved but did not use; this ADR supersedes nothing
+  and is not superseded.
 
 ## References
 

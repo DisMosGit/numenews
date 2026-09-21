@@ -142,6 +142,12 @@ Versioning: [Semantic Versioning](https://semver.org/).
   `.venv-eval` the metrics run in (ragas cannot share an environment with `pydantic-ai`), and
   `make test-eval` skips them with an actionable message when no LLM endpoint is configured.
   Documented in `docs/EVAL.md`, with ADR 0013.
+- Architecture decision records for the vector, embedding and cache decisions that until now were
+  only recorded in passing: ADR 0007 (Qdrant hybrid search — the payload filter inside each
+  `Prefetch`, RRF fusion, no sparse retriever yet), ADR 0008 (`fastembed` instead of OpenAI
+  embeddings — ONNX, two `bge` models by text length, lazy loading, the English-only limit) and
+  ADR 0009 (`hishel` in filter mode — `default_ttl` instead of freshness headers, 2xx-only caching,
+  one client per run). ADR 0001 and 0002 drop the forward references that said 10.3 still owed them.
 
 ### Changed
 - `make test-eval` builds and uses the isolated `.venv-eval`; `ragas` and its LangChain tree live

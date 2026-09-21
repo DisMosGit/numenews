@@ -75,6 +75,7 @@ def test_extract_dates_uses_the_current_year_by_default() -> None:
 def test_extract_dates_skips_impossible_days() -> None:
     """Typos do not raise and do not hide the dates around them."""
     assert extract_dates_regex("31.02.2026 and 45.13.2026") == []
+    assert extract_dates_regex("2026-13-45") == []
     assert extract_dates_regex("31.02.2026, but 01.03.2026 is real") == [date(2026, 3, 1)]
 
 

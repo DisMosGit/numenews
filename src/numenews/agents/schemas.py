@@ -55,3 +55,19 @@ class PatternDraft(BaseModel):
     news_ids: list[str]
     strength: float = Field(ge=0.0, le=1.0)
     interpretation: str
+
+
+class ForecastDraft(BaseModel):
+    """The prose of one day's reading.
+
+    The day, its dominant number, whether a master number is active and the patterns it was built
+    from are *not* here: they come from the pure numerology layer and from Qdrant, and the agent
+    receives them as input. ``forecast`` and ``advice`` may not be blank — a reading that says
+    nothing is a failed run to retry, not a result. The text is written in Russian.
+    """
+
+    model_config = ConfigDict(frozen=True, strict=True)
+
+    forecast: str = Field(min_length=1)
+    advice: str = Field(min_length=1)
+    warnings: list[str] = Field(default_factory=list)

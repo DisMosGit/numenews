@@ -10,8 +10,9 @@ Changing one of these constants means updating ``docs/PROMPTS.md`` in the same c
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import date
 
-from numenews.models import NewsItem
+from numenews.models import NewsItem, NumberActivation, Pattern
 
 EXTRACT_INSTRUCTIONS = """\
 You read one news text and report the numbers and symbols it contains. You do not interpret them.
@@ -86,3 +87,80 @@ def build_pattern_prompt(news: Sequence[NewsItem]) -> str:
     """Return the prompt listing every item the pattern agent has to connect."""
     blocks = "\n\n".join(_news_block(index, item) for index, item in enumerate(news, start=1))
     return f"News items to analyse:\n\n{blocks}"
+
+
+FORECAST_INSTRUCTIONS = """\
+You write the daily numerological reading from facts you are given: the date, its dominant number,
+whether a master number (11, 22 or 33) is active, the patterns found in that day's news and the
+number activations of the recent past. Take those numbers as given — never compute, reduce or
+change one — and do not invent a fact that is not in the input.
+
+Write in Russian:
+- "forecast": three to five sentences on what the day holds, grounded in the given number, patterns
+  and activations.
+- "advice": one or two sentences of practical advice for the day.
+- "warnings": one short line per risk the input points at; return an empty list when the day is
+  unremarkable.
+
+Name the number, the pattern or the activation each claim rests on, so a reader can check it.
+"""
+
+#: How much of one activation's context the forecast prompt shows, in characters.
+HISTORY_CONTEXT_LIMIT = 160
+
+
+def format_history(history: Sequence[NumberActivation]) -> str:
+    """Return the recent activations as a prompt block, newest first.
+
+    The order mirrors ``VectorStore.get_history`` (phase 3.7): newest first, and at equal dates by
+    ``news_id`` descending, so the same history always renders the same prompt. Contexts are cut to
+    :data:`HISTORY_CONTEXT_LIMIT` characters so one long news item cannot crowd the block out.
+    """
+    if not history:
+        return "No number activations were recorded for this window."
+    ordered = sorted(
+        history,
+        key=lambda activation: (activation.date, str(activation.news_id.root)),
+        reverse=True,
+    )
+    return "\n".join(
+        f"- {activation.date.isoformat()} · {activation.number} · "
+        f"{activation.context[:HISTORY_CONTEXT_LIMIT]}"
+        for activation in ordered
+    )
+
+
+def format_patterns(patterns: Sequence[Pattern]) -> str:
+    """Return the patterns of the day as a prompt block."""
+    if not patterns:
+        return "No patterns were found for this day."
+    return "\n".join(
+        f"- {pattern.type} · strength {pattern.strength:.2f} · "
+        f"numbers {', '.join(str(number) for number in pattern.numbers) or 'none'} · "
+        f"{pattern.interpretation}"
+        for pattern in patterns
+    )
+
+
+def build_forecast_prompt(
+    *,
+    date: date,
+    dominant_number: int,
+    master_active: bool,
+    patterns: Sequence[Pattern] = (),
+    history: Sequence[NumberActivation] = (),
+) -> str:
+    """Return the prompt for one day: its number, its patterns and the recent activations."""
+    return "\n".join(
+        (
+            f"Date: {date.isoformat()}",
+            f"Dominant number: {dominant_number} · master number active: "
+            f"{'yes' if master_active else 'no'}",
+            "",
+            "Patterns found for this day:",
+            format_patterns(patterns),
+            "",
+            "Number activations of the recent past:",
+            format_history(history),
+        )
+    )

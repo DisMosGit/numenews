@@ -132,6 +132,13 @@ init_typed = true
 init_forbid_extra = true
 warn_required_dynamic_aliases = true
 
+# `ragas` is installed only in `.venv-eval` (ADR 0013) — it cannot share an environment with
+# `pydantic-ai` — so the eval harness imports it where mypy, which runs in `.venv`, cannot see it.
+# The boundary is `Any` on purpose: the harness's own code is typed, the ragas calls are not.
+[[tool.mypy.overrides]]
+module = ["ragas", "ragas.*"]
+ignore_missing_imports = true
+
 # -----------------------------------------------------------------------------
 # pytest
 # -----------------------------------------------------------------------------

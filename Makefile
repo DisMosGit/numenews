@@ -3,16 +3,18 @@
 # `make install` sets up the environment, `make dev` starts Qdrant, and
 # `make lint && make test` is the gate every commit has to pass. `make mcp` serves the nine
 # MCP tools over stdio (phase 6) and `make run` runs `numenews today` (phase 7), which needs
-# Qdrant and an LLM endpoint. The ragas suite arrives in phase 9: until then `make test-eval`
-# runs the scaffold in `tests/eval`.
+# Qdrant and an LLM endpoint. The ragas suite (phase 9) lives in `tests/eval` and runs in its own
+# `.venv-eval`: ragas and `pydantic-ai` cannot share an environment (ADR 0013), so `make eval-env`
+# builds it and `make test-eval` uses it.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 COMPOSE := docker compose
 PYTEST := uv run pytest
+EVAL_PY := .venv-eval/bin/python
 
-.PHONY: help install lint format test test-unit test-integration test-eval coverage dev dev-down mcp run clean
+.PHONY: help install lint format test test-unit test-integration test-eval eval-env coverage dev dev-down mcp run clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -39,8 +41,13 @@ test-unit: ## Unit tests only
 test-integration: ## Integration tests (Qdrant :memory:, respx, mocked LLMs)
 	$(PYTEST) tests/integration -m integration
 
-test-eval: ## ragas evaluation (phase 9; needs --run-eval)
-	$(PYTEST) tests/eval -v --run-eval
+test-eval: ## ragas evaluation in .venv-eval (needs an LLM endpoint; see docs/EVAL.md)
+	@test -x $(EVAL_PY) || $(MAKE) eval-env
+	RAGAS_DO_NOT_TRACK=true $(EVAL_PY) -m pytest tests/eval -v --run-eval
+
+eval-env: ## Build .venv-eval: the locked runtime environment without pydantic-ai, plus ragas
+	UV_PROJECT_ENVIRONMENT=.venv-eval uv sync --no-install-package pydantic-ai-slim
+	uv pip install --python $(EVAL_PY) -r tests/eval/requirements-eval.txt
 
 coverage: ## Tests with an HTML coverage report in docs/coverage.html
 	$(PYTEST) tests/unit tests/integration --cov=numenews --cov-report=term-missing --cov-report=html:docs/coverage.html
@@ -62,4 +69,4 @@ run: ## Run the sample one-shot CLI command (needs Qdrant and an LLM endpoint)
 
 clean: ## Stop Qdrant, delete its volume and drop the local caches
 	$(COMPOSE) down -v --remove-orphans
-	rm -rf .mypy_cache .pytest_cache .ruff_cache .cache htmlcov .coverage docs/coverage.html
+	rm -rf .mypy_cache .pytest_cache .ruff_cache .cache htmlcov .coverage docs/coverage.html .venv-eval

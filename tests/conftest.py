@@ -11,15 +11,28 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from pydantic_ai import models
 
 from numenews.config import Settings, get_settings
 from numenews.logging import configure_logging
 
+
 # The agent tests script `TestModel`/`FunctionModel`; a stray real model would be a network call to
 # an endpoint this suite does not have. This is pydantic-ai's own guard, and it does not affect the
 # test models, which are what every agent test hands to an agent.
-models.ALLOW_MODEL_REQUESTS = False
+#
+# The eval environment (`.venv-eval`, ADR 0013) installs ragas instead of pydantic-ai, because the
+# two cannot be resolved together; that environment runs `tests/eval` only, and a missing
+# pydantic-ai must not stop pytest from collecting the shared fixtures below.
+def _forbid_model_requests() -> None:
+    """Turn pydantic-ai's request guard on, when pydantic-ai is installed at all."""
+    try:
+        from pydantic_ai import models
+    except ModuleNotFoundError:
+        return
+    models.ALLOW_MODEL_REQUESTS = False
+
+
+_forbid_model_requests()
 
 # Every variable `Settings` reads, derived from the model so a new field cannot be forgotten.
 SETTING_ENV_VARS: tuple[str, ...] = tuple(name.upper() for name in Settings.model_fields)

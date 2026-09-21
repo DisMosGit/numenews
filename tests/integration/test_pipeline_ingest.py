@@ -23,6 +23,7 @@ from numenews.vector import (
     NUMBER_HISTORY_COLLECTION,
     NUMBERS_COLLECTION,
     VectorStore,
+    get_activations,
     get_news_items,
 )
 from numenews.vector.payloads import activation_point_id, news_point_id
@@ -145,6 +146,28 @@ async def test_the_history_row_carries_the_snippet_around_the_number(
     assert "11th hour" in str(payload["context"])
     # The row carries the item's own reduced value, so the memory is readable on its own (8.1).
     assert payload["numerology_value"] == stored_items[0].numerology_value
+
+
+async def test_a_second_batch_grows_the_history(vector_store: VectorStore) -> None:
+    """Phase 8's DoD: the memory accumulates across runs instead of restarting each time."""
+    first_day = date(2026, 9, 20)
+    next_day = date(2026, 9, 21)
+    first = _item(11, title=FIRST_TITLE, text=FIRST_TEXT, day=first_day)
+    second = _item(7, title=SECOND_TITLE, text=SECOND_TEXT, day=next_day)
+    morning, _ = _pipeline(vector_store, [first], [11])
+    evening, _ = _pipeline(vector_store, [second], [7])
+
+    first_run = await morning.ingest(TOPIC, RANGE)
+    after_first = vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count
+    second_run = await evening.ingest(TOPIC, RANGE)
+    after_second = vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count
+
+    history = await evening.run_blocking(lambda: get_activations(vector_store, 30, today=next_day))
+
+    assert first_run.activations == 1
+    assert second_run.activations == 1
+    assert (after_first, after_second) == (1, 2)
+    assert {activation.date for activation in history} == {first_day, next_day}
 
 
 async def test_a_repeated_ingest_adds_nothing_and_calls_no_model(

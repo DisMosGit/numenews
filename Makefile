@@ -51,11 +51,13 @@ dev: ## Start Qdrant and wait until it is healthy
 dev-down: ## Stop Qdrant, keep the volume
 	$(COMPOSE) down
 
+# `run` and `mcp` are silenced: make would otherwise echo the recipe into stdout and break
+# the "stdout carries JSON (or JSON-RPC) and nothing else" contract.
 mcp: ## Start the MCP server over stdio (phase 6 placeholder)
-	uv run python -m numenews.mcp
+	@uv run python -m numenews.mcp
 
 run: ## Run the sample one-shot CLI command (phase 7 placeholder)
-	uv run python -m numenews.cli
+	@uv run python -m numenews.cli
 
 clean: ## Stop Qdrant, delete its volume and drop the local caches
 	$(COMPOSE) down -v --remove-orphans

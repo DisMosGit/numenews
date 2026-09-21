@@ -14,6 +14,7 @@ pipeline, two interfaces".
 
 from __future__ import annotations
 
+from numenews.cli.dates import parse_day
 from numenews.mcp.context import AppContext
 from numenews.models import DateRange, Forecast, Topic
 from numenews.pipeline import window_start
@@ -46,4 +47,25 @@ async def today(context: AppContext, *, topic: str) -> Forecast:
     return await pipeline.forecast(day)
 
 
-__all__ = ["today"]
+async def forecast(context: AppContext, *, day: str) -> Forecast:
+    """Return the reading for ``day``, read from storage when that day was already handled.
+
+    The ``--date`` grammar (``YYYY-MM-DD``, ``today``, ``tomorrow``, ``yesterday``, ``+Nd``,
+    ``-Nd``) is resolved against the pipeline's clock, which is also the day the pipeline itself
+    would use, so ``--date tomorrow`` and a replayed run agree on which day they mean.
+
+    Unlike :func:`today`, this command does not fetch news: it answers the question "what is stored
+    about this day", so running it twice costs nothing after the first.
+
+    Args:
+        context: The application context; its pipeline is built on first use.
+        day: The raw ``--date`` argument.
+
+    Returns:
+        The reading for the resolved day, as stored.
+    """
+    pipeline = await context.pipeline()
+    return await pipeline.forecast(parse_day(day, today=pipeline.clock.now().date()))
+
+
+__all__ = ["forecast", "today"]

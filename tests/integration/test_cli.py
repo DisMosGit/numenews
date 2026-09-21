@@ -225,3 +225,74 @@ def test_today_reports_a_missing_llm_endpoint_as_json(
 
     assert result.exit_code == 1
     assert json.loads(result.stdout)["kind"] == "LLMConfigurationError"
+
+
+def test_forecast_reads_the_requested_day(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ROADMAP 7.4: ``--date 2026-09-22`` reads that day, not today."""
+    stored = _item("11th hour deal").model_copy(update={"numbers": (11,), "numerology_value": 11})
+    upsert_news(vector_store, [stored])
+    pipeline, _, _ = _pipeline(vector_store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, ["forecast", "--date", "2026-09-22"])
+
+    assert result.exit_code == 0, result.stderr
+    reading = json.loads(result.stdout)
+    assert reading["date"] == "2026-09-22"
+    assert reading["dominant_number"] == 11
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("today", "2026-09-21"),
+        ("tomorrow", "2026-09-22"),
+        ("yesterday", "2026-09-20"),
+        ("+3d", "2026-09-24"),
+        ("-2d", "2026-09-19"),
+    ],
+)
+def test_forecast_resolves_relative_dates_against_the_pipeline_clock(
+    settings: Settings,
+    vector_store: VectorStore,
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+    expected: str,
+) -> None:
+    """ROADMAP 7.4: relative forms are resolved against the frozen clock, not the wall clock."""
+    pipeline, _, _ = _pipeline(vector_store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, ["forecast", "--date", value])
+
+    assert result.exit_code == 0, result.stderr
+    assert json.loads(result.stdout)["date"] == expected
+
+
+def test_forecast_defaults_to_today(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bare ``numenews forecast`` is the reading for today."""
+    pipeline, _, _ = _pipeline(vector_store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, ["forecast"])
+
+    assert result.exit_code == 0, result.stderr
+    assert json.loads(result.stdout)["date"] == TODAY.isoformat()
+
+
+def test_forecast_rejects_an_unknown_date_as_a_usage_error(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A mistyped ``--date`` exits 2 with an empty stdout, so a pipe never sees a half-document."""
+    pipeline, _, _ = _pipeline(vector_store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, ["forecast", "--date", "banana"])
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert "--date" in result.stderr

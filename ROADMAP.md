@@ -1194,9 +1194,17 @@
 > `mcp.context.AppContext`, а не заводит второй контейнер.*
 
 ### 7.4. Команда `forecast`
-- [ ] `numenews forecast --date 2026-09-22` · `M` 🧪
-- [ ] Поддержка `--date tomorrow` и `--date +3d` · `M` 🧪
-- [ ] Коммит: `feat(cli): forecast command` · `M` 🧪
+- [x] `numenews forecast --date 2026-09-22` · `M` 🧪
+- [x] Поддержка `--date tomorrow` и `--date +3d` · `M` 🧪
+- [x] Коммит: `feat(cli): forecast command` · `M` 🧪
+
+> *Уточнения. Грамматика `--date` живёт в `cli/dates.py` (`parse_day`): ISO-день, `today`,
+> `tomorrow`, `yesterday`, `+Nd`/`-Nd`; всё прочее — `typer.BadParameter`, то есть usage error с
+> кодом 2 и пустым stdout. Относительные формы разрешаются от часов пайплайна (`pipeline.clock`), а
+> не от `date.today()`: так `--date tomorrow` совпадает с тем днём, о котором думал бы сам пайплайн, и
+> тест не зависит от календаря машины. `--date` по умолчанию `today`; в отличие от `today`, команда
+> ничего не фетчит — читает окно из хранилища и зовёт модель только если дня ещё нет в `forecasts`.
+> Параметр назван `day` (как аргумент MCP-инструмента 6.7), а опция — `--date`.*
 
 ### 7.5. Команда `history`
 - [ ] `numenews history --number 11 --days 30` · `S` 🧪

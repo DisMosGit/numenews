@@ -171,3 +171,23 @@ def today(
     LLM endpoint; news sources without a key are simply not queried.
     """
     run_command(ctx, lambda context: commands.today(context, topic=topic))
+
+
+@app.command()
+def forecast(
+    ctx: typer.Context,
+    day: Annotated[
+        str,
+        typer.Option(
+            "--date",
+            help="Day to read: YYYY-MM-DD, today, tomorrow, yesterday, +Nd or -Nd.",
+        ),
+    ] = "today",
+) -> None:
+    """Print the reading for a calendar day, from storage when that day was already read.
+
+    Unlike ``today`` this command fetches nothing: it reads the stored news window, runs the model
+    only when the day has no stored reading, and answers with the day's ``Forecast``. Needs Qdrant
+    and an LLM endpoint.
+    """
+    run_command(ctx, lambda context: commands.forecast(context, day=day))

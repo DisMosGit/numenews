@@ -118,13 +118,17 @@
 **DoD:** `Settings()` читает `.env`, тест на невалидные значения зелёный.
 
 ### 0.7. Логирование (structlog)
-- [ ] `src/numenews/logging.py` — настройка `structlog` · `M`
-- [ ] JSON-вывод в production, human-readable в dev (`log_level`) · `S`
-- [ ] Корреляция через `contextvars` (request_id, news_id) · `M`
-- [ ] Интеграция с `pydantic-settings` · `S`
-- [ ] Коммит: `feat(logging): structlog setup` · `M` 📝
+- [x] `src/numenews/logging.py` — настройка `structlog` · `M`
+- [x] JSON-вывод в production, human-readable в dev (`log_level`) · `S`
+- [x] Корреляция через `contextvars` (request_id, news_id) · `M`
+- [x] Интеграция с `pydantic-settings` · `S`
+- [x] Коммит: `feat(logging): structlog setup` · `M` 📝
 
 **DoD:** `structlog.get_logger().info("test")` пишет JSON.
+
+> *Логи идут в stderr (stdout занят JSON-ом CLI); stdlib-записи (`httpx`, `qdrant-client`)
+> проходят через тот же `ProcessorFormatter`, поэтому поток однородный. Заглушки
+> `cli/__main__.py` и `mcp/__main__.py` переведены на `configure_logging()`/`get_logger()`.*
 
 ### 0.8. Первые тесты
 - [ ] `tests/conftest.py` с фикстурами (`event_loop`, `anyio_backend`, `tmp_cache_dir`) · `S`

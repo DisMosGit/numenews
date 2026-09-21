@@ -28,4 +28,4 @@ def test_mcp_placeholder_leaves_stdout_empty(capsys: pytest.CaptureFixture[str])
     assert mcp_main() == 0
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert "phase 6" in captured.err
+    assert "mcp.server_not_implemented" in captured.err

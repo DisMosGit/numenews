@@ -1,6 +1,6 @@
-"""The analyze step over the in-memory engine (ROADMAP 5.3).
+"""The analyze step over the in-memory engine (docs/RAG_PIPELINE.md).
 
-Roadmap 5.3's acceptance test is stated in the roadmap itself: three news items carrying the number
+The acceptance test is stated in docs/RAG_PIPELINE.md: three news items carrying the number
 11 produce a ``resonance``-kind pattern citing all three ids. The pattern agent is a real
 ``PatternAgent`` over a ``FunctionModel``, so what is asserted here is the step's own contract —
 which items it shows the agent, what it saves, and that an unknown id never reaches the model —
@@ -90,7 +90,7 @@ def _pipeline(
 async def test_three_items_with_eleven_produce_a_resonance_pattern(
     vector_store: VectorStore,
 ) -> None:
-    """ROADMAP 5.3's own acceptance test, with the ids the pipeline actually passes."""
+    """docs/RAG_PIPELINE.md's own acceptance test, with the ids the pipeline actually passes."""
     items = [_item(11), _item(12), _item(13)]
     upsert_news(vector_store, items)
     pipeline, _ = _pipeline(vector_store, [_draft(items)])
@@ -146,7 +146,7 @@ async def test_an_unknown_id_is_skipped_and_nothing_is_stored(
 
 
 async def test_analyze_without_ids_answers_an_empty_run(vector_store: VectorStore) -> None:
-    """Roadmap 4.3: nothing to connect is an empty answer, not a model run."""
+    """docs/PROMPTS.md: nothing to connect is an empty answer, not a model run."""
     upsert_news(vector_store, [_item(11)])
     pipeline, counter = _pipeline(vector_store, [])
 
@@ -162,7 +162,7 @@ async def test_analyze_without_ids_answers_an_empty_run(vector_store: VectorStor
 async def test_a_failing_pattern_agent_surfaces_after_one_retry(
     vector_store: VectorStore,
 ) -> None:
-    """An empty list must stay distinguishable from "the model never answered" (phase 4.3)."""
+    """An empty list must stay distinguishable from "the model never answered"."""
     item = _item(11)
     upsert_news(vector_store, [item])
     broken = PatternAgent(broken_model())
@@ -175,7 +175,7 @@ async def test_a_failing_pattern_agent_surfaces_after_one_retry(
 async def test_a_pattern_that_cites_no_stored_item_is_not_saved(
     vector_store: VectorStore,
 ) -> None:
-    """The agent drops an unciteable draft (phase 4.3); the step then has nothing to store."""
+    """The agent drops an unciteable draft (docs/PROMPTS.md); the step then has nothing to store."""
     items = [_item(11)]
     upsert_news(vector_store, items)
     draft = _draft(items)

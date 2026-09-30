@@ -31,8 +31,9 @@ from numenews.news.protocol import NewsSource
 
 logger = get_logger(__name__)
 
-# What makes two items the same article. The roadmap names the key, and nothing beyond the
-# adapters' own trimming is normalised, so titles that differ by one character stay two items.
+# What makes two items the same article. The key is the article's identity — title, source and
+# date — and nothing beyond the adapters' own trimming is normalised, so titles that differ by one
+# character stay two items.
 type DeduplicationKey = tuple[str, str, date]
 
 

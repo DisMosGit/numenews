@@ -1,8 +1,8 @@
 """The ``digests`` collection: the news outside the window, compressed into a period.
 
-Roadmap 5.5 keeps the recent seven days raw — that is what the agents read — and summarises anything
-older into one numerological digest, so the project does not have to keep every article of every
-month in a prompt. This collection is where the summary goes.
+The pipeline keeps the recent seven days raw — that is what the agents read — and summarises
+anything older into one numerological digest, so the project does not have to keep every article of
+every month in a prompt. This collection is where the summary goes.
 
 It is vector-backed with the same 768d model as ``news``, ``patterns`` and ``forecasts``: the point
 of a digest is to be *found* later ("what did the run-up to September look like"), which is a

@@ -55,7 +55,7 @@ def _item(
 def test_upserting_creates_the_collection_with_the_right_vector_size(
     vector_store: VectorStore,
 ) -> None:
-    """Roadmap 3.3: the collection and its schema exist before the first point is written."""
+    """docs/QDRANT_COLLECTIONS.md: the collection and its schema exist before the first write."""
     upsert_news(vector_store, [_item("sun rises")])
 
     info = vector_store.client.get_collection(NEWS_COLLECTION)
@@ -72,7 +72,7 @@ def test_an_empty_batch_touches_nothing(vector_store: VectorStore) -> None:
 
 
 def test_upserting_the_same_item_twice_keeps_one_point(vector_store: VectorStore) -> None:
-    """The deterministic id makes a repeated ingest idempotent, which phase 5 depends on."""
+    """The deterministic id makes a repeated ingest idempotent, which the ingest step depends on."""
     item = _item("sun rises")
 
     upsert_news(vector_store, [item])
@@ -91,7 +91,7 @@ def test_search_returns_the_nearest_item_first(
     vector_store: VectorStore,
     fake_base_embedder: FakeEmbedder,
 ) -> None:
-    """Roadmap 3.3 DoD: upsert then search by semantics returns the nearest stored article."""
+    """docs/QDRANT_COLLECTIONS.md: semantic search returns the nearest stored article."""
     nearest = _register(fake_base_embedder, _item("markets fall"), 0)
     farther = _register(fake_base_embedder, _item("the sun rises"), 1)
     upsert_news(vector_store, [nearest, farther])
@@ -104,7 +104,7 @@ def test_search_returns_the_nearest_item_first(
 def test_a_stored_item_comes_back_as_the_same_model(
     vector_store: VectorStore,
 ) -> None:
-    """The payload is lossless: what phase 5 reads back is what phase 4 stored."""
+    """The payload is lossless: what the pipeline reads back is what the agents stored."""
     item = _item("sun rises", numerology_value=7, numbers=(7, 2026))
 
     upsert_news(vector_store, [item])
@@ -116,7 +116,7 @@ def test_a_numerology_filter_narrows_the_search(
     vector_store: VectorStore,
     fake_base_embedder: FakeEmbedder,
 ) -> None:
-    """Roadmap 3.8's filter: only the items whose reduced value is 7 are returned."""
+    """docs/QDRANT_COLLECTIONS.md's filter: only the items whose reduced value is 7 are returned."""
     items = [
         _register(fake_base_embedder, _item("seven", numerology_value=7), 0),
         _register(fake_base_embedder, _item("three", numerology_value=3), 1),
@@ -143,7 +143,7 @@ def test_items_without_a_computed_value_never_match_a_value_filter(
 def test_the_master_flag_is_filterable(
     vector_store: VectorStore,
 ) -> None:
-    """The derived boolean is what lets phase 7 ask for the days of a master number."""
+    """The derived boolean is what lets cli-surface ask for the days of a master number."""
     upsert_news(
         vector_store,
         [_item("eleven", numerology_value=11), _item("seven", numerology_value=7)],
@@ -197,7 +197,7 @@ def test_a_non_positive_limit_is_refused(vector_store: VectorStore) -> None:
 def test_reading_items_by_id_returns_them_in_the_requested_order(
     vector_store: VectorStore,
 ) -> None:
-    """Phase 5.3 gets a list of ids from a search and has to show the items those ids name."""
+    """The analyze step gets ids from a search and has to show the items those ids name."""
     first = _item("alpha")
     second = _item("beta")
     upsert_news(vector_store, [first, second])
@@ -230,7 +230,7 @@ def test_reading_an_absent_collection_by_id_explains_the_setup(vector_store: Vec
 
 
 def test_the_window_reads_both_ends_inclusively(vector_store: VectorStore) -> None:
-    """Roadmap 5.5: seven days means the seven days, starting and ending where the caller asked."""
+    """docs/RAG_PIPELINE.md: seven days means the seven days, starting and ending where asked."""
     upsert_news(
         vector_store,
         [

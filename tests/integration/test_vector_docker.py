@@ -1,7 +1,7 @@
 """The Docker Qdrant that ``make dev`` starts.
 
 The in-memory engine is a real Qdrant but ignores payload indexes, so the checks that prove the
-schemas of phase 3 belong here. The fixture skips the whole file when the container is not running,
+schemas of the vector layer belong here. The fixture skips it when the container is not running,
 which keeps `make test` green on a machine without Docker; run `make dev` first for the full set.
 
 Running this file provisions the collections in the developer's Qdrant: it creates what is missing
@@ -36,7 +36,7 @@ from numenews.vector.collections import (
 pytestmark = pytest.mark.integration
 
 #: Collection → the payload indexes it must have on a real server. This is the one place where the
-#: indexes of phases 3 and 5 are checked for real; every collection added to the schema is added
+#: indexes are checked for real; every collection added to the schema is added
 #: here.
 EXPECTED_INDEXES: Mapping[str, Mapping[str, PayloadSchemaType]] = {
     NEWS_COLLECTION: NEWS_PAYLOAD_INDEXES,
@@ -49,7 +49,7 @@ EXPECTED_INDEXES: Mapping[str, Mapping[str, PayloadSchemaType]] = {
 
 
 def test_the_configured_qdrant_answers(docker_store: VectorStore) -> None:
-    """Roadmap 3.2: the client health-checks the container named by ``Settings.qdrant_url``."""
+    """docs/QDRANT_COLLECTIONS.md: the client health-checks the ``Settings.qdrant_url`` server."""
     docker_store.health_check()
 
 
@@ -71,7 +71,7 @@ def test_a_collection_carries_its_payload_indexes(
     collection: str,
     indexes: Mapping[str, PayloadSchemaType],
 ) -> None:
-    """Roadmap 3.3 DoD: on a real server — not in local mode — the indexes exist before ingest."""
+    """docs/QDRANT_COLLECTIONS.md, on a real server: the indexes exist before ingest."""
     docker_store.ensure_collections()
 
     info = docker_store.client.get_collection(collection)

@@ -1,9 +1,9 @@
 """ExtractNumbersAgent: the numbers and symbols of one text.
 
-The model runs first, but the deterministic regex pass of phase 1.6 always runs too: a model that is
+The model runs first, but the deterministic regex pass always runs too: a model that is
 missing, slow or wrong degrades to ``extract_numbers_regex`` instead of failing the pipeline, which
-is the definition of done of ROADMAP 4.2. ``ExtractedNumbers.sources`` records which strategies
-contributed, so a reader of the result can tell a model reading from a regex one.
+is what docs/PROMPTS.md requires of the extract step. ``ExtractedNumbers.sources`` records which
+strategies contributed, so a reader of the result can tell a model reading from a regex one.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def _unique[ItemT](values: Iterable[ItemT]) -> list[ItemT]:
     """Return ``values`` without duplicates, keeping the first occurrence.
 
     ``ExtractedNumbers.numbers`` is relied on as unique by the vector layer, which derives one point
-    id per ``(news_id, number)`` pair (phase 3.4).
+    id per ``(news_id, number)`` pair.
     """
     return list(dict.fromkeys(values))
 

@@ -140,7 +140,7 @@ apps/api/src/plantkeeper/api/grpc/generated/
 # -----------------------------------------------------------------------------
 *.jsonl
 !tests/fixtures/**/*.jsonl
-# The evaluation corpus is committed: roadmap 9.1 pins its size and the eval scores it (ADR 0013).
+# The evaluation corpus is committed: the eval pins its size and scores it (ADR 0013).
 !tests/eval/fixtures/**/*.jsonl
 iot-replay/
 telemetry-dump/

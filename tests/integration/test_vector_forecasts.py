@@ -1,6 +1,6 @@
 """The ``forecasts`` collection, over the in-memory engine.
 
-Roadmap 3.6 stores one reading per day and reads it back by date; roadmap 5.4 is what depends on
+The collection stores one reading per day and reads it back by date; the forecast step depends on
 that: a second call for the same day must answer from storage instead of re-running the agent.
 """
 
@@ -64,7 +64,7 @@ def test_a_saved_forecast_comes_back_unchanged(vector_store: VectorStore) -> Non
 
 
 def test_an_unread_day_is_none_not_an_error(vector_store: VectorStore) -> None:
-    """A day with no reading is a legitimate answer for phase 5's `build_forecast` to act on."""
+    """A day with no reading is a legitimate answer for `build_forecast` to act on."""
     save_forecast(vector_store, _forecast(day=date(2026, 9, 21)))
 
     assert get_forecast(vector_store, date(2026, 9, 22)) is None

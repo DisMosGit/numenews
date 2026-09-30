@@ -47,7 +47,7 @@ Retrieval: hit@5 = 1.000 (20/20), floor 0.80.
   than tuned to the last run.
 - A single question can drop to 0 when the judge's statement check misreads an answer the
   contexts plainly support; the run is gated on the mean for exactly that reason.
-- `faithfulness` and `context_precision` are the gates of phase 9; `context_recall` and
+- `faithfulness` and `context_precision` are the gated metrics; `context_recall` and
   `answer_relevancy` are reported so a regression is visible before it is gated.
 - The full details — endpoint, dataset format, how to add fixtures — are in
   `docs/EVAL.md`.

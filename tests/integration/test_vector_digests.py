@@ -1,4 +1,4 @@
-"""The ``digests`` collection, over the in-memory engine (ROADMAP 5.5).
+"""The ``digests`` collection, over the in-memory engine (docs/RAG_PIPELINE.md).
 
 A digest is identified by the period it summarises, so the two things worth proving are that the
 period round-trips and that re-summarising the same period replaces the point instead of adding

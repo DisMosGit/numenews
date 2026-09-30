@@ -1,6 +1,6 @@
 """The ``NewsSource`` Protocol and the failure vocabulary around it.
 
-The roadmap's Definition of Done for this task is that ``mypy --strict`` checks the structural
+The Definition of Done for this module is that ``mypy --strict`` checks the structural
 typing, so the fake below is deliberately a plain class — no base class, no inheritance — and the
 module-level :func:`accepts` takes a :class:`~numenews.news.NewsSource`. If the Protocol and the
 fake drift apart, the type check fails, not just these assertions.

@@ -14,8 +14,9 @@ class Forecast(BaseModel):
 
     ``dominant_number`` is the reduced value the day is read under, ``master_active`` says whether
     a master number (11, 22 or 33) participates, and ``patterns`` carries the connections the
-    reading was built from. The field is named ``master_active`` after ``ROADMAP.md`` 1.1; the JSON
-    sketch in the private design brief (``master_number_active``) is stale.
+    reading was built from. The field is named ``master_active`` after the master numbers of
+    docs/NUMEROLOGY.md; the JSON sketch in the private design brief (``master_number_active``) is
+    stale.
     """
 
     model_config = ConfigDict(frozen=True, strict=True)

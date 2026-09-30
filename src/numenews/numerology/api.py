@@ -11,12 +11,12 @@ from numenews.numerology.reduction import reduce_number, reduction_steps
 def compute_numerology(text: str) -> NumerologyResult:
     """Read a text: its letter sum, the reduced value, and the steps between them.
 
-    This is the one function the interfaces above call. The MCP tool of phase 6.4 returns its
-    result unchanged and the CLI prints it as JSON, so the shape of
+    This is the one function the interfaces above call. The ``compute_numerology`` MCP tool returns
+    its result unchanged and the CLI prints it as JSON, so the shape of
     :class:`~numenews.models.results.NumerologyResult` is the contract.
 
     Extraction is deliberately *not* part of it. Finding numbers and dates in the text is the
-    agent's job with ``extract_*_regex`` as its fallback (phase 4.2); a reading of the text's
+    agent's job with ``extract_*_regex`` as its fallback; a reading of the text's
     letters does not depend on what those regexes found, and mixing the two would make one result
     answer two questions.
 

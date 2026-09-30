@@ -1,7 +1,7 @@
 # FAQ
 
-> Short answers with a pointer to the document that owns the detail. `ROADMAP.md` is the
-> authoritative status.
+> Short answers with a pointer to the document that owns the detail. The authoritative status is
+> [`openspec/specs/`](../openspec/specs/).
 
 ## What is this, in one paragraph?
 
@@ -49,7 +49,7 @@ selection logic per question is in [`TOOL_USE.md`](TOOL_USE.md).
 ## What does "hybrid search" mean here?
 
 Dense retrieval with the payload filter applied *inside* each `Prefetch`, fused with reciprocal rank
-fusion. Phase 3 has one retriever, so the fusion merges a single ranking; the shape is what makes a
+fusion. There is one dense retriever today, so the fusion merges a single ranking; the shape is what makes a
 sparse/BM25 retriever a second entry in the same list. See
 [ADR 0007](adr/0007-qdrant-hybrid-search.md).
 
@@ -89,7 +89,7 @@ and the LLM endpoint you configured.
 
 Yes — a new feed implements the `NewsSource` Protocol and is registered with the aggregator; a new
 agent follows the existing four and its prompt goes in `docs/PROMPTS.md`. Both are
-architecturally visible changes, so they need an ADR and a ROADMAP task, not a quiet patch.
+architecturally visible changes, so they need an ADR and an OpenSpec change, not a quiet patch.
 
 ## Why is the coverage badge a static number?
 
@@ -106,5 +106,6 @@ retrieval half always runs. See [`EVAL.md`](EVAL.md).
 
 ## Where is the project going next?
 
-`ROADMAP.md` — phases 0–10 are planned there, one atomic commit per task. Anything not in the
-roadmap is not a plan yet.
+[`openspec/changes/`](../openspec/changes/) holds what has been proposed and is in flight, and
+[`openspec/specs/`](../openspec/specs/) holds the behaviour that ships. An idea that is not a change
+yet lives in a GitHub issue. Anything in none of those places is not a plan yet.

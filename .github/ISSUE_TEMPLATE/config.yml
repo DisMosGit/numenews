@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Propose a change
+    url: https://github.com/DisMosGit/numenews/blob/main/CONTRIBUTING.md
+    about: Ready to build something? The contributing guide walks through the OpenSpec loop.
+  - name: How the project works
+    url: https://github.com/DisMosGit/numenews/blob/main/docs/ARCHITECTURE.md
+    about: The layers, the data flow and what each document owns.

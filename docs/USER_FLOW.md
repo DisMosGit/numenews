@@ -1,7 +1,8 @@
 # The one-shot CLI
 
-> Phase 7. `ROADMAP.md` is the authoritative status; this document is the contract of the command
-> surface: what each command does, what it needs, what it prints, and how it fails. The decisions
+> The authoritative status is [`openspec/specs/`](../openspec/specs/); this document is the contract of
+> the command surface: what each command does, what it needs, what it prints, and how it fails. Its
+> behaviour is specified by the `cli-surface` capability; the decisions
 > behind it are in [ADR 0005](adr/0005-json-only-output.md) (JSON-only stdout) and
 > [ADR 0006](adr/0006-one-shot-vs-repl.md) (one-shot, and the container it shares with MCP).
 
@@ -100,7 +101,7 @@ uv run numenews today | jq '{number: .dominant_number, master: .master_active}'
 ```
 
 The day and the window come from the pipeline's clock (UTC). `--topic` defaults to `politics` so the
-bare command in the roadmap's definition of done works.
+bare command works with no arguments.
 
 ### `forecast`
 

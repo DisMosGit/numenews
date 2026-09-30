@@ -44,7 +44,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--run-eval",
         action="store_true",
         default=False,
-        help="Run tests marked `eval` (ragas metrics, phase 9).",
+        help="Run tests marked `eval` (ragas metrics, docs/EVAL.md).",
     )
 
 

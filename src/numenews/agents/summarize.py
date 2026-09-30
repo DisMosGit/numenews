@@ -1,6 +1,6 @@
 """SummarizeAgent: the news outside the window, compressed into one digest.
 
-The sliding window of roadmap 5.5 keeps the recent days raw for the pattern and forecast agents;
+The pipeline's sliding window keeps the recent days raw for the pattern and forecast agents;
 everything older is summarised once — and only when the caller asks for it — so a long-running
 installation does not have to carry every article into every prompt.
 

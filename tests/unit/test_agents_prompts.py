@@ -1,4 +1,4 @@
-"""Prompt-format tests for the reasoning layer (ROADMAP 4.5).
+"""Prompt-format tests for the reasoning layer (docs/PROMPTS.md).
 
 The project has no snapshot library, so the snapshot is a literal: each rendered prompt is compared
 with the exact text the agent will send. When a prompt changes on purpose, this file changes with

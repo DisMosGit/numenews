@@ -1,6 +1,6 @@
 # Tooling
 
-> Phase 10.2. The tools actually used to build and check this repository, and the commands that stand
+> The tools actually used to build and check this repository, and the commands that stand
 > in for the CI that deliberately does not exist. The conventions they enforce are in
 > [`CONVENTIONS.md`](CONVENTIONS.md); the commands a review re-runs are in
 > [`EVAL_OF_AGENT.md`](EVAL_OF_AGENT.md).
@@ -10,8 +10,9 @@
 One package, `numenews`, in a `src/` layout, on Python 3.14+, managed by
 [`uv`](https://docs.astral.sh/uv/) and pinned by the committed `uv.lock`. `pyproject.toml` declares
 the runtime dependencies, a `dev` dependency group (pytest, mypy, ruff, hypothesis, respx,
-pre-commit, pytest-cov) and the `uv_build` backend; the comment above `dependencies` records which
-phase introduced each package, and a dependency is added only by the phase that first imports it.
+pre-commit, pytest-cov) and the `uv_build` backend; the comment above `dependencies` groups each
+package by the layer that introduced it, and a dependency is added only by the change that first
+imports it.
 
 ```bash
 uv sync --all-extras        # make install — the only setup step
@@ -48,8 +49,9 @@ verified against the `Makefile`:
 `make lint && make test` is the gate every commit has to pass. `mcp` and `run` are prefixed with `@`
 on purpose: make would otherwise echo its recipe into stdout and break the "stdout carries JSON (or
 JSON-RPC) and nothing else" contract. `make test` ends with `make coverage-check`, which enforces the
-per-layer floors of ROADMAP 10.4; `pyproject.toml` keeps `fail_under = 0` because coverage.py has no
-per-path threshold and the Makefile passes `--fail-under` once per include group instead.
+per-layer floors recorded in [`../coverage_report.md`](../coverage_report.md); `pyproject.toml` keeps
+`fail_under = 0` because coverage.py has no per-path threshold and the Makefile passes `--fail-under`
+once per include group instead.
 
 ## Ruff and mypy
 
@@ -122,19 +124,20 @@ working directory; nothing in the package imports or depends on it.
 ```bash
 make install                          # once
 docker compose up -d qdrant           # or make dev, when the task needs the vector layer
-# 1. pick the task in ROADMAP.md, read AGENTS.md and the docs it names
+# 1. pick the task in the change's tasks.md, read AGENTS.md and the docs it names
 # 2. plan (PROMPTING_PLAYBOOK.md, prompt 1), then implement (prompt 2)
 make format                           # optional: apply ruff fixes while iterating
 make lint && make test                # the gate; test ends with the per-layer coverage floors
 make test-eval                        # only when the eval is touched
 make coverage && open docs/coverage.html
 make dev && uv run numenews today     # the live check, when the task needs it
-# 3. tick the checkboxes, update CHANGELOG.md and the docs, one atomic commit
+# 3. tick the checkbox, update CHANGELOG.md and the docs, one atomic commit
+# 4. openspec archive "<change>" once every box is ticked and the change validates
 ```
 
 ## No CI/CD, by design
 
 There is no `.github/workflows` and no pipeline configuration: `AGENTS.md` rules CI/CD, Kubernetes and
-Terraform out of scope. The local commands are the gate, which is why every task's Definition of Done
+Terraform out of scope. The local commands are the gate, which is why every task's verification
 is phrased as a command that must pass and why a review re-runs `make lint`, `make test` and
 `make test-eval` rather than trusting a report.

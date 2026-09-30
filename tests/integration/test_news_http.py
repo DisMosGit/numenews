@@ -46,7 +46,7 @@ async def _fetch(client: httpx.AsyncClient, **params: str) -> httpx.Response:
 async def test_the_second_identical_request_comes_from_the_cache(
     news_client: AsyncCacheClient,
 ) -> None:
-    """Roadmap 2.2: a repeat within the TTL must not touch the network."""
+    """docs/NEWS_SOURCES.md: a repeat within the TTL must not touch the network."""
     with respx.mock(assert_all_called=False) as router:
         route = router.get(URL).mock(return_value=httpx.Response(200, json={"title": "sun"}))
 
@@ -79,7 +79,7 @@ async def test_the_cache_lives_in_the_configured_directory_with_the_fifteen_minu
     news_client: AsyncCacheClient,
     settings: Settings,
 ) -> None:
-    """The client reads `Settings.cache_dir`, and the TTL is the roadmap's fifteen minutes."""
+    """The client reads `Settings.cache_dir`, and the TTL is the documented fifteen minutes."""
     storage = news_client.storage
 
     assert isinstance(storage, AsyncSqliteStorage)

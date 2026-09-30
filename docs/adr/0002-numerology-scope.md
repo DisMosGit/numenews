@@ -28,7 +28,7 @@ Three further constraints shape the layer:
   later interpret a number, but it must not be the thing that computes it, or the pipeline becomes
   unverifiable and non-reproducible.
 
-`ROADMAP.md` 1.1 additionally places the result models (`NumerologyResult`, `MasterCheckResult`) in
+Phase 1 additionally places the result models (`NumerologyResult`, `MasterCheckResult`) in
 `src/numenews/models/`, while the phase-0 layer table in `docs/ARCHITECTURE.md` describes `numerology`
 as importing "nothing". Those two cannot both hold as written.
 
@@ -91,7 +91,6 @@ with the extraction functions and the agent, because those are different questio
 
 ## References
 
-- [`ROADMAP.md`](../../ROADMAP.md) phase 1 (tasks 1.1–1.8)
 - [`docs/NUMEROLOGY.md`](../NUMEROLOGY.md) — the rules, worked examples and invariants
 - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — the layer table this ADR corrects one row of
 - [`AGENTS.md`](../../AGENTS.md) — the purity rule and the boundary contracts

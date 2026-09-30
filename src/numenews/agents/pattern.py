@@ -4,7 +4,7 @@ The model proposes the connections; this module decides what a connection *is*. 
 :class:`~numenews.models.Pattern` only if it cites ids the caller actually passed, and the pattern's
 identity is derived from its content with ``uuid5`` — the same determinism as
 :func:`numenews.news.items.news_id` — so analysing the same items twice overwrites the same Qdrant
-point instead of inventing a new one (phase 3.5 saves a pattern under its own id).
+point instead of inventing a new one.
 """
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ def pattern_id(
 
     Derived from the pattern's own content — its kind, its numbers and the (sorted) items it links —
     so the same connection found twice is one pattern. ``discovered_at`` is *not* part of the key:
-    it describes the moment ``save_pattern`` wrote the point, and phase 3.5 keeps the first one.
+    it describes the moment ``save_pattern`` wrote the point, and the store keeps the first one.
     """
     key = "|".join(
         (
@@ -92,7 +92,7 @@ class PatternAgent:
 
         Returns:
             The patterns, in the order the model reported them, each with a deterministic id and
-            with ``discovered_at`` left unset for phase 3.5's ``save_pattern`` to stamp.
+            with ``discovered_at`` left unset for ``save_pattern`` to stamp.
 
         Raises:
             AgentExecutionError: If the model run failed or its output never validated. An empty

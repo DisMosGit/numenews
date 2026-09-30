@@ -3,7 +3,7 @@
 Payload indexes are created before any ingest, and a filter goes inside ``Prefetch`` in multi-stage
 queries. :class:`~numenews.vector.client.VectorStore` owns the connection and the two local
 embedders; the collection modules build on it, one module per collection, and this package's
-``__all__`` is the surface the pipeline (phase 5) and the MCP tools (phase 6) call.
+``__all__`` is the surface the pipeline and the MCP tools call.
 """
 
 from __future__ import annotations

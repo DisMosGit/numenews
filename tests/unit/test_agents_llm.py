@@ -1,7 +1,7 @@
-"""Tests for the LLM client and the layer boundary of `agents` (ROADMAP 4.1).
+"""Tests for the LLM client and the layer boundary of `agents` (docs/PROMPTS.md).
 
 Nothing here touches the network: the model is only *constructed*, and the endpoint is a fake one.
-The same construction is what the pipeline of phase 5 will do with real settings.
+The same construction is what the pipeline will do with real settings.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Tests for `ExtractNumbersAgent` (ROADMAP 4.2).
+"""Tests for `ExtractNumbersAgent` (docs/PROMPTS.md).
 
 The model is always a `pydantic-ai` test double, so these tests exercise the real structured-output
 path — validation, retries, the `AgentRunError` on failure — without a network or a key.
@@ -42,7 +42,7 @@ async def test_extract_reports_a_model_only_reading_when_regex_adds_nothing() ->
 
 
 async def test_extract_uses_the_regex_fallback_when_the_model_fails() -> None:
-    """ROADMAP 4.2: a broken provider degrades to `extract_numbers_regex`, it does not raise."""
+    """docs/PROMPTS.md: a broken provider degrades to `extract_numbers_regex`, it does not raise."""
     agent = ExtractNumbersAgent(failing(ModelAPIError(model_name="test", message="boom")))
 
     result = await agent.extract(TEXT, symbols=("AI", "$"))

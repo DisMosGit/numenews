@@ -115,7 +115,7 @@ def test_a_stored_activation_comes_back_unchanged() -> None:
 
 
 def test_a_stored_activation_keeps_the_items_reduced_value() -> None:
-    """The value rides in the payload, so a history read needs no lookup in `news` (phase 8.1)."""
+    """The value rides in the payload, so a history read needs no lookup in `news`."""
     activation = _activation(numerology_value=11)
 
     payload = activation_payload(activation)

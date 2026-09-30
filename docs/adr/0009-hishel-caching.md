@@ -11,8 +11,8 @@ Accepted (phase 2)
 ## Context
 
 The five news APIs are queried together, several times a day, during development and from the MCP
-server, and all but GDELT count requests against a daily quota on their free tiers. `ROADMAP.md`
-fixes a fifteen-minute cache: within one working session the same query should hit the network once.
+server, and all but GDELT count requests against a daily quota on their free tiers. A fifteen-minute
+cache was chosen: within one working session the same query should hit the network once.
 A cache is also what makes a repeated `numenews today` reproducible when a feed is throttled.
 
 `httpx` has no cache of its own, so the layer needed a third-party one, and the obvious candidate —
@@ -80,5 +80,4 @@ We will cache every news request through one `hishel`-backed `httpx.AsyncClient`
 - [`docs/NEWS_SOURCES.md`](../NEWS_SOURCES.md) — the five APIs, their quotas and §The cache
 - [`src/numenews/news/http.py`](../../src/numenews/news/http.py) — `build_news_client`,
   `_CacheOnlySuccesses` and the retry policy
-- [`ROADMAP.md`](../../ROADMAP.md) — phase 2, tasks 2.2 and 2.9
 - [`hishel`](https://hishel.com/) — storage TTLs and filtering policies

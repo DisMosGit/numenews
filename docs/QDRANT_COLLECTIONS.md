@@ -1,7 +1,7 @@
 # Qdrant collections
 
-> Phases 3 and 5. `ROADMAP.md` is the authoritative status; this document records what the vector
-> layer actually stores and why. The decisions behind it are in
+> The authoritative status is [`openspec/specs/`](../openspec/specs/); this document records what the
+> vector layer actually stores and why. The decisions behind it are in
 > [ADR 0003](adr/0003-local-embeddings.md) and [ADR 0011](adr/0011-rag-pipeline-orchestration.md).
 
 Six collections live in Qdrant, all created by `VectorStore.ensure_collections()` (or by the first
@@ -59,7 +59,7 @@ Both store the same payload — one `NumberActivation`:
 }
 ```
 
-`numerology_value` is the *item's* reduced value, copied onto the activation in phase 8.1 so a
+`numerology_value` is the *item's* reduced value, copied onto the activation so a
 history read answers "what was that day read under" without a second lookup in `news`. It is absent
 when the item has none (a headline with no letters), exactly like the `news` payload.
 
@@ -114,7 +114,7 @@ missing collection means the store was never initialised. `vector/forecasts.py` 
 
 ### `digests`
 
-One point per summarised period, written by `save_digest` (roadmap 5.5):
+One point per summarised period, written by `save_digest`:
 
 ```json
 {
@@ -129,7 +129,7 @@ One point per summarised period, written by `save_digest` (roadmap 5.5):
 `(period_start, period_end)` and re-summarising a range replaces its point. Both ends are RFC 3339
 days and are indexed as `DATETIME`, because "what did the first week of September look like" is a
 range query. The vector is built from `summary` (or, when it is blank, from the numbers), so a later
-semantic question about an earlier stretch can find the digest that answers it. Phase 5 stores and
+semantic question about an earlier stretch can find the digest that answers it. The pipeline stores and
 reads the digest; no prompt contains one yet (`docs/CONTEXT_MANAGEMENT.md`).
 
 ## Point ids
@@ -154,8 +154,8 @@ The pipeline's steps read three of them, and each has a read function rather tha
 | `read_news_range(store, date_from, date_to)` | "what was published in my window" — inclusive at both ends |
 | `get_activations(store, days, today=)` | "what was active recently" — the forecast step's memory |
 | `get_history(store, number, days, today=)` | "when was 11 active" — the exact question about one number |
-| `activation_frequency(activations)` | "how often, day by day" — those rows folded into the period's series (phase 8.2) |
-| `read_patterns(store, pattern_type=, min_strength=, limit=)` | "which strong resonance patterns do I have" — the exact read of phase 7.7 |
+| `activation_frequency(activations)` | "how often, day by day" — those rows folded into the period's series, as `docs/CONTEXT_MANAGEMENT.md` describes |
+| `read_patterns(store, pattern_type=, min_strength=, limit=)` | "which strong resonance patterns do I have" — the exact read behind `numenews patterns` (`cli-surface`) |
 | `get_forecast(store, day)` / `get_digest(store, start, end)` | "have I already read this day / summarised this period" |
 
 ## Searching
@@ -180,7 +180,7 @@ the generated upper bound is the *start of the next day*.
 
 `search_news` passes the filter as `query_filter`; `hybrid_search_news` uses the multi-stage Query
 API — `Prefetch(query=vector, filter=..., limit=...)` followed by `FusionQuery(Fusion.RRF)` — so every
-retriever pre-filters its own candidate set. Phase 3 has one dense retriever, so the fusion merges a
+retriever pre-filters its own candidate set. The vector layer has one dense retriever, so the fusion merges a
 single ranking and the returned order is **RRF** (`1 / (60 + rank)`), not cosine; a sparse/BM25
 prefetch joins as a second entry in the same list.
 

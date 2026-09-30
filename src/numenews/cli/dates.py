@@ -1,14 +1,14 @@
 """The ``--date`` grammar of the CLI: an absolute day or one relative to today.
 
-``numenews forecast`` is the command a user reaches for on a day that is not today — the roadmap
-asks for ``--date 2026-09-22``, ``--date tomorrow`` and ``--date +3d`` — so the grammar lives in one
-place instead of in the command. The offset forms exist because a shell script should not have to
-compute a date to ask about one.
+``numenews forecast`` is the command a user reaches for on a day that is not today — the cli-surface
+capability requires ``--date 2026-09-22``, ``--date tomorrow`` and ``--date +3d`` — so the grammar
+lives in one place instead of in the command. The offset forms exist because a shell script should
+not have to compute a date to ask about one.
 
 Relative forms are resolved against a day the caller passes in, never against ``date.today()`` here:
-the day comes from the pipeline's clock, which is the one clock the project reads (phases 1.6, 3.7
-and 5.4 inject theirs for the same reason), so a test or a replayed run is independent of the wall
-clock.
+the day comes from the pipeline's clock, which is the one clock the project reads — the regex date
+extraction, the history read and the forecast build take their day from the caller for the same
+reason — so a test or a replayed run is independent of the wall clock.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from datetime import date, timedelta
 
 import typer
 
-#: The accepted relative offsets, spelled with a lowercase ``d`` as the roadmap writes them.
+#: The accepted relative offsets, spelled with a lowercase ``d`` as cli-surface requires.
 _OFFSET = re.compile(r"^(?P<sign>[+-])(?P<days>\d+)d$")
 
 #: Named days, resolved as an offset from the day the caller passes.

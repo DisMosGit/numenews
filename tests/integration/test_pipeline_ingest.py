@@ -1,9 +1,9 @@
-"""The ingest step over the in-memory engine (ROADMAP 5.2).
+"""The ingest step over the in-memory engine (docs/RAG_PIPELINE.md).
 
 The acceptance test of this task is idempotency by ``news_id``: a second ingest of the same page
 must add no points, make no model call and embed nothing. The rest of the file states what one run
 writes — the news item, the semantic activation and the exact history row — and that the profile of
-roadmap 5.1 covers the four steps of the chain.
+docs/RAG_PIPELINE.md covers the four steps of the chain.
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ def _pipeline(
 async def test_ingest_writes_the_news_the_activation_and_the_history(
     vector_store: VectorStore,
 ) -> None:
-    """One run of the chain fills all three collections of roadmap 5.2."""
+    """One run of the chain fills all three collections the ingest step writes."""
     first = _item(11, title=FIRST_TITLE, text=FIRST_TEXT)
     second = _item(7, title=SECOND_TITLE, text=SECOND_TEXT)
     pipeline, _ = _pipeline(vector_store, [first, second], [11, 7])
@@ -144,12 +144,12 @@ async def test_the_history_row_carries_the_snippet_around_the_number(
     assert payload["date"] == "2026-09-21T00:00:00Z"
     assert payload["news_id"] == str(item.id.root)
     assert "11th hour" in str(payload["context"])
-    # The row carries the item's own reduced value, so the memory is readable on its own (8.1).
+    # The row carries the item's own reduced value, so the memory is readable on its own.
     assert payload["numerology_value"] == stored_items[0].numerology_value
 
 
 async def test_a_second_batch_grows_the_history(vector_store: VectorStore) -> None:
-    """Phase 8's DoD: the memory accumulates across runs instead of restarting each time."""
+    """docs/CONTEXT_MANAGEMENT.md: memory accumulates across runs instead of restarting."""
     first_day = date(2026, 9, 20)
     next_day = date(2026, 9, 21)
     first = _item(11, title=FIRST_TITLE, text=FIRST_TEXT, day=first_day)
@@ -173,7 +173,7 @@ async def test_a_second_batch_grows_the_history(vector_store: VectorStore) -> No
 async def test_a_repeated_ingest_adds_nothing_and_calls_no_model(
     vector_store: VectorStore,
 ) -> None:
-    """ROADMAP 5.2's Definition of Done: the second run is a no-op."""
+    """docs/RAG_PIPELINE.md's Definition of Done: the second run is a no-op."""
     item = _item(11, title=FIRST_TITLE, text=FIRST_TEXT)
     pipeline, counter = _pipeline(vector_store, [item], [11])
 
@@ -243,7 +243,7 @@ async def test_the_extraction_reads_the_headline_and_the_body(vector_store: Vect
 
 
 async def test_the_run_reports_one_timing_per_step(vector_store: VectorStore) -> None:
-    """ROADMAP 5.1: every step of the chain leaves a timing for the profile."""
+    """docs/RAG_PIPELINE.md: every step of the chain leaves a timing for the profile."""
     item = _item(11, title=FIRST_TITLE, text=FIRST_TEXT)
     pipeline, _ = _pipeline(vector_store, [item], [11])
 

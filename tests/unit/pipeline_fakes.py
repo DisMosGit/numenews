@@ -86,7 +86,7 @@ def orchestration_pipeline(**kwargs: object) -> Pipeline:
     The single place a test double is passed where a ``VectorStore`` is expected, so the
     inconvenient downcast exists once instead of in every test that only cares about the wiring.
     A summarizer is supplied unless the caller passes one, because the constructor would otherwise
-    build a real agent from ``Settings`` — and the suite has no LLM endpoint (phase 4.1).
+    build a real agent from ``Settings`` — and the suite has no LLM endpoint (docs/PROMPTS.md).
     """
     kwargs.setdefault("summarizer", summarize_agent()[0])
     return Pipeline(store=FakeStore(), **kwargs)  # type: ignore[arg-type]

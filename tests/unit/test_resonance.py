@@ -1,4 +1,4 @@
-"""Tests for date resonance (ROADMAP 1.5).
+"""Tests for date resonance (docs/NUMEROLOGY.md).
 
 `2026-09-21`, `2026-09-12` and `2026-09-03` all have the digit sum 22, which makes them a convenient
 resonant trio; `2026-09-22` reduces to 23 -> 5 and stays outside it.

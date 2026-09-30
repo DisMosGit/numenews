@@ -3,8 +3,8 @@
 The four layers below are deliberately independent — ``news`` knows nothing of ``agents``,
 ``agents`` nothing of ``vector`` — so something has to compose them. That is this class, and it is
 the *only* thing that knows the order of the chain: fetch news, read numbers out of it, reduce the
-text, embed and store, connect the items, read the memory back, write the day's reading. Roadmap
-5.1 calls it ``Pipeline``.
+text, embed and store, connect the items, read the memory back, write the day's reading. The class
+is named ``Pipeline``.
 
 Three properties make it testable without a server, a key or a model:
 
@@ -33,13 +33,13 @@ from numenews.pipeline.errors import PipelineError
 from numenews.pipeline.timings import PipelineRun
 from numenews.vector import VectorStore
 
-#: How many calendar days one pipeline window covers, when the caller does not say. Roadmap 5.5
-#: names seven: the day being read plus the six before it.
+#: How many calendar days one pipeline window covers, when the caller does not say. The window is
+#: seven days: the day being read plus the six before it.
 DEFAULT_WINDOW_DAYS = 7
 
-#: How far back the forecast's memory reaches, when the caller does not say. Roadmap 8.3 names
-#: thirty: the news window is what the reading is *about*, the memory window is the evidence it may
-#: cite, and the two are deliberately different lengths.
+#: How far back the forecast's memory reaches, when the caller does not say. The memory reaches
+#: thirty days: the news window is what the reading is *about*, the memory window is the evidence it
+#: may cite, and the two are deliberately different lengths.
 DEFAULT_HISTORY_DAYS = 30
 
 #: What the news step calls when no fetcher is injected: a coroutine taking ``(topic, date_range)``.
@@ -65,7 +65,7 @@ class Pipeline:
             :class:`~numenews.pipeline.clock.SystemClock`.
         window_days: Length of the sliding window in calendar days, ending on the day being read.
         history_days: How far back the forecast's memory of number activations reaches, in calendar
-            days (``number_history``, phase 8.3). Independent of ``window_days``: the window says
+            days (``number_history``). Independent of ``window_days``: the window says
             what the reading is about, the memory says what it may cite.
         summary_limit: How many old items one digest summarises at most.
 

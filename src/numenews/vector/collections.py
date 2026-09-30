@@ -5,11 +5,11 @@ walk, without one it collects candidates and throws most of them away. Every ``c
 therefore idempotent — it checks ``collection_exists`` before creating — and every write path calls
 it, so ``upsert_news`` cannot run against a collection that has no indexes yet.
 
-One unnamed COSINE vector per collection is deliberate: phase 3 searches dense vectors only
-(roadmap 3.8 is "dense + filter"), and a single vector keeps the point payload the only place where
-a schema can drift. The width is the model the collection was designed around — 768d for ``news``,
-384d for the short number contexts of ``numbers`` — so a wrong embedder fails at creation rather
-than silently at the first query. ``docs/QDRANT_COLLECTIONS.md`` records each payload field.
+One unnamed COSINE vector per collection is deliberate: the search is dense with a payload filter,
+and a single vector keeps the point payload the only place where a schema can drift. The width is
+the model the collection was designed around — 768d for ``news``, 384d for the short number contexts
+of ``numbers`` — so a wrong embedder fails at creation rather than silently at the first query.
+``docs/QDRANT_COLLECTIONS.md`` records each payload field.
 
 Local mode (``QdrantClient(":memory:")``) ignores payload indexes and warns about it; the indexes
 are asserted against the Docker server in ``tests/integration/test_vector_docker.py``.
@@ -53,7 +53,7 @@ NUMBERS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
 }
 
 #: Payload fields of ``patterns``. ``discovered_at`` is always written by ``save_pattern``, so the
-#: datetime index never sees a null; ``strength`` is a float so phase 7 can ask for the strong
+#: datetime index never sees a null; ``strength`` is a float so the CLI can ask for the strong
 #: patterns without scanning the collection.
 PATTERNS_PAYLOAD_INDEXES: Mapping[str, PayloadSchemaType] = {
     "type": PayloadSchemaType.KEYWORD,
@@ -166,7 +166,7 @@ def _create_indexes(
 
 
 #: Every collection creator, in the order ``ensure_collections`` runs them. It grows with the
-#: collections of phase 3, so a caller always sees the schemas this build actually defines.
+#: collection set, so a caller always sees the schemas this build actually defines.
 COLLECTION_CREATORS: tuple[Callable[[QdrantClient], None], ...] = (
     create_news_collection,
     create_numbers_collection,

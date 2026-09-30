@@ -1,12 +1,12 @@
-"""The stdio transport, end to end (ROADMAP 6.11).
+"""The stdio transport, end to end (mcp-surface).
 
 The in-memory tests of ``test_mcp_tools.py`` prove what each tool answers; this one proves the thing
 a host actually does: launch ``uv run python -m numenews.mcp`` as a child process, speak JSON-RPC
-over its stdin/stdout and list the tools. It is the substitute for the roadmap's manual "open it in
+over its stdin/stdout and list the tools. It is the substitute for the manual "open it in
 Claude Desktop" check — no Node, no GUI, and the same command ``make mcp`` runs.
 
 The subprocess is only asked to initialize and list: nothing is built eagerly, so the check passes
-on a machine with no Qdrant and no LLM key, which is exactly the phase-6 startup contract.
+on a machine with no Qdrant and no LLM key, which is exactly the mcp-surface startup contract.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.integration
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-#: The nine tools of ROADMAP 6.2-6.10, in registration (roadmap) order.
+#: The nine tools of mcp-surface, in registration order.
 EXPECTED_TOOLS = [
     "fetch_news",
     "extract_numbers",

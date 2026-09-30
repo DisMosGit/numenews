@@ -1,6 +1,6 @@
 """Context management: what the agents see, and what is compressed instead.
 
-One rule lives here (roadmap 5.5). The agents read the *window* — the day being handled and the
+One rule lives here. The agents read the *window* — the day being handled and the
 ``window_days - 1`` days before it — because a reading is about the present. Everything older is not
 passed to them at all; it is summarised once into a
 :class:`~numenews.models.Digest` and stored, so the project's memory of an earlier stretch is a

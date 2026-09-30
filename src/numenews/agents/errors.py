@@ -2,7 +2,7 @@
 
 An agent can fail for two different reasons, and a caller reacts differently to each: an endpoint
 that is not configured at all is a mistake to fix before anything runs, while a run that failed is a
-runtime outcome the pipeline of phase 5 may degrade from. Both derive from :class:`AgentError`, so
+runtime outcome the pipeline may degrade from. Both derive from :class:`AgentError`, so
 one ``except`` reads as "the agent could not do its job".
 """
 

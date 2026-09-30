@@ -66,8 +66,8 @@ class NewsFilter(BaseModel):
     ``qdrant_client``; ``date_from``/``date_to`` are inclusive UTC calendar days, matching
     :class:`DateRange`.
 
-    ``numerology_value`` compares a single value: the phase-3 collections store the reduced value of
-    the whole item, so a filter is "the item's number is 7", not "7 occurs somewhere in it".
+    ``numerology_value`` compares a single value: the ``news`` collection stores the reduced value
+    of the whole item, so a filter is "the item's number is 7", not "7 occurs somewhere in it".
     """
 
     model_config = ConfigDict(frozen=True, strict=True)

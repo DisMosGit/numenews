@@ -1,21 +1,21 @@
 # Evaluating agent output
 
-> Phase 10.2. How a human reviews work an agent produced in this repository: what to diff, which
+> How a human reviews work an agent produced in this repository: what to diff, which
 > commands to re-run, and what counts as evidence. The prompts that ask for the work are in
 > [`PROMPTING_PLAYBOOK.md`](PROMPTING_PLAYBOOK.md); the prohibitions a review enforces are in
 > [`GUARDRAILS.md`](GUARDRAILS.md).
 
-The review answers one question: **does the change satisfy the task's Definition of Done, and can I
+The review answers one question: **does the change satisfy what the task says it verifies, and can I
 see that it does?** A convincing summary is not an answer. Everything below is something the reviewer
 reproduces, not something the agent reports.
 
-## Start from the Definition of Done
+## Start from what the task claims to verify
 
-Open `ROADMAP.md` at the task and turn its DoD into a checklist. Then diff the working tree against
-the base revision and walk the checklist item by item. If an item is not observable from the diff or a
-command, it is not done; "the code looks right" closes nothing. Record the deviations the agent
-reported and decide whether each is legitimate — a documented deviation next to the task is fine, a
-silent one is a finding.
+Open the change's `tasks.md` at the task and turn its verification into a checklist. Then diff the
+working tree against the base revision and walk the checklist item by item. If an item is not
+observable from the diff or a command, it is not done; "the code looks right" closes nothing. Record
+the deviations the agent reported and decide whether each is legitimate — a documented deviation next
+to the task is fine, a silent one is a finding.
 
 ## Re-run the verification commands yourself
 
@@ -25,7 +25,7 @@ Never accept an agent's transcript of a command. Run the same commands and read 
 make lint           # ruff check, ruff format --check, mypy --strict
 make test           # tests/unit + tests/integration, coverage, then the per-layer floors
 make coverage       # the same run with an HTML report in docs/coverage.html
-make coverage-check # re-checks the floors of ROADMAP 10.4 against the existing .coverage
+make coverage-check # re-checks the floors in ../coverage_report.md against the existing .coverage
 make test-eval      # ragas metrics in .venv-eval; needs an LLM endpoint (docs/EVAL.md)
 ```
 
@@ -55,9 +55,9 @@ the commit message carries the reason and an ADR carries it if the decision was 
 
 ## Check the paperwork landed in the same change
 
-One `ROADMAP.md` task is one atomic commit. That commit is expected to contain:
+One `tasks.md` item is one atomic commit. That commit is expected to contain:
 
-- the task's checkboxes ticked in `ROADMAP.md`, with a deviation note if reality differed;
+- the task's checkbox ticked in the change's `tasks.md`, with a deviation note if reality differed;
 - `CHANGELOG.md` under `[Unreleased]` when the change is user-facing;
 - the docs the task names — `docs/MCP_TOOLS.md` for a renamed tool,
   `docs/QDRANT_COLLECTIONS.md` for a payload change, `docs/PROMPTS.md` for a prompt change;
@@ -90,7 +90,7 @@ Evidence has three parts: **the command, its observed output, and the date**. "T
 them. A review comment is stronger still when it points at the code that would have to change.
 
 Treat every factual claim in agent-written prose as a claim to verify against the code — a docstring,
-a README line, a doc paragraph. The repository has a real example. Until phase 10.2,
+a README line, a doc paragraph. The repository has a real example. Until recently,
 `CONTRIBUTING.md`'s import-rules section said the layering was "enforced by `import-linter`". No such
 tool is installed and no `[tool.importlinter]` section exists; the actual guard is the subprocess and
 AST tests in `tests/unit/test_numerology_api.py`
@@ -105,15 +105,16 @@ grep -rn "import-linter" CONTRIBUTING.md docs/agentic/EVAL_OF_AGENT.md   # only 
 ```
 
 A claim that names a tool, a command or a file is cheap to verify and expensive to leave wrong; the
-correction belongs in the same change, which is what phase 10.2 did.
+correction belongs in the same change that notices it.
 
 ## Review checklist
 
-- [ ] The DoD is open next to the diff, and every item is checked against it.
+- [ ] The task's verification is open next to the diff, and every item is checked against it.
 - [ ] `make lint`, `make test`, and `make test-eval` when the eval is touched were re-run by the
       reviewer, with the output read.
 - [ ] `tests/` was diffed for removed, skipped or weakened assertions.
-- [ ] `ROADMAP.md` checkboxes, `CHANGELOG.md`, the named docs and any ADR are in the same commit.
+- [ ] The change's `tasks.md` checkbox, `CHANGELOG.md`, the named docs and any ADR are in the same
+      commit.
 - [ ] The failure paths (LLM, Qdrant, news source, empty/duplicate data) were considered and tested.
 - [ ] The evidence is command + observed output + date, not a summary.
 - [ ] Every factual claim in new prose was checked against the code.

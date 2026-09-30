@@ -1,4 +1,4 @@
-"""Tests for gematria (ROADMAP 1.4)."""
+"""Tests for gematria (docs/NUMEROLOGY.md)."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def test_normalize_text_folds_case() -> None:
 
 
 def test_gematria_simple_sums_latin_letters() -> None:
-    """The roadmap example: `sun` is 19 + 21 + 14 = 54."""
+    """The docs/NUMEROLOGY.md example: `sun` is 19 + 21 + 14 = 54."""
     assert gematria_simple("sun") == 54
     assert gematria_simple("Sun") == 54
     assert gematria_simple("Sun rises") == 124

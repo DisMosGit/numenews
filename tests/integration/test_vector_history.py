@@ -123,7 +123,7 @@ def test_a_window_shorter_than_a_day_is_refused(vector_store: VectorStore) -> No
 
 
 def test_the_whole_window_comes_back_whatever_the_number(vector_store: VectorStore) -> None:
-    """Roadmap 5.4 asks "what was active", not "when was 7 active"."""
+    """The forecast step asks "what was active", not "when was 7 active"."""
     record_activation(vector_store, _activation(number=7, news_url="a"))
     record_activation(vector_store, _activation(number=11, news_url="b"))
     record_activation(vector_store, _activation(number=7, news_url="c"))

@@ -1,6 +1,6 @@
 # Coverage report
 
-> ROADMAP 10.4. The dated snapshot of the suite's coverage and the floors it is compared against.
+> The dated snapshot of the suite's coverage and the floors it is compared against.
 > This is a static record, not something a pipeline regenerates: the project has no CI/CD by design
 > (`AGENTS.md`), so the command below is the one to re-run, and the README badge is kept in sync with
 > this file manually. [`TESTING.md`](TESTING.md) describes the levels behind the numbers.

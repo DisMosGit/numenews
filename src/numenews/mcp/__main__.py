@@ -1,6 +1,6 @@
 """Run the MCP server: ``python -m numenews.mcp``.
 
-The one-shot CLI of phase 7 proxies to the same :func:`numenews.mcp.main.main`, so both entry points
+The one-shot CLI proxies to the same :func:`numenews.mcp.main.main`, so both entry points
 start the identical server. stdout is the JSON-RPC stream and nothing else.
 """
 

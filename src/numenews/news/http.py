@@ -4,7 +4,7 @@ The client is an ``httpx.AsyncClient`` whose transport is wrapped by ``hishel``'
 The cache runs in hishel's *filter* mode rather than its specification mode, which is a deliberate
 choice: none of the five news APIs sends a freshness header that RFC 9111 could use, so the
 specification policy would treat every stored response as stale and never answer from the cache. The
-policy that makes the roadmap's fifteen-minute TTL real is the storage's ``default_ttl`` — a hishel
+policy that makes the fifteen-minute TTL real is the storage's ``default_ttl`` — a hishel
 extension, not a caching rule — and the filter mode is what lets it apply.
 
 Failures become :mod:`numenews.news.errors` exceptions here, once, so no adapter and no aggregator
@@ -42,7 +42,7 @@ from numenews.news.errors import (
 
 logger = get_logger(__name__)
 
-# How long a cached response may answer a request. The roadmap fixes fifteen minutes: the five APIs
+# How long a cached response may answer a request. The cache TTL is fifteen minutes: the five APIs
 # count requests against a daily quota, and a forecast run is measured in minutes, not seconds.
 NEWS_CACHE_TTL_SECONDS = 900.0
 
@@ -90,7 +90,7 @@ def build_news_client(settings: Settings | None = None) -> AsyncCacheClient:
 
     The caller owns the client and closes it (``async with`` or ``aclose``). Closing the client
     closes its sqlite storage for good, so there is deliberately no module-level singleton to reuse
-    by accident; phase 6 may keep one alive inside its application context.
+    by accident; the MCP server may keep one alive inside its application context.
 
     Args:
         settings: Configuration holding the cache directory. Defaults to

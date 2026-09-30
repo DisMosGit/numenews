@@ -1,4 +1,4 @@
-"""The context step over the in-memory engine (ROADMAP 5.5).
+"""The context step over the in-memory engine (docs/RAG_PIPELINE.md).
 
 `Pipeline.summarize` is the public entry of the task: ingest a range, keep the sliding window raw,
 and compress everything before it into one stored digest. The interesting cases are the boundaries —
@@ -75,7 +75,7 @@ def _pipeline(
 async def test_the_older_items_become_one_digest_and_the_window_stays_raw(
     vector_store: VectorStore,
 ) -> None:
-    """ROADMAP 5.5: the sliding window is kept, the stretch before it is compressed once."""
+    """docs/RAG_PIPELINE.md: the sliding window is kept, the stretch before it is compressed."""
     items = [_item(date(2026, 9, 2)), _item(date(2026, 9, 3)), _item(date(2026, 9, 20))]
     pipeline, counter = _pipeline(vector_store, items)
 

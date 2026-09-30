@@ -1,8 +1,8 @@
-"""The server object: construction, registration and the stdout contract (ROADMAP 6.1).
+"""The server object: construction, registration and the stdout contract (mcp-surface).
 
-``build_server`` is the seam the whole phase hangs on: it registers the tools of
+``build_server`` is the seam the whole surface hangs on: it registers the tools of
 :data:`numenews.mcp.tools.TOOLS`, wires the lifespan and accepts an injected application context.
-The skeleton registers nothing — each tool task of 6.2-6.10 adds one entry to ``TOOLS`` and its name
+The skeleton registers nothing — each tool of mcp-surface adds one entry to ``TOOLS`` and its name
 to the expectation here — so this module also tracks the nine-tool surface as it grows.
 """
 
@@ -16,7 +16,7 @@ from numenews.mcp.main import main as mcp_main
 from numenews.mcp.server import SERVER_NAME, build_server
 from numenews.mcp.tools import TOOLS
 
-#: Every tool the finished server exposes, in roadmap order (6.2-6.10).
+#: Every tool the finished server exposes, in registration order.
 EXPECTED_TOOLS: tuple[str, ...] = (
     "fetch_news",
     "extract_numbers",
@@ -30,8 +30,8 @@ EXPECTED_TOOLS: tuple[str, ...] = (
 )
 
 
-def test_the_phase_surface_is_exactly_nine_distinct_tools() -> None:
-    """ROADMAP phase 6 is nine tools; the registry is the source of truth for what ships."""
+def test_the_surface_is_exactly_nine_distinct_tools() -> None:
+    """mcp-surface is nine tools; the registry is the source of truth for what ships."""
     assert len(EXPECTED_TOOLS) == 9
     assert len(set(EXPECTED_TOOLS)) == 9
 

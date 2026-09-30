@@ -47,4 +47,3 @@ one and records it here.
 
 - [Documenting Architecture Decisions — Michael Nygard](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
 - [`template.md`](template.md)
-- [`ROADMAP.md`](../../ROADMAP.md)

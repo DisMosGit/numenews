@@ -6,6 +6,22 @@ Versioning: [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- The roadmap is retired and its job passes to OpenSpec: `openspec/specs/` holds the behaviour that
+  ships, `openspec/changes/` holds work in flight, and the loop is propose → review → implement →
+  archive. The two external surfaces are specified as the `mcp-surface` and `cli-surface`
+  capabilities, and `AGENTS.md`, `CONTRIBUTING.md` and `docs/agentic/` describe the new workflow.
+- Every citation of the roadmap across `docs/`, `src/`, `tests/`, `Makefile` and `pyproject.toml`
+  now points at the document or capability that owns the claim. The per-layer coverage floors are
+  anchored to `docs/coverage_report.md` instead of a roadmap task, and the dependency comments in
+  `pyproject.toml` group packages by the layer that introduced them.
+- `README.md` is rewritten around what the project does today, and `.github/` gains issue and
+  pull-request templates that route new work through OpenSpec.
+
+### Removed
+- `ROADMAP.md`. All eleven phases were closed at `v0.1.0`; the build history lives on in this file,
+  in the `v0.1.0` tag and in `git log`. No archived copy is kept.
+
 ## [0.1.0] — 2026-09-21
 
 ### Added
@@ -167,8 +183,8 @@ Versioning: [Semantic Versioning](https://semver.org/).
   layer table in `docs/ARCHITECTURE.md`.
 
 ### Changed
-- `make test` now ends with `make coverage-check`, which enforces the per-layer coverage floors of
-  ROADMAP 10.4 (numerology ≥ 95 %, `pipeline/` + `agents/` ≥ 80 %, `vector/` + `news/` ≥ 70 %).
+- `make test` now ends with `make coverage-check`, which enforces the per-layer coverage floors
+  (numerology ≥ 95 %, `pipeline/` + `agents/` ≥ 80 %, `vector/` + `news/` ≥ 70 %).
   coverage.py has no per-path threshold, so each group gets its own `--fail-under` and
   `[tool.coverage.report] fail_under` stays `0`. The measured numbers and the command behind them are
   in the new `docs/coverage_report.md`, and the README carries a static coverage badge next to the

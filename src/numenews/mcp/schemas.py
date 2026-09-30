@@ -1,6 +1,6 @@
 """The wire schemas of the MCP tools: what a client may send, in the form it sends it.
 
-The domain models of :mod:`numenews.models` are ``strict`` by decision (phase 1): a Python ``str``
+The domain models of :mod:`numenews.models` are ``strict`` by decision: a Python ``str``
 is never coerced into a ``date``, a ``list`` never into a ``tuple``. That is right inside the
 process and wrong on the wire — an MCP client speaks JSON, where dates are strings, tuples are
 arrays and ids are UUID strings, and every one of those must be parsed rather than rejected.
@@ -34,9 +34,9 @@ from numenews.models import (
     PatternType,
 )
 
-#: The collections ``query_qdrant`` may search. Phase 3 only built semantic read paths for the two
-#: 768d collections whose entities are searchable by meaning: ``news`` (``search_news``) and
-#: ``patterns`` (``find_similar_patterns``). ``number_history`` is read exactly by ``get_history``,
+#: The collections ``query_qdrant`` may search. Only two 768d collections have a semantic read path,
+#: and their entities are searchable by meaning: ``news`` (``search_news``) and ``patterns``
+#: (``find_similar_patterns``). ``number_history`` is read exactly by ``get_history``,
 #: and ``numbers``/``forecasts``/``digests`` have no read path yet, so offering them here would be a
 #: promise the storage layer cannot keep.
 type CollectionName = Literal["news", "patterns"]
@@ -147,9 +147,8 @@ class PatternInput(BaseModel):
 class CollectionQueryResult(BaseModel):
     """What ``query_qdrant`` found: the collection it searched and the entities it returned.
 
-    The roadmap's sketch returned ``list[dict]``; ``AGENTS.md`` rules dicts out of every
-    boundary, so
-    the two searchable entities of phase 3 — :class:`~numenews.models.news.NewsItem` and
+    The original design sketch returned ``list[dict]``; ``AGENTS.md`` rules dicts out of every
+    boundary, so the two searchable entities — :class:`~numenews.models.news.NewsItem` and
     :class:`~numenews.models.patterns.Pattern` — are returned as a typed union. ``query`` is echoed
     back so a client can match a result to the question it asked.
     """

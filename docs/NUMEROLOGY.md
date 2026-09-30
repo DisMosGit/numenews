@@ -1,6 +1,6 @@
 # Numerology
 
-> **Implemented** in `src/numenews/numerology/` (phase 1). The layer is pure: it imports only the
+> **Implemented** in `src/numenews/numerology/`. The layer is pure: it imports only the
 > shared `numenews.models` vocabulary, performs no I/O, and every rule below is enforced by unit
 > tests and property-based tests. [ADR 0002](adr/0002-numerology-scope.md) records why the scope is
 > exactly this and what it deliberately leaves out.
@@ -161,7 +161,7 @@ on. A value below `1` raises `ValueError`: `compute_numerology` reports a text w
 ## Regex extraction
 
 The layer never asks a model for anything. These functions are the fallback that keeps the pipeline
-running when the extract agent fails (phase 4.2), and they double as the deterministic baseline the
+running when the extract agent fails, and they double as the deterministic baseline the
 agent's output is compared against.
 
 `extract_numbers_regex(text)` returns every run of ASCII digits as an integer, in text order,
@@ -183,7 +183,7 @@ duplicates kept, leading zeros normalised (`"007"` → `7`). Two consequences ar
 The genitive form (`15 марта`) and the nominative (`15 Март 2027`) are both accepted,
 case-insensitively. A date that does not exist — `31.02.2026`, `2026-13-45` — is skipped instead of
 raising, because news text contains typos and one bad date must not lose the others. English month
-names are **not** supported in phase 1.6.
+names are **not** supported.
 
 `today` is the date whose year completes a year-less match; it defaults to `date.today()`. It is
 injectable so that a test — or a caller replaying an old batch — does not depend on the wall clock.
@@ -192,7 +192,7 @@ This is the only ambient value the layer ever reads.
 `extract_symbols(text, symbols)` returns the requested symbols that occur in `text`, matched
 case-insensitively as substrings (so `"AI"` and emoji both work), deduplicated, in the order of the
 `symbols` argument. Presence is the primitive here; counting occurrences belongs to the pattern layer,
-which compares symbols across news items (phase 5).
+which compares symbols across news items.
 
 ## Public API
 
@@ -257,7 +257,7 @@ above. Coverage of `src/numenews/numerology/` is 100% (statements and branches).
 |---|---|---|
 | `0` | the text has no mapped letter (`gematria`, `value` of `NumerologyResult`) | gematria layer |
 | `0` | the two dates do not resonate | `date_resonance` |
-| `None` | the news item's `numerology_value` was not computed yet | `NewsItem` (phase 4 fills it) |
+| `None` | the news item's `numerology_value` was not computed yet | `NewsItem` (the extract step fills it) |
 
 `0` is never a reduced value, so both zero sentinels are unambiguous; `reduce_number` rejects it
 rather than returning it.
@@ -277,5 +277,5 @@ The following are intentionally **not** implemented, and adding one is a new dec
   of Cyrillic onto Latin values — the project keeps one table per script;
 - astrology, tarot or any reading that is not arithmetic on numbers, dates and letters;
 - English month names in `extract_dates_regex`;
-- interpreting a reading (what `7` "means") — that is the forecast agent's job (phase 4.4);
+- interpreting a reading (what `7` "means") — that is the forecast agent's job;
 - extracting numbers as part of `compute_numerology`.

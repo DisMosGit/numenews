@@ -1,6 +1,6 @@
-"""The forecast step over the in-memory engine (ROADMAP 5.4).
+"""The forecast step over the in-memory engine (docs/RAG_PIPELINE.md).
 
-Two of the roadmap's criteria are asserted here: the reading is saved, and a second call returns it
+Two of the step's criteria are asserted here: the reading is saved, and a second call returns it
 from storage instead of re-running the agent. Everything else is the step's own contract — the day's
 number comes from ``numerology`` rather than from the model, a day without news still gets a number
 from its date, the memory shown to the model is about this day's numbers, and a failing agent
@@ -102,7 +102,7 @@ def _pipeline(
 
 
 async def test_forecast_saves_the_day_and_returns_it(vector_store: VectorStore) -> None:
-    """ROADMAP 5.4's Definition of Done: the reading is stored under the day's point id."""
+    """docs/RAG_PIPELINE.md's Definition of Done: the reading is stored under the day's point id."""
     items = [_item(11), _item(11)]
     upsert_news(vector_store, items)
     pipeline, _, _ = _pipeline(vector_store, patterns=[_draft(items)])
@@ -125,7 +125,7 @@ async def test_forecast_saves_the_day_and_returns_it(vector_store: VectorStore) 
 async def test_a_second_call_answers_from_storage_without_a_model_run(
     vector_store: VectorStore,
 ) -> None:
-    """ROADMAP 5.4: the cached day must not cost another agent run."""
+    """docs/RAG_PIPELINE.md: the cached day must not cost another agent run."""
     items = [_item(11), _item(11)]
     upsert_news(vector_store, items)
     pipeline, pattern_counter, forecast_counter = _pipeline(vector_store, patterns=[_draft(items)])
@@ -155,7 +155,7 @@ async def test_a_day_without_news_falls_back_to_the_number_of_its_date(
 
 
 async def test_the_window_keeps_the_reading_to_the_recent_days(vector_store: VectorStore) -> None:
-    """Roadmap 5.5's sliding window: a day outside it does not vote."""
+    """The sliding window of docs/RAG_PIPELINE.md: a day outside it does not vote."""
     recent = _item(11)
     old = _item(3, day=date(2026, 9, 1))
     upsert_news(vector_store, [recent, old])
@@ -225,7 +225,7 @@ async def test_the_history_shown_to_the_model_is_the_day_s_numbers(
 
 
 async def test_the_memory_window_reaches_thirty_days(vector_store: VectorStore) -> None:
-    """Roadmap 8.3: the reading may cite an activation of four weeks ago, but not one of six."""
+    """docs/CONTEXT_MANAGEMENT.md: the reading may cite an activation of four weeks ago, not six."""
     item = _item(11)
     upsert_news(vector_store, [item])
     recent = NumberActivation(

@@ -2,9 +2,9 @@
 
 A pattern is stored twice over in a sense — its own fields, and a vector of its interpretation — so
 a later run can ask "have I seen something like this before" instead of re-deriving every connection
-from scratch. That is what makes the collection grow into the long-term memory of phase 8.
+from scratch. That is what makes the collection grow into the project's long-term memory.
 
-``save_pattern`` is the writer the MCP tool 6.9 and the pipeline (5.3) call; it stamps
+``save_pattern`` is the writer the MCP tool and the pipeline call; it stamps
 ``discovered_at`` when the pattern does not carry one, because "when was this found" is a fact about
 storage, not about the connection.
 """
@@ -128,9 +128,9 @@ def read_patterns(
     """Return the stored patterns the filters allow, strongest and newest first.
 
     This is the exact read of the ``patterns`` collection, the counterpart of the semantic
-    :func:`find_similar_patterns`: roadmap 7.7 asks "which resonance patterns are strong?" — a
-    payload question, not a similarity one — so it scrolls with a filter over the two indexed fields
-    (``type``, ``strength``) instead of embedding anything.
+    :func:`find_similar_patterns`: the ``patterns`` command asks "which resonance patterns are
+    strong?" — a payload question, not a similarity one — so it scrolls with a filter over the two
+    indexed fields (``type``, ``strength``) instead of embedding anything.
 
     The result is ordered by ``strength`` descending, then by ``discovered_at`` descending, then by
     pattern id, and cut to ``limit``. Qdrant has no ordering in ``scroll``, so the ordering happens

@@ -10,15 +10,15 @@ Accepted (phase 6)
 
 ## Context
 
-MCP is the project's primary interface (`AGENTS.md`, and the target state in `ROADMAP.md`: nine tools
+MCP is the project's primary interface (`AGENTS.md`, and the target state: nine tools
 that Claude Desktop and Cursor can attach to). Phase 5 built the RAG pipeline the tools are meant to
 be thin wrappers over, and deliberately left two questions open — how an MCP tool reports a failure
-(`pipeline/steps.py`: "phase 6 decides how an MCP tool reports a failure") and how a long-lived
-server owns a store, an embedder session and an LLM client.
+(`pipeline/steps.py`, which at the time read "phase 6 decides how an MCP tool reports a failure") and
+how a long-lived server owns a store, an embedder session and an LLM client.
 
 Four forces shaped the implementation:
 
-**Which SDK line?** `ROADMAP.md` 6.1 sketched `FastMCP("numenews")`. The current stable MCP Python
+**Which SDK line?** Phase 6 sketched `FastMCP("numenews")`. The current stable MCP Python
 SDK is v2, where that class was renamed to `MCPServer` and `mcp.server.fastmcp` no longer exists;
 v1.x lives on a maintenance branch and receives critical fixes only. New code belongs on v2, so the
 roadmap's class name cannot be taken literally.
@@ -47,7 +47,7 @@ We will add `numenews.mcp` as the interface layer, with the decisions below.
   is `numenews.mcp.main.main`, reachable as `python -m numenews.mcp` and `make mcp`, with
   `numenews.mcp.__main__` delegating to it. The server object is built by `build_server()`, not at
   import time, so it can be handed a test context. The rename from the roadmap's `FastMCP` is
-  recorded as a deviation in `ROADMAP.md` 6.1 and here.
+  recorded as a deviation in the phase-6 notes and here.
 - **One `AppContext`, built by the lifespan, whose collaborators are lazy, memoized and
   single-flight.** It holds settings, a `VectorStore`, an `ExtractNumbersAgent`, a `Pipeline`, a
   `NewsAggregator` and the one long-lived cached HTTP client; each is built on first use under one
@@ -107,11 +107,10 @@ Harder and worth remembering:
   building their read paths in `vector/` first — which is the right order, but it is follow-up work
   the doc has to state plainly.
 - No live run against Claude Desktop or Cursor happens in this environment. The stdio integration
-  test proves the transport and `ROADMAP.md` records the substitution.
+  test proves the transport; the phase-6 notes record the substitution.
 
 ## References
 
-- `ROADMAP.md` phase 6 (6.1–6.12) and phase 7.8 (`numenews mcp --transport stdio`)
 - [`docs/MCP_TOOLS.md`](../MCP_TOOLS.md) — the tool surface, its prerequisites and the client configs
 - [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) — the interface layer and the boundary rules
 - [ADR 0002](0002-numerology-scope.md) — `numerology` is pure; the strict domain models

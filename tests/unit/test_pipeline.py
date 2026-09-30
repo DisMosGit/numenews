@@ -1,4 +1,4 @@
-"""Tests for the pipeline orchestrator (ROADMAP 5.1).
+"""Tests for the pipeline orchestrator (docs/RAG_PIPELINE.md).
 
 Three things are asserted here: the constructor wires every collaborator and refuses a window that
 cannot work, the step timer measures with the injected clock and survives a failing block, and the
@@ -56,7 +56,7 @@ def _pipeline() -> Pipeline:
 
 
 def test_the_default_window_is_seven_days() -> None:
-    """ROADMAP 5.5 names the window: the day being read and the six before it."""
+    """docs/RAG_PIPELINE.md names the window: the day being read and the six before it."""
     assert _pipeline().window_days == DEFAULT_WINDOW_DAYS == 7
 
 
@@ -67,7 +67,7 @@ def test_a_window_without_days_is_refused() -> None:
 
 
 def test_the_default_history_window_is_thirty_days() -> None:
-    """ROADMAP 8.3 names the memory window; it is wider than the news window on purpose."""
+    """docs/CONTEXT_MANAGEMENT.md sets the memory window; it is the wider one on purpose."""
     assert _pipeline().history_days == DEFAULT_HISTORY_DAYS == 30
 
 

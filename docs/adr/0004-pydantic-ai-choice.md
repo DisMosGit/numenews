@@ -19,7 +19,7 @@ together, because each constrains the others.
 meta-package, which hard-depends on the `anthropic`, `google`, `logfire`, `evals`, `mcp` and `web`
 extras, or `pydantic-ai-slim` with only the extra the project uses.
 
-**Which protocol?** The project promises "any OpenAI-compatible endpoint" (ROADMAP 4.1) —
+**Which protocol?** The project promises "any OpenAI-compatible endpoint" —
 OpenRouter, a local Ollama, vLLM — and those servers implement the *chat completions* API.
 `pydantic-ai` resolves the bare `"openai:"` model string to the newer Responses API, which they do
 not implement.
@@ -95,7 +95,6 @@ Harder and worth remembering:
 
 ## References
 
-- `ROADMAP.md` phases 4.1–4.6 and 8.3
 - `docs/PROMPTS.md` — every prompt, verbatim, with its rationale
 - [ADR 0002](0002-numerology-scope.md) — numerology is pure logic; the agents never compute a number
 - [ADR 0003](0003-local-embeddings.md) — the layer rules and the `uuid5` identity idiom

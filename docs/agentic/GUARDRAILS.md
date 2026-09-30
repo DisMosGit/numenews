@@ -1,6 +1,6 @@
 # Guardrails: what an agent must not do
 
-> Phase 10.2. The hard prohibitions, each with the reason it exists, the rule that owns it and what to
+> The hard prohibitions, each with the reason it exists, the rule that owns it and what to
 > do instead. Most come from the `Do not` list in [`AGENTS.md`](../../AGENTS.md) or the import rules
 > in [`CONTRIBUTING.md`](../../CONTRIBUTING.md); the architectural ones have an ADR in
 > [`../adr/`](../adr/). Breaking one of these is not a style discussion — it is a defect, and it is
@@ -75,18 +75,18 @@ deliberately no `.github/workflows`. *Owner:* `AGENTS.md` (`Do not`). *Instead:*
 `make lint && make test` (and `make test-eval` when the eval is touched) and record the command output
 in your report. Do not add a workflow file, a chart or a `.tf` file to "help".
 
-**No new dependency without the phase that needs it.**
-*Why:* `pyproject.toml` documents which phase introduced each dependency, so the environment stays
-honest about what the code actually imports and `uv.lock` stays resolvable. *Owner:* `AGENTS.md`
+**No new dependency without the code that needs it.**
+*Why:* `pyproject.toml` groups every dependency by the layer that introduced it, so the environment
+stays honest about what the code actually imports and `uv.lock` stays resolvable. *Owner:* `AGENTS.md`
 (`Stack`), `pyproject.toml`'s dependency comment, ADR 0013. *Instead:* add the dependency in the task
 that first imports it, put it in `[project]` only if the package imports it (otherwise the `dev`
-group), and update the phase comment in `pyproject.toml` in the same commit. If it conflicts with the
-lock, isolate it the way ragas is isolated.
+group), and update the dependency comment in `pyproject.toml` in the same commit. If it conflicts with
+the lock, isolate it the way ragas is isolated.
 
 **Never weaken, skip or delete a test to make a check pass.**
 *Why:* a green suite that no longer asserts anything is worse than a red one; the tests are the
-evidence that a task's Definition of Done holds. *Owner:* `AGENTS.md` (a task is not done until its
-DoD holds), [`EVAL_OF_AGENT.md`](EVAL_OF_AGENT.md). *Instead:* fix the code, or if the test encodes a
+evidence that a task's stated verification holds. *Owner:* `AGENTS.md` (a task is not done until its
+verification passes), [`EVAL_OF_AGENT.md`](EVAL_OF_AGENT.md). *Instead:* fix the code, or if the test encodes a
 superseded decision, change it deliberately in its own task with the reason in the commit message and
 an ADR when the decision was architectural. Deleting an assertion and reporting "tests pass" is the
 single most common way an agent's work is rejected here.
@@ -114,9 +114,10 @@ the downloaded `fastembed` weights and the hypothesis database. *Owner:* `.gitig
 a variable is added and leave the real `.env` local. `git status` is clean of both before a task is
 reported done.
 
-**Do not invent a roadmap task or a phase.**
-*Why:* `ROADMAP.md` is the single source of truth for what is built and in what order; an implicit
-backlog makes status unreadable and lets a task skip its Definition of Done. *Owner:* `AGENTS.md`
-(`Roadmap`), the `Правила работы с роадмапом` section of `ROADMAP.md`. *Instead:* add the task to its
-phase in `ROADMAP.md` (with a DoD, a size and the `🧪`/`📝` labels) in the same commit that builds it,
-and do not start a phase before the previous one is closed.
+**Do not invent work outside a change, or widen one silently.**
+*Why:* `openspec/specs/` is the single source of truth for what is built and `openspec/changes/` for
+what is next; unplanned work makes status unreadable and lets a task skip its verification. *Owner:*
+`AGENTS.md` (`OpenSpec`), [`AGENT_WORKFLOW.md`](AGENT_WORKFLOW.md) (the loop). *Instead:* add the item
+to the change's `tasks.md` in the same commit that does the work. For anything the change does not
+cover, propose a change of its own (`/openspec-propose`) or open a GitHub issue — and archive the
+change once its boxes are ticked, so the spec delta becomes the new baseline.

@@ -2,10 +2,11 @@
 #
 # `make install` sets up the environment, `make dev` starts Qdrant, and
 # `make lint && make test` is the gate every commit has to pass. `make test` ends with
-# `make coverage-check`, which enforces the per-layer coverage floors of phase 10.4 (coverage.py has
+# `make coverage-check`, which enforces the per-layer coverage floors recorded in
+# `docs/coverage_report.md` (coverage.py has
 # no per-path threshold, so each group is reported with its own `--fail-under`). `make mcp` serves
-# the nine MCP tools over stdio (phase 6) and `make run` runs `numenews today` (phase 7), which needs
-# Qdrant and an LLM endpoint. The ragas suite (phase 9) lives in `tests/eval` and runs in its own
+# the nine MCP tools over stdio and `make run` runs `numenews today`, which needs
+# Qdrant and an LLM endpoint. The ragas suite lives in `tests/eval` and runs in its own
 # `.venv-eval`: ragas and `pydantic-ai` cannot share an environment (ADR 0013), so `make eval-env`
 # builds it and `make test-eval` uses it.
 
@@ -56,7 +57,7 @@ coverage: ## Tests with an HTML coverage report in docs/coverage.html
 	$(PYTEST) tests/unit tests/integration --cov=numenews --cov-report=term-missing --cov-report=html:docs/coverage.html
 	@echo "HTML report: docs/coverage.html"
 
-# The per-layer floors of ROADMAP 10.4. `coverage report` reads the `.coverage` file the test
+# The per-layer floors recorded in `docs/coverage_report.md`. `coverage report` reads the `.coverage` file the test
 # targets just wrote, and `--format=total` keeps the output to the number being compared.
 coverage-check: ## Enforce the per-layer coverage floors against the existing .coverage
 	echo "numerology floor 95%:"

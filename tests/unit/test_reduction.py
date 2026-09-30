@@ -1,4 +1,4 @@
-"""Tests for digit reduction (ROADMAP 1.2).
+"""Tests for digit reduction (docs/NUMEROLOGY.md).
 
 The table cases pin the behaviour; the property tests check the invariants that no table can cover
 completely — every positive integer reduces into the allowed set and reduction is idempotent.

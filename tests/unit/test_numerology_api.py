@@ -1,4 +1,4 @@
-"""Tests for the public numerology API (ROADMAP 1.7).
+"""Tests for the public numerology API (docs/NUMEROLOGY.md).
 
 Besides the readings themselves, these tests guard the two structural promises of the layer: the
 package re-exports one coherent surface, and it does not drag the rest of `numenews` in with it.
@@ -17,7 +17,7 @@ from numenews.numerology import compute_numerology
 
 
 def test_compute_numerology_reads_a_latin_text() -> None:
-    """The roadmap example: `Sun rises` sums to 124 and reduces to 7."""
+    """The docs/NUMEROLOGY.md example: `Sun rises` sums to 124 and reduces to 7."""
     assert compute_numerology("Sun rises") == NumerologyResult(
         text="Sun rises",
         gematria=124,

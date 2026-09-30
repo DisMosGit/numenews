@@ -1,8 +1,8 @@
-"""Roadmap 3.1 against the real ONNX models.
+"""docs/EMBEDDINGS.md against the real ONNX models.
 
 The only tests that load — and on the first run download, ~286 MB into ``.cache/fastembed`` — the
 two ``bge`` models. They are marked ``integration`` because they need those files on disk, not
-because they need a service, and they are the evidence for the phase's DoD:
+because they need a service, and they are the evidence for the embedding layer's DoD:
 ``FastEmbedBase().embed(["hello"])`` has to come back as 768 floats.
 """
 
@@ -27,7 +27,7 @@ def test_small_embedder_returns_384_float_vectors(small_embedder: FastEmbedSmall
 
 
 def test_base_embedder_returns_768_float_vectors(base_embedder: FastEmbedBase) -> None:
-    """Roadmap 3.1 DoD: ``FastEmbedBase().embed(["hello"])`` is a list of 768 floats."""
+    """docs/EMBEDDINGS.md DoD: ``FastEmbedBase().embed(["hello"])`` is a list of 768 floats."""
     vectors = base_embedder.embed(["hello"])
 
     assert len(vectors) == 1

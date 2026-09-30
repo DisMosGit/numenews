@@ -14,7 +14,7 @@ callables —
 :func:`numenews.mcp.server.build_server` registers them with ``MCPServer.add_tool`` — so a unit test
 can import and call the ones that need no context directly.
 
-``TOOLS`` is the registry the server iterates; it grows with roadmap 6.2-6.10, one tool per task.
+``TOOLS`` is the registry the server iterates; it holds every tool the server exposes.
 """
 
 from __future__ import annotations
@@ -182,10 +182,10 @@ async def query_qdrant(
 async def save_pattern(pattern: PatternInput, ctx: Context[AppContext]) -> Pattern:
     """Store one pattern and return it as written, with ``discovered_at`` filled in.
 
-    The roadmap called the return type ``SavedPattern``; the saved model *is* a ``Pattern`` (the one
-    ``numenews.vector.save_pattern`` returns), so the tool returns that rather than a second type
-    saying the same thing. Re-saving the same pattern id overwrites the point instead of adding a
-    copy, and a timestamp already present is never rewritten. Needs Qdrant only.
+    The original design sketch called the return type ``SavedPattern``; the saved model *is* a
+    ``Pattern`` (the one ``numenews.vector.save_pattern`` returns), so the tool returns that rather
+    than a second type saying the same thing. Re-saving the same pattern id overwrites the point
+    instead of adding a copy, and a timestamp already present is never rewritten. Needs Qdrant only.
     """
     with tool_errors():
         store = await context_of(ctx).store()
@@ -203,16 +203,16 @@ async def get_history(
 
     One entry per ``(news item, number)`` pair the ingest stored: the day the article was published,
     the item's id and the snippet the number was read in. The window ends today and includes it
-    (``days=1`` is today). Roadmap 6.10 wrote the signature as ``get_history(number)``; the read is
-    a window, so ``days`` is a parameter whose default of 30 matches the memory window of phase 8.
-    Needs Qdrant only.
+    (``days=1`` is today). The original design sketch wrote the signature as
+    ``get_history(number)``; the read is a window, so ``days`` is a parameter whose default of 30
+    matches the memory window. Needs Qdrant only.
     """
     with tool_errors():
         store = await context_of(ctx).store()
         return await asyncio.to_thread(history_in_store, store, number, days)
 
 
-#: Every tool the server registers, in roadmap order.
+#: Every tool the server registers, in the order below.
 TOOLS: tuple[Callable[..., object], ...] = (
     fetch_news,
     extract_numbers,

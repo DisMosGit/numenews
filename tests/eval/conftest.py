@@ -1,4 +1,4 @@
-"""Fixtures for the ragas evaluation (phase 9).
+"""Fixtures for the ragas evaluation (docs/EVAL.md).
 
 The eval has one requirement the rest of the suite deliberately does not: it must talk to the
 developer's configured LLM endpoint, so it reads :class:`~numenews.config.Settings` straight from

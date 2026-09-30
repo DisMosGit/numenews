@@ -56,7 +56,7 @@ EXTRACT_INSTRUCTIONS = f"{EXTRACT_RULES}\n\n{EXTRACT_FEW_SHOT}"
 def build_extract_prompt(text: str, symbols: Sequence[str] = ()) -> str:
     """Return the prompt for one text, with an optional symbol watchlist.
 
-    The watchlist is a caller-owned vocabulary (phase 1.6's ``extract_symbols`` needs one as well),
+    The watchlist is a caller-owned vocabulary (``extract_symbols`` needs one as well),
     so the regex fallback and the model look for the same symbols.
     """
     if not symbols:
@@ -185,7 +185,7 @@ HISTORY_CONTEXT_LIMIT = 160
 def format_history(history: Sequence[NumberActivation]) -> str:
     """Return the recent activations as a prompt block, newest first.
 
-    The order mirrors ``VectorStore.get_history`` (phase 3.7): newest first, and at equal dates by
+    The order mirrors ``VectorStore.get_history``: newest first, and at equal dates by
     ``news_id`` descending, so the same history always renders the same prompt. Contexts are cut to
     :data:`HISTORY_CONTEXT_LIMIT` characters so one long news item cannot crowd the block out.
     """

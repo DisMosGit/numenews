@@ -139,7 +139,7 @@ async def test_fetch_raises_for_an_error_envelope_sent_with_http_200(
 async def test_a_daily_rate_limit_is_retried_and_then_succeeds(
     news_client: AsyncCacheClient,
 ) -> None:
-    """Roadmap 2.4: tenacity retries the 429, and the retry's answer is what comes back."""
+    """docs/NEWS_SOURCES.md: tenacity retries the 429, and the retry's answer is what comes back."""
     limited = httpx.Response(
         429,
         headers={"Retry-After": "0"},

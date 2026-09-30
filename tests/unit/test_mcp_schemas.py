@@ -1,4 +1,4 @@
-"""The wire schemas: what a client may send, and how it becomes a domain model (ROADMAP 6.x).
+"""The wire schemas: what a client may send, and how it becomes a domain model (mcp-surface).
 
 The domain models are strict, so these DTOs are the only place JSON shapes are accepted. The tests
 assert both halves: a valid payload converts to the frozen domain model field by field, and the
@@ -38,7 +38,7 @@ WHEN = datetime(2026, 9, 21, 12, 0, tzinfo=UTC)
 
 
 def test_collection_name_lists_exactly_the_searchable_collections() -> None:
-    """Phase 3 built semantic read paths for news and patterns only; the Literal must say so."""
+    """The vector layer built semantic reads for news and patterns only; the Literal must say so."""
     assert get_args(CollectionName.__value__) == ("news", "patterns")
 
 
@@ -149,7 +149,7 @@ def test_an_unknown_pattern_type_is_refused_at_the_wire() -> None:
 
 
 def test_a_query_result_holds_the_typed_entities() -> None:
-    """The result replaces the roadmap's ``list[dict]`` with the two searchable entities."""
+    """The result replaces ``list[dict]`` with the two searchable entities."""
     item = NewsItem(
         id=NewsId(NEWS_ID),
         title="11th hour deal",

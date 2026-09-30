@@ -1,6 +1,6 @@
 """The hybrid (multi-stage) news search, over the in-memory engine.
 
-Roadmap 3.8 asks for a dense query whose payload filter is applied inside the ``Prefetch`` — the
+docs/QDRANT_COLLECTIONS.md asks for a dense query filtered inside the ``Prefetch`` — the
 pre-filtering the payload indexes exist for. The test proves it the only way a caller can tell:
 an item that is the exact vector twin of the query but fails the filter must not come back, while
 an unfiltered search still returns it.
@@ -52,7 +52,7 @@ def test_the_filter_narrows_what_the_dense_retriever_can_rank(
     vector_store: VectorStore,
     fake_base_embedder: FakeEmbedder,
 ) -> None:
-    """Roadmap 3.8 DoD: `numerology_value=7` + a semantic query, filter inside the prefetch.
+    """docs/QDRANT_COLLECTIONS.md: `numerology_value=7` + a semantic query, filter in the prefetch.
 
     ``twin`` is embedded to the very same vector as the query, so it would win an unfiltered
     ranking; it is filtered out by its reduced value, which is only possible if the filter is

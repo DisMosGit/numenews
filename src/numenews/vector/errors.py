@@ -2,7 +2,7 @@
 
 The shape follows ``news/errors.py``: one base class so a caller that only needs to know the store
 is unusable catches a single thing, plus one subclass for the failure that actually has a fix. The
-distinction matters to the pipeline (phase 5): "Qdrant is not running" is an environment problem,
+distinction matters to the pipeline: "Qdrant is not running" is an environment problem,
 while "the collection was never created" is a missing setup step.
 """
 

@@ -7,7 +7,7 @@ and a test can build the same object over ``QdrantClient(":memory:")`` without a
 
 The layer is synchronous on purpose: ``QdrantClient`` — not ``AsyncQdrantClient`` — is what the
 in-memory collections of the test suite support, and the callers that live in async code (the
-pipeline of phase 5, the MCP tools of phase 6) can offload a blocking call to a worker thread. ADR
+pipeline and the MCP tools) can offload a blocking call to a worker thread. ADR
 0003 records the decision.
 """
 

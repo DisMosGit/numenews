@@ -1,4 +1,4 @@
-"""Tests for the dominant-number rule (ROADMAP 5.4).
+"""Tests for the dominant-number rule (docs/RAG_PIPELINE.md).
 
 The rule decides which number a day is read under, so its behaviour has to be predictable and
 total: the most frequent value wins, a tie goes to the larger value, and an empty set says so with

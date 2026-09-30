@@ -77,7 +77,6 @@ allowed.
 
 ## References
 
-- `ROADMAP.md` phase 7 (7.1–7.10) and 6.1 (the `ToolError` policy this mirrors)
 - [`../USER_FLOW.md`](../USER_FLOW.md) — the command surface this contract applies to
 - [ADR 0006](0006-one-shot-vs-repl.md) — why the CLI is one-shot, and what shares its container
 - [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) — "CLI stdout is JSON only"

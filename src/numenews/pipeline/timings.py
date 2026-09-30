@@ -6,9 +6,9 @@ is a question worth answering with data instead of a profiler. Every step is wra
 monotonic duration it took (for the profile), both read from the injected
 :class:`~numenews.pipeline.clock.Clock`.
 
-The timings are part of the returned :class:`PipelineRun`, not a private logger side channel:
-roadmap 5.1 asks for them "для профилирования", and a caller that wants to report them — the CLI of
-phase 7, an MCP tool of phase 6 — should not have to scrape stderr.
+The timings are part of the returned :class:`PipelineRun`, not a private logger side channel: the
+pipeline records them "для профилирования", and a caller that wants to report them — the CLI, an MCP
+tool — should not have to scrape stderr.
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ class Timing(BaseModel):
 class PipelineRun(BaseModel):
     """The outcome of a pipeline call: what it saw, what it wrote, and how long each step took.
 
-    A frozen model rather than a tuple, because the CLI of phase 7 serializes it and roadmap 5.1's
-    timings belong in that answer. ``news`` carries the items as they were stored — extraction and
+    A frozen model rather than a tuple, because the CLI serializes it and the timings belong in that
+    answer. ``news`` carries the items as they were stored — extraction and
     reduction already applied — and ``patterns`` the connections the analyze step found, so a caller
     can read both without a second lookup.
     """

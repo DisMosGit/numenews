@@ -1,6 +1,6 @@
 # Context management
 
-> Phases 5.5 and 8.4. `ROADMAP.md` is the authoritative status; this document records how much of the
+> The authoritative status is [`openspec/specs/`](../openspec/specs/); this document records how much of the
 > past the agents see, what is compressed instead, and what is deliberately not wired into a prompt
 > yet.
 
@@ -11,7 +11,7 @@ that with three mechanisms of different granularity:
 |---|---|---|---|
 | The sliding window | the day and the six before it | Qdrant `news` | the pattern and forecast steps |
 | The activation history | the last 30 days, by number | Qdrant `number_history` | the forecast step and `numenews history` |
-| The digest | everything older | Qdrant `digests` | a caller, and a later phase's prompt |
+| The digest | everything older | Qdrant `digests` | a caller; no prompt yet |
 
 ## The sliding window
 
@@ -34,17 +34,17 @@ the only place those readings happen: every step takes its dates from the pipeli
 
 ## The activation history
 
-`number_history` is the exact log of which number occurred in which article on which day (phase 3.7,
-roadmap phase 8). Every ingest appends one row per `(news item, number)` pair — the number, the
-publication day, the item's id, the sentence the number was read in and the item's own reduced value
-(phase 8.1). The point id is derived from the pair, so re-ingesting an article overwrites its rows
+`number_history` is the exact log of which number occurred in which article on which day. Every ingest
+appends one row per `(news item, number)` pair — the number, the
+publication day, the item's id, the sentence the number was read in and the item's own reduced value.
+The point id is derived from the pair, so re-ingesting an article overwrites its rows
 instead of appending duplicates.
 
 Two reads answer two questions:
 
 - `get_history(store, number, days, today=)` — "when was 11 active": the rows of one number, newest
   first. `numenews history --number 11` prints exactly that, and folds the same rows into `by_day`
-  with `activation_frequency` (phase 8.2): one bucket per calendar day, counting activation rows.
+  with `activation_frequency`: one bucket per calendar day, counting activation rows.
 - `get_activations(store, days, today=)` — "what was active recently": the same window without a
   number, which is the read the forecast step needs.
 
@@ -73,7 +73,7 @@ Digest(
 
 - **The period is the identity.** There is no id of its own; the point id is `uuid5` over
   `(period_start, period_end)`, so re-summarising a range replaces its point instead of adding a
-  second memory (phase 3.6's idiom for forecasts).
+  second memory (the same idiom `get_forecast` uses for forecasts).
 - **Two items are the minimum.** One article is not a digest, so `build_digest` returns `None` and
   writes nothing. A daily run whose range falls entirely inside the window produces `None`, which is
   the normal case, not an error.
@@ -83,10 +83,10 @@ Digest(
   partly read would make the memory claim more than it knows.
 - **The numbers are ours.** The model writes the prose; the period and the reduced values come from
   the items, because a model asked to list the numbers it saw can list one that was not there.
-- **A digest is never injected.** Phase 5 stores it and reads it back through `get_digest`; no
-  prompt contains one yet. The prompt snapshots in `docs/PROMPTS.md` change when the roadmap asks
-  for a prompt change, and no phase-5 task does. Wiring it into the pattern or forecast prompt is
-  additive when a later task calls for it.
+- **A digest is never injected.** The pipeline stores it and reads it back through `get_digest`; no
+  prompt contains one yet. The prompt snapshots in `docs/PROMPTS.md` change when a change asks
+  for a prompt change, and none does. Wiring it into the pattern or forecast prompt is
+  additive when a future change calls for it.
 
 ## Cost
 

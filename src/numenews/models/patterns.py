@@ -19,10 +19,10 @@ class Pattern(BaseModel):
     """A connection between news items with a confidence.
 
     ``strength`` is bounded to ``[0, 1]`` here rather than in the agent, so a model output that
-    leaves the range is rejected at the boundary (phase 4).
+    leaves the range is rejected at the boundary.
 
     ``discovered_at`` is when the pattern was written to Qdrant and is indexed there. It is optional
-    because the pattern agent (4.3) describes a connection, not a moment: ``save_pattern`` stamps an
+    because the pattern agent describes a connection, not a moment: ``save_pattern`` stamps an
     unstamped pattern with the current UTC time, and a pattern that already carries a timestamp —
     read back from storage, or built by a test — keeps it.
     """

@@ -1,19 +1,18 @@
 # Architecture
 
-> `ROADMAP.md` is the authoritative status; this document describes the shape the code has. The
-> reasoning behind each significant choice is in [`docs/adr/`](adr/), and the phase that introduced a
-> layer is named where it matters.
+> The authoritative status is [`openspec/specs/`](../openspec/specs/); this document describes the
+> shape the code has. The reasoning behind each significant choice is in [`docs/adr/`](adr/).
 
 ## One pipeline, two interfaces, one measurement
 
 numenews is a single package with two entry points over the same code, plus an offline measurement of
 the retrieval it performs:
 
-- **MCP server** (`numenews.mcp`, phase 6) — nine tools an LLM client calls, each returning a
+- **MCP server** (`numenews.mcp`) — nine tools an LLM client calls, each returning a
   Pydantic model ([`MCP_TOOLS.md`](MCP_TOOLS.md)).
-- **One-shot CLI** (`numenews.cli`, phase 7) — the same operations once per invocation, one JSON
+- **One-shot CLI** (`numenews.cli`) — the same operations once per invocation, one JSON
   document on stdout and nothing else ([`USER_FLOW.md`](USER_FLOW.md)).
-- **Evaluation** (`tests/eval`, phase 9) — the production retrieval path and a ragas scoring of it,
+- **Evaluation** (`tests/eval`) — the production retrieval path and a ragas scoring of it,
   in an isolated environment ([`EVAL.md`](EVAL.md), [ADR 0013](adr/0013-eval-isolation.md)).
 
 The two interfaces are thin: the work lives in `numenews.pipeline`, and all persistent state lives in
@@ -75,7 +74,7 @@ once (ADR 0003).
 the order of the chain and nothing else — no numerology, no storage schema, no HTTP — and it is
 asynchronous while `vector` stays synchronous, bridged only by `asyncio.to_thread` (ADR 0011).
 
-`cli` is the one interface that imports the other: roadmap 7.8's `numenews mcp` proxies into
+`cli` is the one interface that imports the other: `numenews mcp` proxies into
 `numenews.mcp.main`, and the one-shot commands share the MCP server's lazy `AppContext` as their
 container instead of growing a second one — the two surfaces build the store, the agents and the news
 client the same way, once (ADR 0006).
@@ -210,7 +209,12 @@ payload field.
 The full contract, per command and per tool, is in [`USER_FLOW.md`](USER_FLOW.md) and
 [`MCP_TOOLS.md`](MCP_TOOLS.md).
 
-## Implemented so far
+## How it was built
+
+The phases below are the order this project was built in, before it moved to OpenSpec. They are
+history, not a plan: what ships today is the behaviour in
+[`openspec/specs/`](../openspec/specs/), and work in flight is in
+[`openspec/changes/`](../openspec/changes/).
 
 Phase 0: configuration, logging and the test scaffolding. Phase 1: the frozen domain models and the
 pure numerology layer (100 % covered) with ADR 0002. Phase 2: the news layer — one `NewsSource`
@@ -229,14 +233,15 @@ ingest, `activation_frequency` for the per-day series, and the thirty-day memory
 forecast, with ADR 0012. Phase 9: the ragas evaluation over the production retrieval path, isolated
 in `.venv-eval`, with ADR 0013.
 
-The layer-by-layer detail lives in the topic documents linked above; `ROADMAP.md` is the
-authoritative status, and [`docs/adr/`](adr/) records every decision with its reason.
+The layer-by-layer detail lives in the topic documents linked above; the authoritative status is
+[`openspec/specs/`](../openspec/specs/), and [`docs/adr/`](adr/) records every decision with its
+reason.
 
 ## Documentation map
 
 | Question | Document |
 |---|---|
-| What is built, in what order? | [`ROADMAP.md`](../ROADMAP.md) |
+| What is built? | [`openspec/specs/`](../openspec/specs/) |
 | What do the numbers mean? | [`NUMEROLOGY.md`](NUMEROLOGY.md) |
 | Which feeds, and how are they queried? | [`NEWS_SOURCES.md`](NEWS_SOURCES.md) |
 | Which collections and payloads? | [`QDRANT_COLLECTIONS.md`](QDRANT_COLLECTIONS.md) |

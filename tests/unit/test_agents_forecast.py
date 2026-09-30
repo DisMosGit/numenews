@@ -1,8 +1,8 @@
-"""Tests for `ForecastAgent` (ROADMAP 4.4).
+"""Tests for `ForecastAgent` (docs/PROMPTS.md).
 
 What the model contributes is the prose; everything else in a `Forecast` is asserted to be the
 caller's fact passed through unchanged. The history-injection tests read the prompt the model was
-shown, which is what phase 8.3 extends with the real `number_history` window.
+shown, which is what docs/CONTEXT_MANAGEMENT.md extends with the real `number_history` window.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def _draft(**overrides: object) -> dict[str, object]:
 
 
 async def test_forecast_carries_every_field_of_the_domain_model() -> None:
-    """ROADMAP 4.4: every `Forecast` field is present — facts from us, prose from the model."""
+    """docs/PROMPTS.md: every `Forecast` field is present — facts from us, prose from the model."""
     agent = ForecastAgent(answering(**_draft()))
     patterns = [_pattern()]
 
@@ -90,7 +90,7 @@ async def test_forecast_rejects_blank_prose() -> None:
 
 
 async def test_forecast_raises_when_the_model_fails() -> None:
-    """A broken provider is reported, so phase 5 can decide how to degrade."""
+    """A broken provider is reported, so the pipeline can decide how to degrade."""
     agent = ForecastAgent(failing(ModelAPIError(model_name="test", message="boom")))
 
     with pytest.raises(AgentExecutionError, match="build_forecast"):

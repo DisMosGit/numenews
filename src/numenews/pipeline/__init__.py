@@ -1,7 +1,7 @@
 """The RAG pipeline: the one place that knows the order of the chain.
 
 ``news`` fetches, ``numerology`` reads, ``agents`` reason, ``vector`` remembers — and none of them
-imports the others. This package composes them in the order roadmap 5.2-5.4 describe::
+imports the others. This package composes them in the order the steps run::
 
     fetch news → extract numbers → compute numerology → embed and upsert
         → find patterns → read activation history → build the forecast → save it

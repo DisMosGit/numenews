@@ -1,8 +1,9 @@
 # News Sources
 
-> **Implemented** in `src/numenews/news/` (phase 2). Five APIs behind one
+> **Implemented** in `src/numenews/news/`. Five APIs behind one
 > [`NewsSource`](../src/numenews/news/protocol.py) Protocol, one cached HTTP client, and an
-> aggregator that degrades gracefully. `ROADMAP.md` is the authoritative status.
+> aggregator that degrades gracefully. The authoritative status is
+> [`openspec/specs/`](../openspec/specs/).
 
 ## The layer in one picture
 
@@ -127,7 +128,7 @@ Nothing in the layer depends on a paid plan, but a paid plan widens the numbers 
   meaningful across feeds: a null publisher falls back to the URL hostname, and the adapter's name is
   the last resort.
 - **`NewsItem.id` is `uuid5(NAMESPACE_URL, url)`**, so the same article keeps the same id across
-  runs and the ingest step of phase 5 is idempotent by `news_id` with no lookup table.
+  runs and the ingest step is idempotent by `news_id` with no lookup table.
 
 ## The cache
 
@@ -144,15 +145,15 @@ Two decisions are worth knowing about:
 - **`FilterPolicy`, not the RFC 9111 specification policy.** None of the five APIs sends a freshness
   header (`Cache-Control`/`Expires`) that the specification policy could use, so it treats every
   stored response as stale and the cache never answers a request — measured: two identical requests,
-  two network calls. `FilterPolicy` plus the storage's `default_ttl` is what makes the roadmap's
-  fifteen minutes real. See [ADR 0009](adr/0009-hishel-caching.md), which records this decision.
+  two network calls. `FilterPolicy` plus the storage's `default_ttl` is what makes the
+  fifteen-minute TTL real. See [ADR 0009](adr/0009-hishel-caching.md), which records this decision.
 - **Only 2xx responses are stored.** `hishel` stores whatever the transport returned, so without
   `_CacheOnlySuccesses` a cached 503 would be replayed for the whole TTL instead of being retried,
   and a 429 would hide the moment the quota reset.
 
 The database lives in `Settings.cache_dir` (default `.cache/hishel`); `hishel` creates the directory
 and drops a `.gitignore` holding `*` into it. The client is **not** a module-level singleton: closing
-it closes the sqlite storage for good, so `fetch_news` creates one per call, and phase 6 may keep a
+it closes the sqlite storage for good, so `fetch_news` creates one per call, and the MCP server may keep a
 long-lived one in its application context.
 
 ## The retry policy
@@ -174,14 +175,14 @@ the source sends one. `tenacity` 9 no longer ships `wait_retry_after`, so the wa
 ## What this layer deliberately does not do
 
 - **No language filter.** None is sent, so each API uses its own default (Currents defaults to
-  English; GDELT is language-agnostic). Add it in a later phase with one mapping table per API — half
+  English; GDELT is language-agnostic). Add it later with one mapping table per API — half
   a mapping is worse than none.
 - **No pagination.** One page per source per run, capped by the free tier; the caps are constants in
   each adapter.
 - **No de-duplication beyond the literal key** — no fuzzy titles, no canonical URLs.
 - **No key handling in the interfaces.** The adapters read `Settings` through `from_settings`, and
-  `build_sources` decides which of them exist. The MCP server of phase 6 hands `Settings` to
-  `build_sources` and has no key handling of its own; the CLI of phase 7 does the same, so
+  `build_sources` decides which of them exist. The MCP server hands `Settings` to
+  `build_sources` and has no key handling of its own; the CLI does the same, so
   `numenews today` queries exactly the sources the environment configures.
 
 ## Configuration

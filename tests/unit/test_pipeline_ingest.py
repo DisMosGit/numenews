@@ -1,4 +1,4 @@
-"""Unit tests for the activation bookkeeping of the ingest step (ROADMAP 5.2).
+"""Unit tests for the activation bookkeeping of the ingest step (docs/RAG_PIPELINE.md).
 
 Both functions are pure: a news item and its numbers go in, activations come out. That makes the
 two rules of the ingest step testable without Qdrant — one activation per ``(news_id, number)``

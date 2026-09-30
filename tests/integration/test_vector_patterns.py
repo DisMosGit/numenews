@@ -99,7 +99,7 @@ def test_similar_patterns_come_back_nearest_first(
     vector_store: VectorStore,
     fake_base_embedder: FakeEmbedder,
 ) -> None:
-    """Roadmap 3.5: a query finds the pattern whose interpretation it is closest to."""
+    """docs/QDRANT_COLLECTIONS.md: a query finds the closest pattern interpretation."""
     nearest = _pattern("master numbers around money")
     farther = _pattern("dates that reduce to the same value")
     fake_base_embedder.register_axis(pattern_embedding_text(nearest), 0)
@@ -116,7 +116,7 @@ def test_similar_patterns_come_back_nearest_first(
 
 
 def test_the_stored_payload_carries_the_indexed_fields(vector_store: VectorStore) -> None:
-    """`type`, `strength` and `discovered_at` are what phase 7 filters on."""
+    """`type`, `strength` and `discovered_at` are what cli-surface filters on."""
     saved = save_pattern(vector_store, _pattern(kind="master", strength=0.75))
 
     stored = vector_store.client.retrieve(
@@ -150,7 +150,7 @@ def test_a_non_positive_limit_is_refused(vector_store: VectorStore) -> None:
 
 
 def test_read_patterns_returns_everything_unfiltered(vector_store: VectorStore) -> None:
-    """The exact read of roadmap 7.7 with no arguments lists the collection."""
+    """The exact read of cli-surface with no arguments lists the collection."""
     save_pattern(vector_store, _pattern("first"))
     save_pattern(vector_store, _pattern("second"))
 

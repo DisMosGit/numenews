@@ -13,7 +13,7 @@ Three rules are visible in every function here:
   ``numerology_value`` key at all rather than a null one; a null would still be indexed and would
   make "not computed" indistinguishable from "computed to null".
 * **Point ids are derived, never random.** A repeated ingest overwrites the same point, which is
-  what makes phase 5 idempotent without a lookup table.
+  what makes the ingest idempotent without a lookup table.
 """
 
 from __future__ import annotations

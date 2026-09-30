@@ -2,7 +2,7 @@
 
 ``search_news`` embeds the query with the 768d model and asks Qdrant for the nearest points after
 applying the payload filter; because the filter's fields are indexed, the narrowing happens inside
-the HNSW walk rather than after it. ``hybrid_search_news`` (3.8) is the multi-stage form of the same
+the HNSW walk rather than after it. ``hybrid_search_news`` is the multi-stage form of the same
 question.
 
 Writes are idempotent by construction: the point id is the item's deterministic ``NewsId``, so a
@@ -53,8 +53,8 @@ def upsert_news(store: VectorStore, items: Sequence[NewsItem]) -> int:
     """Embed and store ``items`` in one batch, returning how many points were written.
 
     The collection and its payload indexes are created here if they are missing — before the first
-    point is written, as roadmap 3.3 requires — and the whole batch is embedded in one call, so the
-    model sees a batch instead of N single texts.
+    point is written — and the whole batch is embedded in one call, so the model sees a batch
+    instead of N single texts.
 
     Args:
         store: The connection and the 768d embedder.
@@ -96,7 +96,7 @@ def search_news(
 
     Returns:
         The matching items, ordered by cosine similarity. The scores are not part of the result:
-        phase 3 works with the entities, and a caller that needs a score can query the collection
+        this layer works with the entities, and a caller that needs a score can query the collection
         directly.
     """
     if limit < 1:
@@ -126,9 +126,9 @@ def hybrid_search_news(
     :class:`~qdrant_client.models.Prefetch` with its own filter, and a
     :class:`~qdrant_client.models.FusionQuery` merges their rankings. With the filter inside the
     prefetch, Qdrant narrows the candidate set before the HNSW walk of that retriever, which is the
-    pre-filtering the payload indexes exist for (roadmap 3.8).
+    pre-filtering the payload indexes exist for.
 
-    Phase 3 has one dense retriever, so the fusion receives a single ranking; the shape is what
+    This build has one dense retriever, so the fusion receives a single ranking; the shape is what
     matters, because a sparse/BM25 prefetch is a second entry in the same list. The consequence is
     that the returned order is by reciprocal-rank fusion (``1 / (60 + rank)``) rather than by cosine
     similarity, and the ranks are relative within the prefetch's own ``limit``.
@@ -167,10 +167,10 @@ def get_news_items(store: VectorStore, ids: Sequence[NewsId]) -> list[NewsItem]:
     """Return the stored items whose ids are in ``ids``, in the order ``ids`` gives.
 
     This is the read an id-only caller needs: the MCP ``find_patterns`` tool and the CLI receive a
-    list of news ids from a previous search, and the pattern agent (phase 4.3) has to be shown the
-    items those ids name. The ids come from ``uuid5`` over a URL (phase 2.3), so asking for a
-    missing one is a normal outcome of a mistyped request rather than an error: it is skipped, like
-    an id the pattern agent invented.
+    list of news ids from a previous search, and the pattern agent has to be shown the items those
+    ids name. The ids come from ``uuid5`` over a URL, so asking for a missing one is a normal
+    outcome of a mistyped request rather than an error: it is skipped, like an id the pattern agent
+    invented.
 
     Args:
         store: The connection. The items are read by id, so no embedder is used.
@@ -200,11 +200,11 @@ def get_news_items(store: VectorStore, ids: Sequence[NewsId]) -> list[NewsItem]:
 def read_news_range(store: VectorStore, date_from: date, date_to: date) -> list[NewsItem]:
     """Return every stored item published between ``date_from`` and ``date_to``, both inclusive.
 
-    The window of roadmap 5.5: a caller asks for the last seven days and gets exactly those days,
-    because the published dates and this filter are built from the same ``day_start`` (the inclusive
-    upper bound is the start of the day *after* ``date_to``). The result is ordered by date and then
-    by id, so the same window always reads back in the same order — a prompt built from it is
-    stable.
+    The window the pipeline reads: a caller asks for the last seven days and gets exactly those
+    days, because the published dates and this filter are built from the same ``day_start`` (the
+    inclusive upper bound is the start of the day *after* ``date_to``). The result is ordered by
+    date and then by id, so the same window always reads back in the same order — a prompt built
+    from it is stable.
 
     Args:
         store: The connection. The items are read by date, so no embedder is used.

@@ -1,9 +1,9 @@
 """Regex extraction: the LLM-free fallback.
 
-Phase 4 has an agent read a news item, but the pipeline must keep working when the model is down or
-returns nonsense, so these functions find numbers, dates and symbols with regular expressions alone.
-They are deliberately plain and predictable: matches come back in text order with duplicates kept,
-and nothing is inferred beyond what the pattern says.
+The ``extract_numbers`` agent reads a news item, but the pipeline must keep working when the model
+is down or returns nonsense, so these functions find numbers, dates and symbols with regular
+expressions alone. They are deliberately plain and predictable: matches come back in text order with
+duplicates kept, and nothing is inferred beyond what the pattern says.
 
 Two consequences of "nothing is inferred" are worth stating, because a caller can be surprised by
 them. Numbers and dates overlap — the digits of a date are also numbers — so a caller that wants

@@ -1,4 +1,4 @@
-"""Tests for `PatternAgent` (ROADMAP 4.3).
+"""Tests for `PatternAgent` (docs/PROMPTS.md).
 
 The model is a `pydantic-ai` test double throughout: one test proves the prompt carries the items,
 the others prove what this layer — not the model — decides: which ids a pattern may cite, what its
@@ -88,7 +88,7 @@ async def test_find_patterns_drops_a_connection_with_no_known_item() -> None:
 
 
 async def test_find_patterns_rejects_a_strength_outside_the_unit_interval() -> None:
-    """ROADMAP 4.3: Pydantic rejects an invalid confidence instead of clamping it."""
+    """docs/PROMPTS.md: Pydantic rejects an invalid confidence instead of clamping it."""
     agent = PatternAgent(answering(response=[_draft(strength=1.5)]))
 
     with pytest.raises(AgentExecutionError, match="find_patterns"):

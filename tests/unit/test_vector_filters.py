@@ -40,7 +40,7 @@ def test_no_filter_matches_everything() -> None:
 
 
 def test_a_numerology_value_becomes_a_match_condition() -> None:
-    """Roadmap 3.8 filters on the reduced value of the item."""
+    """docs/QDRANT_COLLECTIONS.md filters on the reduced value of the item."""
     (condition,) = _conditions(NewsFilter(numerology_value=7))
 
     assert condition.key == "numerology_value"

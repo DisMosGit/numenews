@@ -1,4 +1,4 @@
-"""Phase 9.2: the four ragas metrics over the production retrieval path.
+"""docs/EVAL.md: the four ragas metrics over the production retrieval path.
 
 One question at a time: the top-:data:`~tests.eval.harness.TOP_K` items the *production*
 :func:`numenews.vector.hybrid_search_news` returns become the retrieved contexts, the eval's
@@ -44,7 +44,7 @@ from .harness import (
     retrieve,
 )
 
-#: Floors from roadmap 9.2; the two metrics without one are reported, not gated.
+#: Floors from docs/EVAL.md; the two metrics without one are reported, not gated.
 FLOORS = {"faithfulness": 0.7, "context_precision": 0.6}
 
 #: Every metric the run reports, in the order the report shows them.
@@ -172,7 +172,7 @@ def _render_report(
         "  than tuned to the last run.",
         "- A single question can drop to 0 when the judge's statement check misreads an answer the",
         "  contexts plainly support; the run is gated on the mean for exactly that reason.",
-        "- `faithfulness` and `context_precision` are the gates of phase 9; `context_recall` and",
+        "- `faithfulness` and `context_precision` are the gated metrics; `context_recall` and",
         "  `answer_relevancy` are reported so a regression is visible before it is gated.",
         "- The full details — endpoint, dataset format, how to add fixtures — are in",
         "  `docs/EVAL.md`.",
@@ -188,7 +188,7 @@ async def test_rag_quality(
     eval_news: dict[str, NewsItem],
     eval_questions: list[EvalQuestion],
 ) -> None:
-    """Score every fixture question with ragas and hold the run to the phase-9 floors."""
+    """Score every fixture question with ragas and hold the run to the floors of docs/EVAL.md."""
     if not judge.endpoint_configured(eval_settings):
         pytest.skip(
             "no LLM endpoint configured: set OPENAI_API_KEY or OPENAI_BASE_URL and rerun "

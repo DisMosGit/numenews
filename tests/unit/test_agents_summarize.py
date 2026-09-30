@@ -1,4 +1,4 @@
-"""Tests for the summarizer (ROADMAP 5.5) and its prompt.
+"""Tests for the summarizer (docs/RAG_PIPELINE.md) and its prompt.
 
 The model contributes the prose only. The period of the digest and the numbers it rests on are facts
 about the items, so those are asserted to come from here rather than from a model answer; the model
@@ -152,7 +152,7 @@ def test_an_empty_prompt_says_so() -> None:
 
 
 def test_the_instructions_are_the_documented_blocks() -> None:
-    """A prompt change is a deliberate three-file change (phase 4.5); this is the literal."""
+    """A prompt change is a deliberate three-file change (docs/PROMPTS.md); this is the literal."""
     assert f"{SUMMARIZE_RULES}\n\n{SUMMARIZE_FEW_SHOT}" == SUMMARIZE_INSTRUCTIONS
     assert SUMMARIZE_RULES in SUMMARIZE_INSTRUCTIONS
 

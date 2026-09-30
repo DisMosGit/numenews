@@ -1,4 +1,4 @@
-"""Tests for the regex extraction fallback (ROADMAP 1.6).
+"""Tests for the regex extraction fallback (docs/NUMEROLOGY.md).
 
 The fallback must never raise on news text: an impossible date is skipped, a text without matches
 returns an empty list, and the order of the input is preserved throughout.

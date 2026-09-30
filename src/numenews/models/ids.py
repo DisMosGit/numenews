@@ -3,7 +3,7 @@
 Every aggregate gets its own ``RootModel[UUID]`` so that a news id cannot be passed where a pattern
 id is expected. The wrappers serialise as bare UUID strings; because the models are strict, a Python
 ``str`` is not coerced — build them from :class:`uuid.UUID`, or validate a JSON payload with
-``model_validate_json`` (that is how the Qdrant payloads are read back in phase 3).
+``model_validate_json`` (that is how the Qdrant payloads are read back).
 """
 
 from __future__ import annotations

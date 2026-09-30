@@ -1,9 +1,9 @@
 # Choosing an MCP tool
 
-> Phase 6. `ROADMAP.md` is the authoritative status; [`MCP_TOOLS.md`](MCP_TOOLS.md) is the contract of
-> each tool (arguments, returns, failures). This document is the *selection* layer on top of it: given
-> a question in prose, which of the nine tools should a model call, in what order, and what does it
-> need running first.
+> The authoritative status is [`openspec/specs/`](../openspec/specs/);
+> [`MCP_TOOLS.md`](MCP_TOOLS.md) is the contract of each tool (arguments, returns, failures). This
+> document is the *selection* layer on top of it: given a question in prose, which of the nine tools
+> should a model call, in what order, and what does it need running first.
 
 The tools are deliberately small and orthogonal. A model chooses well when it picks the narrowest
 tool that can answer, chains tools instead of guessing, and lets the tool's error message correct the

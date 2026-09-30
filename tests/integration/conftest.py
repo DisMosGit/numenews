@@ -2,7 +2,7 @@
 
 Qdrant runs in memory here (`QdrantClient(":memory:")`), so these tests exercise the vector
 layer without Docker; the container from `docker-compose.yml` is exercised by the manual
-checks in ROADMAP.md and, from phase 3, by the client's health check. The news layer needs no
+checks in docs/TESTING.md and, from the vector layer on, by the client's health check. News needs no
 service at all: `respx` answers its HTTP calls, while the `news_client` fixture exercises the real
 `hishel` cache against a sqlite file in the test's temporary directory. The embedding model is
 genuinely local but not free: `small_embedder`/`base_embedder` download the ~286 MB of weights on

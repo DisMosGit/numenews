@@ -1,4 +1,4 @@
-"""Tests for the sliding window and the partition it implies (ROADMAP 5.5).
+"""Tests for the sliding window and the partition it implies (docs/RAG_PIPELINE.md).
 
 The window is one rule with one definition — ``window_start`` — and ``partition`` is its other
 reader: the days inside the window are the ones the agents see, the days before it are the ones a

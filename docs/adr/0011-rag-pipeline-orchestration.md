@@ -107,7 +107,6 @@ Harder and worth remembering:
 
 ## References
 
-- `ROADMAP.md` phases 5.1–5.7 and 8.3
 - [ADR 0002](0002-numerology-scope.md) — numerology is pure logic; the pipeline never computes a
   number inline
 - [ADR 0003](0003-local-embeddings.md) — the synchronous vector layer and the `asyncio.to_thread`

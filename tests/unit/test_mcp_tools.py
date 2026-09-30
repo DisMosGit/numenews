@@ -1,9 +1,9 @@
-"""The tool functions that need no context, called directly (ROADMAP 6.4, 6.6).
+"""The tool functions that need no context, called directly (mcp-surface).
 
 Two of the nine tools are pure wrappers over :mod:`numenews.numerology`: they take no
 ``Context[AppContext]``, so they can be imported and called like the layer function they wrap. The
 :mod:`numenews.mcp.server` test proves they are registered as tools; these tests prove they answer
-what the roadmap says they answer.
+what mcp-surface says they answer.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def test_compute_numerology_reads_cyrillic_too() -> None:
 
 
 def test_check_master_numbers_counts_every_occurrence() -> None:
-    """ROADMAP 6.6: distinct master numbers live in one field, occurrences in the other."""
+    """mcp-surface: distinct master numbers live in one field, occurrences in the other."""
     result = check_master_numbers([11, 11, 7, 22])
 
     assert isinstance(result, MasterCheckResult)

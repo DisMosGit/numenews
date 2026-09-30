@@ -1,8 +1,8 @@
 """The MCP server: one ``MCPServer`` with the nine tools and the application lifespan.
 
-The roadmap's 6.1 sketch said ``FastMCP("numenews")``. The installed SDK is v2, where that class was
-renamed to ``MCPServer`` (``mcp.server.fastmcp`` no longer exists); the reasoning, and the rest of
-the phase-6 decisions, are in ``docs/adr/0010-use-mcp-server.md``.
+The original design sketch said ``FastMCP("numenews")``. The installed SDK is v2, where that class
+was renamed to ``MCPServer`` (``mcp.server.fastmcp`` no longer exists); the reasoning, and the rest
+of the server's decisions, are in ``docs/adr/0010-use-mcp-server.md``.
 
 The server object is built by :func:`build_server` rather than created at import time, so a test can
 hand it an :class:`~numenews.mcp.context.AppContext` over in-memory Qdrant and scripted agents. The

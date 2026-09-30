@@ -3,12 +3,13 @@
 An MCP server is a long-lived process, so building a ``QdrantClient``, an embedding session or an
 agent per tool call would be both slow and wrong — two stores would hold two views of the same
 collections. Everything a call needs is therefore built once and reached through the lifespan
-object, which is what roadmap 6.1 calls dependency injection through ``AppContext``.
+object, which is dependency injection through ``AppContext``.
 
 The construction is *lazy*. The server must start even when neither Qdrant nor an LLM endpoint is
-reachable (roadmap 6.1's DoD is "starts and does not fail on connection"), so nothing is built until
-a tool that needs it runs; a failure then becomes a ``ToolError`` that says what to fix, instead of
-a process that refuses to boot. Laziness also gives every tool the smallest prerequisite set:
+reachable (mcp-surface requires that it start and complete the handshake with nothing configured),
+so nothing is built until a tool that needs it runs; a failure then becomes a ``ToolError`` that
+says what to fix, instead of a process that refuses to boot. Laziness also gives every tool the
+smallest prerequisite set:
 
 * ``compute_numerology`` / ``check_master_numbers`` need nothing;
 * ``extract_numbers`` needs an LLM endpoint only;

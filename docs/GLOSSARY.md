@@ -51,7 +51,7 @@
 - **Sliding window** — the day and the six before it (`Pipeline.window_days`, seven by default). The
   news the pattern and forecast steps actually see.
 - **Timing** — one `Timing` per pipeline step, returned inside the result rather than only logged,
-  because the roadmap keeps step profiling as part of the answer.
+  because step profiling is part of the answer, not a logging side channel.
 
 ## Interfaces and model calls
 

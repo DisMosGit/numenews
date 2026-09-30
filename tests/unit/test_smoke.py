@@ -1,4 +1,4 @@
-"""Smoke tests: the package imports and the phase-0 entry points behave."""
+"""Smoke tests: the package imports and the entry points behave."""
 
 from __future__ import annotations
 
@@ -25,12 +25,12 @@ async def test_asyncio_auto_mode_runs_coroutines() -> None:
 
 
 def test_cli_entry_point_serves_the_typer_app() -> None:
-    """The placeholder is gone: the package exposes the one-shot CLI application (phase 7)."""
+    """The placeholder is gone: the package exposes the one-shot CLI application (cli-surface)."""
     assert isinstance(cli_app, typer.Typer)
     assert cli_app.info.name == "numenews"
 
 
-def test_mcp_entry_point_serves_the_phase_six_server() -> None:
+def test_mcp_entry_point_serves_the_server() -> None:
     """The placeholder is gone: the package exposes a server and its main serves it."""
     assert callable(mcp_main)
     assert callable(build_server)

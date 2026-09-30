@@ -95,7 +95,6 @@ Harder and worth remembering:
 
 ## References
 
-- `ROADMAP.md` phases 3.7, 5.2, 5.4, 6.10, 7.5 and 8.1–8.4
 - [ADR 0003](0003-local-embeddings.md) — the vector layer, its collections and the synchronous
   interface
 - [ADR 0011](0011-rag-pipeline-orchestration.md) — the pipeline's window and the deferred 30-day

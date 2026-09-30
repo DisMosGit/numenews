@@ -6,7 +6,7 @@ configured *first* and always writes to stderr — stdout is the wire. ``configu
 the root handlers, so the SDK's ``logging.basicConfig`` call inside ``MCPServer`` becomes a no-op
 and the stream keeps one shape (JSON in ``prod``, readable in ``dev``).
 
-Roadmap 7.8's ``numenews mcp --transport stdio`` calls :func:`main` directly.
+The CLI's ``numenews mcp --transport stdio`` calls :func:`main` directly.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from numenews.mcp.server import build_server
 def main(transport: Literal["stdio"] = "stdio") -> None:
     """Run the MCP server over ``transport`` until the client disconnects.
 
-    Blocks for the life of the server. Phase 6 serves stdio only; the other transports
+    Blocks for the life of the server. The server serves stdio only; the other transports
     the SDK offers (streamable HTTP, SSE) arrive with a use for them.
     """
     configure_logging()

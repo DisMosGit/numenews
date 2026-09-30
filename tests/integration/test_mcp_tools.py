@@ -1,4 +1,4 @@
-"""The nine MCP tools, called through an in-memory client (ROADMAP 6.2-6.10).
+"""The nine MCP tools, called through an in-memory client (mcp-surface).
 
 Each test builds the real server and connects the SDK's own ``Client`` to it in memory — no
 subprocess, no port, no JSON on a wire — and injects an :class:`~numenews.mcp.context.AppContext`
@@ -120,7 +120,7 @@ def _pipeline(
 async def test_fetch_news_returns_the_aggregated_items(
     settings: Settings, news_client: AsyncCacheClient
 ) -> None:
-    """ROADMAP 6.2: the tool reaches ``NewsAggregator`` and returns ``list[NewsItem]``."""
+    """mcp-surface: the tool reaches ``NewsAggregator`` and returns ``list[NewsItem]``."""
     context = AppContext(settings, aggregator=NewsAggregator.from_settings(settings, news_client))
 
     with respx.mock(assert_all_called=False) as router:
@@ -153,7 +153,7 @@ async def test_fetch_news_reports_an_unconfigured_feed_as_a_tool_error(
 
 
 async def test_extract_numbers_returns_the_agents_reading(settings: Settings) -> None:
-    """ROADMAP 6.3: the tool reaches ``ExtractNumbersAgent`` and returns its structured reading."""
+    """mcp-surface: the tool reaches ``ExtractNumbersAgent`` and returns its structured reading."""
     extract, counter = extract_agent([11], symbols=["☀"])
     context = AppContext(settings, extract=extract)
 
@@ -180,7 +180,7 @@ async def test_extract_numbers_reports_a_missing_llm_endpoint(settings: Settings
 
 
 async def test_compute_numerology_needs_no_service(settings: Settings) -> None:
-    """ROADMAP 6.4: a pure tool answers on a server that has nothing configured at all."""
+    """mcp-surface: a pure tool answers on a server that has nothing configured at all."""
     async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
         result = await client.call_tool("compute_numerology", {"text": "sun"})
 
@@ -194,7 +194,7 @@ async def test_compute_numerology_needs_no_service(settings: Settings) -> None:
 async def test_find_patterns_connects_the_stored_items(
     settings: Settings, vector_store: VectorStore
 ) -> None:
-    """ROADMAP 6.5: the tool runs ``Pipeline.analyze`` and returns the saved patterns."""
+    """mcp-surface: the tool runs ``Pipeline.analyze`` and returns the saved patterns."""
     items = [_item(f"story {number}") for number in range(3)]
     upsert_news(vector_store, items)
     pipeline, counter, _ = _pipeline(vector_store, patterns=[_pattern_draft(items)])
@@ -241,7 +241,7 @@ async def test_find_patterns_refuses_a_malformed_id_before_running(settings: Set
 
 
 async def test_check_master_numbers_needs_no_service(settings: Settings) -> None:
-    """ROADMAP 6.6: the second pure tool answers on a server with no configuration."""
+    """mcp-surface: the second pure tool answers on a server with no configuration."""
     async with Client(build_server(context=AppContext(settings)), raise_exceptions=True) as client:
         result = await client.call_tool("check_master_numbers", {"numbers": [11, 11, 7]})
 
@@ -256,7 +256,7 @@ async def test_check_master_numbers_needs_no_service(settings: Settings) -> None
 async def test_build_forecast_reads_the_day_and_caches_it(
     settings: Settings, vector_store: VectorStore
 ) -> None:
-    """ROADMAP 6.7: the reading comes from ``Pipeline.forecast``, and a second call is free."""
+    """mcp-surface: the reading comes from ``Pipeline.forecast``, and a second call is free."""
     stored = _item("11th hour deal").model_copy(update={"numbers": (11,), "numerology_value": 11})
     upsert_news(vector_store, [stored])
     pipeline, _, forecast_counter = _pipeline(vector_store)
@@ -281,7 +281,7 @@ async def test_build_forecast_reads_the_day_and_caches_it(
 async def test_query_qdrant_ranks_the_stored_news(
     settings: Settings, vector_store: VectorStore, fake_base_embedder: FakeEmbedder
 ) -> None:
-    """ROADMAP 6.8: the tool searches the news collection and returns typed entities."""
+    """mcp-surface: the tool searches the news collection and returns typed entities."""
     near = _item("budget deal signed")
     far = _item("weather report published")
     fake_base_embedder.register_axis(news_embedding_text(near), 0)
@@ -304,7 +304,7 @@ async def test_query_qdrant_ranks_the_stored_news(
 async def test_query_qdrant_honours_the_news_filter(
     settings: Settings, vector_store: VectorStore, fake_base_embedder: FakeEmbedder
 ) -> None:
-    """The payload filter narrows the candidate set before the ranking, as phase 3.8 requires."""
+    """The payload filter narrows candidates before the ranking (docs/QDRANT_COLLECTIONS.md)."""
     seven = _item("seven seats lost").model_copy(update={"numerology_value": 7})
     eleven = _item("eleven seats lost").model_copy(update={"numerology_value": 11})
     fake_base_embedder.register_axis(news_embedding_text(seven), 0)
@@ -411,7 +411,7 @@ def _pattern_payload(
 async def test_save_pattern_stores_it_and_stamps_the_time(
     settings: Settings, vector_store: VectorStore
 ) -> None:
-    """ROADMAP 6.9: the pattern is written to the collection and comes back stamped."""
+    """mcp-surface: the pattern is written to the collection and comes back stamped."""
     pattern_id = uuid4()
     context = AppContext(settings, store=vector_store)
 
@@ -461,7 +461,7 @@ def _activation(number: int, *, day: date) -> NumberActivation:
 async def test_get_history_reads_the_window_newest_first(
     settings: Settings, vector_store: VectorStore
 ) -> None:
-    """ROADMAP 6.10: the activations of one number come back newest first."""
+    """mcp-surface: the activations of one number come back newest first."""
     today = datetime.now(UTC).date()
     record_activation(vector_store, _activation(11, day=today))
     record_activation(vector_store, _activation(11, day=today - timedelta(days=2)))

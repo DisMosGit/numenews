@@ -13,8 +13,8 @@ Each agent has three pieces:
 | `*_INSTRUCTIONS` | `f"{rules}\n\n{few_shot}"` — what an `Agent` is constructed with | the agent's `instructions` |
 | `build_*_prompt(...)` | the facts of one call, rendered | `Agent.run(...)` |
 
-There are four of them: `extract_numbers` (4.2), `find_patterns` (4.3), `build_forecast` (4.4) and
-`summarize_news` (5.5).
+There are four of them: `extract_numbers`, `find_patterns`, `build_forecast` and
+`summarize_news`.
 
 Rules and facts are separate on purpose: the rules are constant and snapshot-tested, while the facts
 change per call. `tests/unit/test_agents_prompts.py` compares each rendered prompt with the exact
@@ -48,10 +48,10 @@ honestly know; everything else is computed by the layers that own it:
 | Domain field | Whose it is |
 |---|---|
 | `ExtractedNumbers.sources` | ours: provenance of the extraction (`llm`, `regex`) |
-| `Pattern.id`, `Pattern.discovered_at` | ours: the id is a `uuid5` of the pattern's content, the timestamp belongs to `save_pattern` (3.5) |
+| `Pattern.id`, `Pattern.discovered_at` | ours: the id is a `uuid5` of the pattern's content, the timestamp belongs to `save_pattern` |
 | `Pattern.news_ids` | the input: ids the model may copy but not invent; unknown ones are dropped |
 | `Forecast.date`, `dominant_number`, `master_active` | `numenews.numerology`, through the pipeline (AGENTS.md keeps numerology out of the agents) |
-| `Forecast.patterns` | phase 4.3 or Qdrant |
+| `Forecast.patterns` | the pipeline's pattern step, or Qdrant |
 | `Digest.period_start`, `Digest.period_end`, `Digest.numbers` | ours: the period and the values are read off the items being summarised |
 | `Pattern.interpretation`, `Forecast.forecast` / `advice` / `warnings`, `Digest.summary` | the model |
 
@@ -74,17 +74,17 @@ example output shows. Every prose-producing rule block says so explicitly.
 
 Why the rules read the way they do:
 
-- **Dates count as numbers.** `extract_numbers_regex` is format-agnostic (phase 1.6) and returns the
+- **Dates count as numbers.** `extract_numbers_regex` is format-agnostic and returns the
   components of a date, so the model is asked for the same reading rather than for "interesting"
   numbers only.
 - **No arithmetic.** Reduction, master numbers and gematria belong to `numerology/` (AGENTS.md); the
   prompt forbids computing anything, and the layer keeps the guarantee testable.
 - **A watchlist, not a vocabulary.** Symbols come from the text plus a caller-supplied list. The
-  vocabulary is the caller's because `extract_symbols` needs one too (phase 1.6), and both the model
+  vocabulary is the caller's because `extract_symbols` needs one too, and both the model
   and the fallback must look for the same symbols.
 - **The regex pass always runs.** The model's reading is merged with `extract_numbers_regex` (model
   first, duplicates dropped); a failed run falls back to the regex reading alone, and
-  `ExtractedNumbers.sources` records which strategies contributed (ROADMAP 4.2).
+  `ExtractedNumbers.sources` records which strategies contributed.
 
 ```
 You read one news text and report the numbers and symbols it contains. You do not interpret them.
@@ -145,9 +145,9 @@ News items to analyse:
    text: Eleven ministers resigned today.
 ```
 
-The connection kinds are the closed `PatternType` literal of phase 1.1 (`repetition`, `master`,
+The connection kinds are the closed `PatternType` literal (`repetition`, `master`,
 `resonance`, `symbol`, `hidden`), so the model cannot invent a kind the schema rejects. The rules
-also bound `strength` to `[0, 1]` (enforced by Pydantic, ROADMAP 4.3) and demand Russian
+also bound `strength` to `[0, 1]` (enforced by Pydantic) and demand Russian
 `interpretation`.
 
 ```
@@ -224,10 +224,10 @@ Number activations of the recent past:
   `format_patterns([])` writes `No patterns were found for this day.`
 - `history` renders as `- <date> · <number> · <context>` (one line per activation, contexts cut to
   `HISTORY_CONTEXT_LIMIT = 160` characters), newest first and at equal dates by `news_id`
-  descending — the order of `VectorStore.get_history` (phase 3.7), so the same history always
+  descending — the order of `VectorStore.get_history`, so the same history always
   produces the same prompt. `format_history([])` writes
   `No number activations were recorded for this window.` The pipeline feeds it the activations of
-  the day's numbers read over `Pipeline.history_days` — thirty days by default (phase 8.3), wider
+  the day's numbers read over `Pipeline.history_days` — thirty days by default, wider
   than the seven-day news window the items come from.
 - `forecast` and `advice` may not be blank: `ForecastDraft` rejects an empty string, so a reading
   that says nothing is a failed run to retry, not a result.
@@ -272,7 +272,7 @@ Every sentence names the number or the activation it rests on, and no new number
 ## Summarize the news outside the window
 
 `SUMMARIZE_RULES` + `SUMMARIZE_FEW_SHOT` → `SUMMARIZE_INSTRUCTIONS`; facts through
-`build_digest_prompt(news)`. Output: `DigestDraft`. Added by roadmap 5.5: the sliding window keeps
+`build_digest_prompt(news)`. Output: `DigestDraft`. The sliding window keeps
 the recent days raw, and everything older is compressed into one digest per period.
 
 ```

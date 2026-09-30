@@ -12,10 +12,10 @@ from numenews.models.ids import NewsId
 class NewsItem(BaseModel):
     """One news article as it crosses the module boundaries.
 
-    ``url`` is an opaque source URL: the five feeds of phase 2 spell URLs inconsistently, so the
+    ``url`` is an opaque source URL: the five feeds spell URLs inconsistently, so the
     model does not insist on :class:`~pydantic.AnyHttpUrl` and never rejects an item over it.
 
-    ``numbers`` and ``numerology_value`` are filled in by the extraction step (phase 4); before that
+    ``numbers`` and ``numerology_value`` are filled in by the extraction step; before that
     they are ``()`` and ``None``. ``None`` is the explicit "not computed yet" — the reduced values
     never contain ``0``, so there is no magic number for it.
     """

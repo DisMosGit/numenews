@@ -27,7 +27,7 @@ multi-stage Query API (`query_points` with `prefetch`) builds each stage explici
 filter sits changes what the database does: a top-level filter is applied to the *result* of the
 HNSW walk, so a query that matches only a handful of payloads can come back short; a filter inside a
 `Prefetch` is applied *during* that stage's walk, so the stage collects `limit` matching points
-before anything is fused. `AGENTS.md` and `ROADMAP.md` 3.3 also require payload indexes to exist
+before anything is fused. `AGENTS.md` also requires payload indexes to exist
 **before** ingest, which is what makes an inside-the-prefetch filter cheap.
 
 Finally, repeated ingest (phase 5) must be idempotent without a lookup table: the same article
@@ -86,5 +86,4 @@ to, and fuse with RRF:
 - [`docs/QDRANT_COLLECTIONS.md`](../QDRANT_COLLECTIONS.md) — the collections, payload indexes and the
   search examples
 - [`docs/EVAL.md`](../EVAL.md) — the retrieval quality measured over the production path
-- [`ROADMAP.md`](../../ROADMAP.md) — phase 3, tasks 3.3, 3.8 and 3.9
 - [Qdrant — hybrid queries and fusion](https://qdrant.tech/documentation/concepts/hybrid-queries/)

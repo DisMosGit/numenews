@@ -1,6 +1,6 @@
 """The ``number_history`` collection: the exact log of when a number was activated.
 
-This is the project's long-term memory (``ROADMAP.md``, phase 8): every ingest appends the numbers
+This is the project's long-term memory: every ingest appends the numbers
 it found with the day they were published, and a forecast reads the window back. The collection has
 no vectors — a question about history is exact ("which 11s since Monday?"), and the semantic
 counterpart lives in ``numbers``. A read returns the rows (:func:`get_history`,
@@ -54,7 +54,7 @@ def record_activation(store: VectorStore, activation: NumberActivation) -> None:
     Args:
         store: The connection. The history has no vectors, so neither embedder is used.
         activation: What to remember — the number, the day, the item it was read in, the snippet
-            around it and the item's reduced value (phase 8.1).
+            around it and the item's reduced value.
     """
     create_number_history_collection(store.client)
     store.client.upsert(
@@ -92,7 +92,8 @@ def get_history(
         number: Which number's activations to read.
         days: Length of the window in calendar days.
         today: The end of the window. Defaults to the current UTC day; tests and replayed runs pass
-            it explicitly so the result depends on the data, not on the clock (as in 1.6).
+            it explicitly so the result depends on the data, not on the clock (as the regex date
+            extraction does).
 
     Raises:
         ValueError: when ``days`` is less than one — a window with no days is a call-site bug.
@@ -118,7 +119,7 @@ def get_activations(
 ) -> list[NumberActivation]:
     """Return every activation inside the last ``days`` days, newest first, whatever the number.
 
-    This is the read the forecast step needs (roadmap 5.4): the day's reading should draw on all the
+    This is the read the forecast step needs: the day's reading should draw on all the
     numbers the recent news activated, not on one of them. ``get_history`` stays the question with a
     subject ("when was 11 active"), this one is the question without ("what was active").
 
@@ -147,10 +148,10 @@ def activation_frequency(activations: Sequence[NumberActivation]) -> tuple[DayAc
     """Return how many activations fall on each day, newest day first.
 
     A history read answers "when was 11 active" with one row per news item; this folds the same rows
-    into the time series the roadmap 8.2 aggregation asks for, which is what a reader wants beside
-    the rows themselves. The order matches :func:`get_history` — newest first — so the report and
-    its series read the same way. Rows are counted, not distinct numbers: two articles that both
-    state 11 make one day with ``count=2``.
+    into the per-day time series, which is what a reader wants beside the rows themselves. The order
+    matches :func:`get_history` — newest first — so the report and its series read the same way.
+    Rows are counted, not distinct numbers: two articles that both state 11 make one day with
+    ``count=2``.
 
     Args:
         activations: The rows a read returned, in any order.

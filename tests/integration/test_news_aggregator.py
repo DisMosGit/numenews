@@ -1,6 +1,6 @@
 """The whole news layer against five mocked endpoints.
 
-This is the phase-2 acceptance test: five sources, two of them broken, and one call that still
+This is the news-layer acceptance test: five sources, two of them broken, and one call that still
 returns the news the other three had — plus the rules that must hold whatever each API did (the
 range filter, the de-duplication key, and a configuration with no keys at all).
 """
@@ -76,7 +76,7 @@ async def test_five_sources_with_two_failures_still_produce_news(
     settings: Settings,
     instant_retries: None,
 ) -> None:
-    """The phase's Definition of Done: two of five sources down, three still answer."""
+    """The news layer's Definition of Done: two of five sources down, three still answer."""
     configured = settings.model_copy(update=KEYS)
 
     with respx.mock(assert_all_called=False) as router:

@@ -4,7 +4,7 @@ Both ambient readings the pipeline needs go through this Protocol: the wall cloc
 which day a forecast is for and how an old-news period is labelled, and the monotonic clock, which
 measures how long a step took. Tests hand in a clock whose readings they control, so a timing
 assertion is exact and a window does not depend on the machine's date — the same reason
-``extract_dates_regex(..., today=)`` and ``get_history(..., today=)`` take theirs (phases 1.6, 3.7).
+``extract_dates_regex(..., today=)`` and ``get_history(..., today=)`` take theirs.
 
 ``monotonic`` is deliberately separate from ``now``: a step's duration must not be disturbed by a
 wall-clock adjustment, so the timing path never calls :meth:`Clock.now`.

@@ -1,4 +1,4 @@
-"""Tests for the master-number checks (ROADMAP 1.3)."""
+"""Tests for the master-number checks (docs/NUMEROLOGY.md)."""
 
 from __future__ import annotations
 

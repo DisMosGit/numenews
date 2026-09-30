@@ -1,8 +1,8 @@
 # Stack
 
-> Why each tool is here, and what it costs. [`ROADMAP.md`](../ROADMAP.md) is the authoritative
-> status; the decisions with lasting architectural weight are recorded in [`docs/adr/`](adr/) and
-> linked from the rows below.
+> Why each tool is here, and what it costs. The authoritative status is
+> [`openspec/specs/`](../openspec/specs/); the decisions with lasting architectural weight are
+> recorded in [`docs/adr/`](adr/) and linked from the rows below.
 
 The stack is deliberately small: one package manager, one type system, one vector store, one LLM
 orchestrator, and local models only. Every dependency is either used on the default demo path or is

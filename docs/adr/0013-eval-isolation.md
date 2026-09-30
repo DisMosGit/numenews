@@ -79,7 +79,6 @@ gitignored `.venv-eval` built by `make eval-env`:
 
 ## References
 
-- [`ROADMAP.md`](../../ROADMAP.md) phase 9
 - [`docs/EVAL.md`](../EVAL.md) and [`docs/eval_report.md`](../eval_report.md)
 - [`docs/adr/0003-local-embeddings.md`](0003-local-embeddings.md) — no embedding API
 - [`docs/adr/0004-pydantic-ai-choice.md`](0004-pydantic-ai-choice.md) — `pydantic-ai` as the orchestrator

@@ -66,7 +66,7 @@ class DominantResult(BaseModel):
 class Digest(BaseModel):
     """A compressed reading of the news outside the pipeline's sliding window.
 
-    Roadmap 5.5 keeps the recent window raw and summarises the older items into one numerological
+    The pipeline keeps the recent window raw and summarises the older items into one numerological
     digest per period, so the memory of an earlier stretch survives in a sentence instead of a page
     of articles. ``period_start`` and ``period_end`` are the publication days the summary covers and
     are what identify the digest (there is no id of its own), ``summary`` is the prose, and

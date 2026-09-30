@@ -21,7 +21,7 @@ runner = CliRunner()
 
 
 def test_version_prints_json_and_exits() -> None:
-    """ROADMAP 7.1: ``--version`` works, and its answer honours the JSON-only contract."""
+    """cli-surface: ``--version`` works, and its answer honours the JSON-only contract."""
     result = runner.invoke(app, ["--version"])
 
     assert result.exit_code == 0
@@ -62,7 +62,7 @@ def test_an_unknown_option_is_a_usage_error() -> None:
 
 
 def test_mcp_serves_stdio(monkeypatch: pytest.MonkeyPatch) -> None:
-    """ROADMAP 7.8: ``numenews mcp`` proxies into ``mcp/main.py`` and writes no JSON of its own."""
+    """cli-surface: ``numenews mcp`` proxies into ``mcp/main.py`` and writes no JSON of its own."""
     transports: list[str] = []
     monkeypatch.setattr(cli_main, "serve_mcp", transports.append)
 
@@ -85,7 +85,7 @@ def test_mcp_defaults_to_stdio(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_mcp_refuses_an_unknown_transport() -> None:
-    """Phase 6 serves stdio only; asking for HTTP is a usage error, not a silent fallback."""
+    """mcp-surface serves stdio only; asking for HTTP is a usage error, not a silent fallback."""
     result = runner.invoke(app, ["mcp", "--transport", "http"])
 
     assert result.exit_code == 2

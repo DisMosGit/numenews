@@ -35,8 +35,8 @@ from numenews.vector import (
 async def today(context: AppContext, *, topic: str) -> Forecast:
     """Ingest the topic's news window and return today's reading.
 
-    Roadmap 7.3 is "ingest + analyze + forecast": the news of the sliding window is fetched and
-    stored first, so the reading is built from what is actually in the store, and
+    The ``today`` command is "ingest + analyze + forecast": the news of the sliding window is
+    fetched and stored first, so the reading is built from what is actually in the store, and
     :meth:`~numenews.pipeline.pipeline.Pipeline.forecast` then derives the window's patterns and
     writes the day's reading. The analyze step is not called separately — the forecast step runs it
     over the same window items (``rerun_analysis=True``), and calling both would pay for one model
@@ -85,8 +85,8 @@ async def history(context: AppContext, *, number: int, days: int) -> HistoryResu
 
     This is the read of ``number_history``, the project's long-term memory: one entry per
     ``(news item, number)`` pair an ingest stored, with the day the article was published and the
-    snippet the number was read in. The same rows are folded into ``by_day`` (phase 8.2) so the
-    answer carries the period's frequency as well. It needs Qdrant only — no news API, no model.
+    snippet the number was read in. The same rows are folded into ``by_day`` so the answer carries
+    the period's frequency as well. It needs Qdrant only — no news API, no model.
 
     Args:
         context: The application context; its store is built on first use.
@@ -116,9 +116,9 @@ async def search(
 ) -> CollectionQueryResult:
     """Search the stored news or patterns by meaning and return the matching entities.
 
-    ``collection="news"`` runs the hybrid (multi-stage) search the MCP tool of phase 6.8 uses, so
-    the two interfaces answer the same question the same way; ``collection="patterns"`` finds saved
-    pattern interpretations. Both need Qdrant only — the query is embedded locally with
+    ``collection="news"`` runs the hybrid (multi-stage) search the ``query_qdrant`` MCP tool uses,
+    so the two interfaces answer the same question the same way; ``collection="patterns"`` finds
+    saved pattern interpretations. Both need Qdrant only — the query is embedded locally with
     ``fastembed`` and no model is called.
 
     Args:
@@ -149,8 +149,8 @@ async def patterns(
     """Return the stored patterns the filters allow, strongest and newest first.
 
     Unlike :func:`search`, this is not a similarity question: it lists what the pipeline (or the MCP
-    ``save_pattern`` tool) already found, narrowed by the two indexed payload fields of roadmap 7.7,
-    so it needs Qdrant only and embeds nothing.
+    ``save_pattern`` tool) already found, narrowed by the two indexed payload fields, so it needs
+    Qdrant only and embeds nothing.
 
     Args:
         context: The application context; its store is built on first use.

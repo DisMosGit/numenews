@@ -1,11 +1,11 @@
 """The ``numbers`` collection: the semantic index over the contexts numbers appear in.
 
-Where ``number_history`` (3.7) answers "when was 7 activated, exactly", this collection answers
+Where ``number_history`` answers "when was 7 activated, exactly", this collection answers
 "which activations read like *this*". That is why it lives on the 384d model — a number context is
 one sentence, and the smaller vector is both enough and cheaper — and why the vector is built from
 the context rather than from the number.
 
-The roadmap calls the writer ``upsert_number_patterns``; its argument is
+The writer is ``upsert_number_patterns``; its argument is
 :class:`~numenews.models.NumberActivation`, because the payload it stores is exactly that model
 (``number`` + ``context``, plus the date and the news id that make it traceable).
 """

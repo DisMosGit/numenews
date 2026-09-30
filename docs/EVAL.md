@@ -1,8 +1,8 @@
-# RAG evaluation (phase 9)
+# RAG evaluation
 
-> `ROADMAP.md` is the authoritative status; this document records what the eval actually does, how to
-> run it and how to read its report. The decision behind its isolation is in
-> [ADR 0013](adr/0013-eval-isolation.md).
+> The authoritative status is [`openspec/specs/`](../openspec/specs/); this document records what the
+> eval actually does, how to run it and how to read its report. The decision behind its isolation is
+> in [ADR 0013](adr/0013-eval-isolation.md).
 
 The evaluation answers one question: *does the production retrieval path find the right news, and is
 the prose written from it grounded?* It is measured with [`ragas`](https://docs.ragas.io/) over a
@@ -13,7 +13,7 @@ committed corpus, and it is the only suite in this repository that makes real LL
 | Test | Needs | What it proves |
 |---|---|---|
 | `tests/eval/test_retrieval.py` | no LLM, no key | the fixtures are consistent and the production hybrid search retrieves a relevant item for at least 80 % of the questions |
-| `tests/eval/test_rag.py` | an LLM endpoint | the four ragas metrics over the retrieved contexts, gated at the phase-9 floors |
+| `tests/eval/test_rag.py` | an LLM endpoint | the four ragas metrics over the retrieved contexts, gated at the floors this document sets |
 
 Both are marked `eval` and run only with `--run-eval`, which `make test-eval` passes.
 
@@ -131,8 +131,7 @@ contexts plainly support — seen on a question whose one-sentence answer restat
 sentence almost verbatim. That is why the suite gates the **mean** and keeps the per-question table
 in the report: a lone zero is a judge artefact, a column of zeros is a retrieval problem. The floors
 are floors, not targets: if the mean drops below one, the fix is the corpus, the retrieval or the
-answer prompt — never a lowered threshold. The committed report is the record of the run that
-closed the phase.
+answer prompt — never a lowered threshold. The committed report is the record of that run.
 
 ## Runtime and cost
 

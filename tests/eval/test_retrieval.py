@@ -15,7 +15,7 @@ from numenews.vector import VectorStore
 
 from .harness import HIT_FLOOR, TOP_K, EvalQuestion, hit, relevant_ids, retrieve
 
-#: The sizes roadmap 9.1 names; a fixture edit that drops or adds an item has to say so here.
+#: The sizes docs/EVAL.md names; a fixture edit that drops or adds an item has to say so here.
 CORPUS_SIZE = 50
 QUESTION_COUNT = 20
 
@@ -25,7 +25,7 @@ def test_corpus_has_the_documented_size(
     eval_news: dict[str, NewsItem],
     eval_questions: list[EvalQuestion],
 ) -> None:
-    """The corpus and the question set are the ones roadmap 9.1 specifies."""
+    """The corpus and the question set are the ones docs/EVAL.md specifies."""
     assert len(eval_news) == CORPUS_SIZE
     assert len(eval_questions) == QUESTION_COUNT
 

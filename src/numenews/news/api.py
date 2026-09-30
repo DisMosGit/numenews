@@ -1,7 +1,7 @@
 """The news layer's public entry point.
 
 Callers that want one call and a merged list use :func:`fetch_news`; callers that want to control
-the client or inject sources (phases 5 to 7, and every test) use
+the client or inject sources (the pipeline, the interfaces, and every test) use
 :class:`~numenews.news.aggregator.NewsAggregator` directly.
 """
 

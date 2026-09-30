@@ -1,8 +1,9 @@
 # MCP tools
 
-`numenews` exposes nine tools over the Model Context Protocol. This document is the contract of that
-surface: what each tool takes, what it returns, what it needs to be running, and how a client
-connects.
+`numenews` exposes nine tools over the Model Context Protocol. The `mcp-surface` capability in
+[`openspec/specs/`](../openspec/specs/) is authoritative for their behaviour; this document is the
+contract of that surface: what each tool takes, what it returns, what it needs to be running, and how
+a client connects.
 
 - **Server name:** `numenews` (reported to the client as `serverInfo.name`).
 - **Transport:** stdio. The host launches `uv run python -m numenews.mcp` (or `make mcp`) and speaks
@@ -171,7 +172,7 @@ async def build_forecast(day: date) -> Forecast
 Returns the numerological reading for a calendar day and saves it. A day already read answers from
 Qdrant without running a model; otherwise the reading is assembled from the last seven days of stored
 news (dominant number, whether a master number is active, the patterns among them) plus the
-activations of exactly those numbers over the pipeline's thirty-day memory window (phase 8.3).
+activations of exactly those numbers over the pipeline's thirty-day memory window.
 
 ```json
 {"day": "2026-09-21"}
@@ -261,8 +262,8 @@ async def get_history(number: int, days: int = 30) -> list[NumberActivation]
 
 Returns when a number was activated in the news, newest first, inside the last `days` days (the
 window ends today and includes it; 1–365). One entry per `(news item, number)` pair the ingest
-stored; `numerology_value` is the item's own reduced value (phase 8.1) and is absent when it has
-none. The per-day frequency of the same rows is reported by `numenews history` (phase 8.2), not by
+stored; `numerology_value` is the item's own reduced value and is absent when it has
+none. The per-day frequency of the same rows is reported by `numenews history`, not by
 this tool: its return type is the rows themselves.
 
 ```json
@@ -346,5 +347,5 @@ uv run python -m numenews.mcp                       # the same, by module
 uv run pytest tests/integration/test_mcp_stdio.py   # the same handshake, as a test
 ```
 
-`tests/integration/test_mcp_stdio.py` is the automated stand-in for the roadmap's manual
-"open it in Claude Desktop" check.
+`tests/integration/test_mcp_stdio.py` is the automated stand-in for opening the server in a real
+client by hand.

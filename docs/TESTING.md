@@ -1,8 +1,8 @@
 # Testing
 
-> `ROADMAP.md` is the authoritative status; this document records how the suite is organised, what
-> each level is allowed to assume, and how the coverage floors are enforced. The eval's isolation is
-> in [ADR 0013](adr/0013-eval-isolation.md).
+> The authoritative status is [`openspec/specs/`](../openspec/specs/); this document records how the
+> suite is organised, what each level is allowed to assume, and how the coverage floors are enforced.
+> The eval's isolation is in [ADR 0013](adr/0013-eval-isolation.md).
 
 The suite answers one question per level: *is the pure logic right* (unit), *do the adapters hold up
 against a real engine* (integration), *does the production path retrieve the right news and is the

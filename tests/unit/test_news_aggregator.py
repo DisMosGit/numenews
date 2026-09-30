@@ -53,7 +53,7 @@ class _FakeSource:
 
 
 async def test_two_failing_sources_still_leave_three_sources_of_items() -> None:
-    """Roadmap 2.8: a broken feed degrades the result instead of failing the run."""
+    """docs/NEWS_SOURCES.md: a broken feed degrades the result instead of failing the run."""
     aggregator = NewsAggregator(
         [
             _FakeSource("a", [_item("from a")]),
@@ -138,7 +138,7 @@ async def test_a_bug_of_ours_is_not_degraded_away() -> None:
 
 
 async def test_the_aggregator_reports_its_sources_in_request_order() -> None:
-    """Phases 6 and 7 introspect the source list; it is the order the requests are made in."""
+    """Both surfaces introspect the source list; it is the order the requests are made in."""
     aggregator = NewsAggregator([_FakeSource("a", []), _FakeSource("b", [])])
 
     assert [source.name for source in aggregator.sources] == ["a", "b"]

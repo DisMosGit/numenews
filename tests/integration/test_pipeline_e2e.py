@@ -1,7 +1,7 @@
-"""The whole pipeline, end to end (ROADMAP 5.6).
+"""The whole pipeline, end to end (docs/RAG_PIPELINE.md).
 
 The dependencies of one real run are all present but none of them is real: ``respx`` answers the
-GDELT endpoint through the cached ``httpx`` client of phase 2, a ``FunctionModel`` stands in for the
+GDELT endpoint through the news layer's ``httpx`` cache, a ``FunctionModel`` stands in for the
 language model, and Qdrant runs in memory. So the test drives the actual chain — fetch → extract →
 compute → embed/upsert → analyze → forecast → save — and nothing is stubbed at the seam where the
 bug would hide.
@@ -118,7 +118,7 @@ def _gdelt_router(router: respx.MockRouter) -> None:
 def _fix_gdelt_url() -> None:
     """Keep the endpoint constant honest: the adapter must be asking the URL ``respx`` answers.
 
-    One real unmocked request would reach the network, and the module-level guard of phase 4
+    One real unmocked request would reach the network, and the module-level guard of `agents`
     (``ALLOW_MODEL_REQUESTS``) exists for the same reason on the model side.
     """
     from numenews.news import gdelt
@@ -132,7 +132,7 @@ async def test_ingest_analyze_forecast_over_the_whole_layer(
     settings: Settings,
     instant_retries: None,
 ) -> None:
-    """ROADMAP 5.6: the recorded GDELT answer becomes a stored forecast, through every layer."""
+    """docs/RAG_PIPELINE.md: the recorded GDELT answer becomes a stored forecast, end to end."""
     pipeline, extract_counter, _placeholder_counter, forecast_counter = _pipeline(vector_store)
 
     with respx.mock(assert_all_called=False) as router:
@@ -207,7 +207,7 @@ async def test_the_activation_history_holds_the_ingested_numbers(
     settings: Settings,
     instant_retries: None,
 ) -> None:
-    """Roadmap 8's memory starts in phase 5: ingest records the activations of what it read."""
+    """The memory of docs/CONTEXT_MANAGEMENT.md starts at ingest, which records the activations."""
     pipeline, _, _, _ = _pipeline(vector_store)
 
     with respx.mock(assert_all_called=False) as router:
@@ -232,7 +232,7 @@ async def test_the_chain_provisions_every_collection_it_writes(
     settings: Settings,
     instant_retries: None,
 ) -> None:
-    """Each write path creates its schema first; the digest waits for old news (roadmap 5.5)."""
+    """Each write path creates its schema first; the digest waits for old news."""
     pipeline, _, _, _ = _pipeline(vector_store)
 
     with respx.mock(assert_all_called=False) as router:

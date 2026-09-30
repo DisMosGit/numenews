@@ -185,7 +185,7 @@ def test_number_activation_requires_the_news_it_came_from() -> None:
 
 
 def test_number_activation_records_the_items_value_when_it_has_one() -> None:
-    """The item's value rides along (8.1); `None` is "not computed", as on `NewsItem`."""
+    """The item's value rides along; `None` is "not computed", as on `NewsItem`."""
     news_id = NewsId(uuid4())
     uncomputed = NumberActivation(
         number=11, date=date(2026, 9, 21), news_id=news_id, context="the 11th hour"

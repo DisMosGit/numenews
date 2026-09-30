@@ -29,10 +29,10 @@ the pipeline of phase 5 and the MCP tools of phase 6 without forcing either into
 
 Two smaller questions followed from the storage schema. A `datetime` payload index accepts an RFC 3339
 timestamp, while the domain models' `date` is a calendar day — which of the two shapes is the stored
-one? And phase 3's "hybrid search" is written as "dense + filter" in `ROADMAP.md` but as dense + sparse
+one? And phase 3's "hybrid search" is written as "dense + filter" in the plan but as dense + sparse
 in the private design brief: which of them is it?
 
-Finally, `ROADMAP.md` 3.3 and 3.4 require payload indexes to exist *before* ingest. That makes the
+Finally, phase 3 requires payload indexes to exist *before* ingest. That makes the
 collection schema a piece of code with a rule attached, not just configuration: whoever writes a point
 must first have created the index it will be filtered by.
 
@@ -119,5 +119,4 @@ follows.
 - [`docs/QDRANT_COLLECTIONS.md`](../QDRANT_COLLECTIONS.md) — the five payload schemas and the search
   entry points
 - [`docs/EMBEDDINGS.md`](../EMBEDDINGS.md) — the models, the cache and the threading decision
-- [`ROADMAP.md`](../../ROADMAP.md) — phase 3, tasks 3.1–3.9
 - [`fastembed`](https://github.com/qdrant/fastembed) — the local ONNX embedding library

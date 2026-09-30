@@ -1,4 +1,4 @@
-"""The application context: lazy, memoized, single-flight (ROADMAP 6.1).
+"""The application context: lazy, memoized, single-flight (mcp-surface).
 
 The server must start without Qdrant or an LLM endpoint, so nothing is built until a tool asks for
 it; and once built, a collaborator is shared by every later call — two stores over the same

@@ -1,4 +1,4 @@
-"""The ``--date`` grammar of the CLI (ROADMAP 7.4).
+"""The ``--date`` grammar of the CLI (cli-surface).
 
 ``parse_day`` is pure: it resolves names and offsets against a day the caller passes, and refuses
 anything else with a Typer usage error. These tests pin the accepted forms and the refusal.
@@ -30,7 +30,7 @@ def test_an_iso_date_is_taken_literally() -> None:
     ],
 )
 def test_named_days_are_offsets_from_today(value: str, expected: date) -> None:
-    """ROADMAP 7.4: the three named days are relative to the injected today."""
+    """cli-surface: the three named days are relative to the injected today."""
     assert parse_day(value, today=TODAY) == expected
 
 
@@ -44,7 +44,7 @@ def test_named_days_are_offsets_from_today(value: str, expected: date) -> None:
     ],
 )
 def test_offsets_are_whole_days(value: str, expected: date) -> None:
-    """ROADMAP 7.4: ``+3d`` and the other offset forms move whole days across month boundaries."""
+    """cli-surface: ``+3d`` and the other offset forms move whole days across month boundaries."""
     assert parse_day(value, today=TODAY) == expected
 
 

@@ -1,9 +1,9 @@
 # Code conventions
 
-> Phase 10.2. What the code in this repository already looks like, written down so an agent extends it
+> What the code in this repository already looks like, written down so an agent extends it
 > instead of inventing a second style. The hard prohibitions are in
 > [`GUARDRAILS.md`](GUARDRAILS.md); the tools that check these conventions are in
-> [`TOOLING.md`](TOOLING.md). `ROADMAP.md` remains the authoritative status.
+> [`TOOLING.md`](TOOLING.md). `openspec/specs/` remains the authoritative status.
 
 ## Naming
 
@@ -127,9 +127,9 @@ vector layer is synchronous, and the two are bridged only by `asyncio.to_thread`
 
 Commits follow [Conventional Commits](../../CONTRIBUTING.md) — `feat(scope): …`, `fix(scope): …`,
 `docs: …`, `test: …` — with the scopes `numerology`, `news`, `embeddings`, `vector`, `agents`,
-`pipeline`, `mcp`, `cli`, `models`, `docs`, `deps`. One atomic commit per `ROADMAP.md` task: the code,
-its tests, its docs and the ticked task checkboxes land together, and the subject names the task. A
-change that needs two subjects is two tasks, split in `ROADMAP.md` first.
+`pipeline`, `mcp`, `cli`, `models`, `docs`, `deps`. One atomic commit per `tasks.md` item: the code,
+its tests, its docs and the ticked checkbox land together, and the subject names the task. A
+change that needs two subjects is two tasks, split in the change's `tasks.md` first.
 
 Tests are part of the task, not a follow-up: a unit test for pure logic, an integration test for I/O.
 The layer floors, the markers and the fixtures are in [`../TESTING.md`](../TESTING.md).

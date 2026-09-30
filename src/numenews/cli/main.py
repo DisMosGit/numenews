@@ -1,16 +1,17 @@
 """The Typer application: one command per one-shot operation, JSON on stdout.
 
-The CLI is the second interface over the same pipeline as the MCP server (phase 6) and stays just as
-thin: a command parses its arguments, builds the application context (:class:`AppContext`, reused
-from ``numenews.mcp`` so both interfaces share one lazy container), calls one pipeline or vector
-operation, and prints the resulting model. Nothing here does numerology, storage or HTTP.
+The CLI is the second interface over the same pipeline as the MCP server (the mcp-surface
+capability) and stays just as thin: a command parses its arguments, builds the application context
+(:class:`AppContext`, reused from ``numenews.mcp`` so both interfaces share one lazy container),
+calls one pipeline or vector operation, and prints the resulting model. Nothing here does
+numerology, storage or HTTP.
 
 ``main`` is the group callback: it configures logging for every invocation and stores the two things
 every command needs — the settings and the ``--pretty`` flag — on the Typer context. The command
 bodies themselves live in :mod:`numenews.cli.commands` as async functions over ``AppContext``, which
 is what makes them testable without a subprocess.
 
-Reference: ``ROADMAP.md`` phase 7, ``docs/USER_FLOW.md`` and ADR 0005/0006.
+Reference: the cli-surface capability, ``docs/USER_FLOW.md`` and ADR 0005/0006.
 """
 
 from __future__ import annotations
@@ -94,7 +95,7 @@ def run_command[ResultT: BaseModel](
     configured, a step spent its retry) is an answer too — it is printed as an ``ErrorReport`` on
     stdout and exits ``1``, so a script can read the failure as JSON. Anything else is a defect in
     this code base and stays loud: it propagates to the Click error handler with a traceback on
-    stderr and an empty stdout, the same policy the MCP tools follow (phase 6).
+    stderr and an empty stdout, the same policy the MCP tools follow.
     """
     state = state_of(ctx)
     command = ctx.command.name or "numenews"
@@ -292,7 +293,7 @@ def mcp(
 
     This is the long-running counterpart of the one-shot commands, and the only one whose stdout
     is not a single JSON document: it carries the JSON-RPC wire. It is the same server as
-    ``python -m numenews.mcp`` (roadmap 7.8 proxies into ``mcp/main.py``), built lazily, so it
+    ``python -m numenews.mcp`` (this command proxies into ``mcp/main.py``), built lazily, so it
     starts with neither Qdrant nor an LLM endpoint reachable.
     """
     serve_mcp(transport)

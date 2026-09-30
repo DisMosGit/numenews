@@ -1,6 +1,6 @@
-"""The failure policy of the MCP tools (ROADMAP 6.x).
+"""The failure policy of the MCP tools (mcp-surface).
 
-Phase 5 deferred this decision to phase 6: a tool that hits a condition the model can act on
+The pipeline deferred this to mcp-surface: a tool that hits a condition the model can act on
 hands it a ``ToolError`` (a result with ``is_error=True`` and a readable message), while a
 condition the model cannot fix — or a bug in our own code — is left alone so the SDK sanitises
 it and logs a traceback. These tests pin both halves of that line.

@@ -17,8 +17,8 @@ from numenews.models import NewsId
 def news_id(url: str) -> NewsId:
     """Return the deterministic id of the article at ``url``.
 
-    Derived from the URL with ``uuid5``, so the same article keeps the same id across runs: phase 5
-    gets idempotent ingest without a lookup table, and two feeds reporting the same link collapse to
+    Derived from the URL with ``uuid5``, so the same article keeps the same id across runs: the
+    ingest is idempotent without a lookup table, and two feeds reporting the same link collapse to
     one item.
     """
     return NewsId(uuid5(NAMESPACE_URL, url))

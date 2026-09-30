@@ -1,9 +1,9 @@
 """The ``forecasts`` collection: one day's reading, kept so the next run does not redo it.
 
-Phase 5.4 wants ``build_forecast(date)`` to answer from storage when the day has already been read,
-which is why a day's forecast is stored under a date-derived point id: the lookup is exact and
-idempotent, while the ``date``/``dominant_number`` payload indexes stay available for the range
-queries a CLI or a digest will need.
+The forecast step wants ``build_forecast(date)`` to answer from storage when the day has already
+been read, which is why a day's forecast is stored under a date-derived point id: the lookup is
+exact and idempotent, while the ``date``/``dominant_number`` payload indexes stay available for the
+range queries a CLI or a digest will need.
 
 The vector across the reading and the advice is what would let a later run ask "was there a day like
 this"; the numbers themselves are filterable, so they are not part of the embedded text.

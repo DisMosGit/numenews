@@ -27,6 +27,7 @@ Guidance for AI coding agents working in this repository.
 - `src/numenews/cli/` — one-shot Typer commands
 - `src/numenews/models/` — Pydantic v2 domain models
 - `docs/` — architecture, ADRs, MCP tools, Qdrant schema, RAG pipeline
+- `openspec/` — `specs/` for behaviour that ships, `changes/` for work in flight
 - `tests/` — unit, integration, eval
 
 ## Rules
@@ -38,23 +39,29 @@ Guidance for AI coding agents working in this repository.
 - Qdrant payload indexes must exist before ingest; filters go inside `Prefetch` for hybrid search.
 - CLI stdout is JSON only. Logs and progress go to stderr via `structlog`.
 - State lives in Qdrant, not in process memory — one-shot commands must be idempotent.
+- Behaviour that ships must match `openspec/specs/`. Changing it goes through a change with a spec delta, never a hand-edit of an archived spec.
 - Type hints are mandatory. `mypy --strict` must pass.
 - No `Any`, no `# type: ignore` without an inline comment explaining why.
 - No API keys required for the default demo path; `.env` only for optional news APIs.
 
-## Roadmap
+## OpenSpec
 
-`ROADMAP.md` is the single source of truth for what is built and in what order: phases 0–10, one atomic commit per task, Definition of Done per task. Statuses are `[ ]` not started, `[~]` in progress, `[x]` done, `[-]` cancelled.
+`openspec/` is the single source of truth for what is built and for what is next.
 
-- Do not start a phase before the previous one is closed; tasks inside a phase are independent unless a `depends on` is given.
-- A task is not done until its DoD holds and its checkboxes are ticked in `ROADMAP.md`.
+- `openspec/specs/` — the behaviour the project ships, one capability per directory. Two exist today: `mcp-surface` (the nine MCP tools) and `cli-surface` (the six CLI commands).
+- `openspec/changes/` — work in flight. Each change holds a `proposal.md`, spec deltas under `specs/`, a `design.md` when the approach needs deciding, and a `tasks.md`.
+- The loop is **propose → review → implement → archive**. `openspec list` shows active changes and `openspec validate "<name>" --strict` checks one; archiving merges a change's spec deltas into `openspec/specs/`.
+- New work starts as a change, never as an edit. An idea that is not yet a change belongs in a GitHub issue.
+- One atomic commit per `tasks.md` item, with its checkbox ticked in the same commit.
 - Architectural decisions get an ADR in `docs/adr/` (`template.md`); the reason is recorded, never only the change.
-- `.docs/plan.md` is the private design brief (gitignored). Where it disagrees with this file or `ROADMAP.md`, the latter two win: the package is `numenews`, the CLI is `numenews`, not `numerology_news`/`nn`.
+- `.docs/plan.md` is the private design brief (gitignored). Where it disagrees with this file or `openspec/specs/`, those win: the package is `numenews`, the CLI is `numenews`, not `numerology_news`/`nn`.
 
 ## Commands
 
-Both interfaces are implemented: the MCP server and its nine tools (Phase 6), served by `make mcp`
-over stdio, and the one-shot CLI (Phase 7), whose commands each print one JSON document on stdout.
+Both interfaces are implemented: the MCP server and its nine tools, served by `make mcp`
+over stdio, and the one-shot CLI, whose commands each print one JSON document on stdout. Their
+behaviour is specified in `openspec/specs/` (`mcp-surface` and `cli-surface`) and explained in
+`docs/MCP_TOOLS.md` and `docs/USER_FLOW.md`.
 `make run` exercises `numenews today`, which needs Qdrant and an LLM endpoint.
 
 ```
@@ -75,6 +82,7 @@ make install lint test run mcp # shortcut targets
 ## When changing code
 
 - Add an ADR in `docs/adr/` for any architectural decision.
+- Change behaviour through an OpenSpec change: update the owning requirement in the change's spec delta, and tick the `tasks.md` item in the same commit.
 - Update `docs/MCP_TOOLS.md` when adding or renaming an MCP tool.
 - Update `docs/QDRANT_COLLECTIONS.md` when changing a collection or payload schema.
 - Update `docs/PROMPTS.md` when changing extract, pattern, or forecast prompts.

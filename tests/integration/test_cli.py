@@ -1,4 +1,4 @@
-"""The one-shot commands, driven through ``CliRunner`` (ROADMAP 7.3-7.9).
+"""The one-shot commands, driven through ``CliRunner`` (cli-surface).
 
 The commands are exercised the way a shell runs them — the real Typer application, real argument
 parsing, real ``run_command`` — while the services behind them are the test's doubles: an in-memory
@@ -109,7 +109,7 @@ def _install(monkeypatch: pytest.MonkeyPatch, context: AppContext) -> None:
 def test_today_ingests_the_window_and_prints_the_reading(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.3: ``numenews today`` runs ingest + forecast and prints the ``Forecast``."""
+    """cli-surface: ``numenews today`` runs ingest + forecast and prints the ``Forecast``."""
     item = _item("eleven ministers resigned")
     pipeline, extract_counter, forecast_counter = _pipeline(
         vector_store, fetcher=fetcher_returning([item])
@@ -187,7 +187,7 @@ def test_today_answers_from_the_store_without_running_the_agent(
 def test_no_pretty_writes_a_single_line(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.2: the compact form is one JSON document on one line."""
+    """cli-surface: the compact form is one JSON document on one line."""
     pipeline, _, _ = _pipeline(vector_store)
     _install(monkeypatch, AppContext(settings, pipeline=pipeline))
 
@@ -200,7 +200,7 @@ def test_no_pretty_writes_a_single_line(
 def test_logs_go_to_stderr_and_stdout_stays_json(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.2: the payload parses as JSON while the progress lines land on stderr."""
+    """cli-surface: the payload parses as JSON while the progress lines land on stderr."""
     pipeline, _, _ = _pipeline(vector_store)
     _install(monkeypatch, AppContext(settings, pipeline=pipeline))
 
@@ -216,7 +216,7 @@ def test_logs_go_to_stderr_and_stdout_stays_json(
 def test_today_reports_a_news_failure_as_json(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.2/7.3: an expected failure is a JSON answer with exit code 1."""
+    """cli-surface: an expected failure is a JSON answer with exit code 1."""
 
     async def failing(topic: Topic, date_range: DateRange) -> list[NewsItem]:
         raise NewsSourceError("no news sources are configured")
@@ -249,7 +249,7 @@ def test_today_reports_a_missing_llm_endpoint_as_json(
 def test_forecast_reads_the_requested_day(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.4: ``--date 2026-09-22`` reads that day, not today."""
+    """cli-surface: ``--date 2026-09-22`` reads that day, not today."""
     stored = _item("11th hour deal").model_copy(update={"numbers": (11,), "numerology_value": 11})
     upsert_news(vector_store, [stored])
     pipeline, _, _ = _pipeline(vector_store)
@@ -280,7 +280,7 @@ def test_forecast_resolves_relative_dates_against_the_pipeline_clock(
     value: str,
     expected: str,
 ) -> None:
-    """ROADMAP 7.4: relative forms are resolved against the frozen clock, not the wall clock."""
+    """cli-surface: relative forms are resolved against the frozen clock, not the wall clock."""
     pipeline, _, _ = _pipeline(vector_store)
     _install(monkeypatch, AppContext(settings, pipeline=pipeline))
 
@@ -330,7 +330,7 @@ def _activation(number: int, *, day: date) -> NumberActivation:
 def test_history_reads_the_window_newest_first(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.5: the activations of one number come back newest first, with the question."""
+    """cli-surface: the activations of one number come back newest first, with the question."""
     today = datetime.now(UTC).date()
     record_activation(vector_store, _activation(11, day=today))
     record_activation(vector_store, _activation(11, day=today - timedelta(days=2)))
@@ -347,7 +347,7 @@ def test_history_reads_the_window_newest_first(
         today.isoformat(),
         (today - timedelta(days=2)).isoformat(),
     ]
-    # The same rows folded per day (roadmap 8.2), newest day first.
+    # The same rows folded per day (docs/CONTEXT_MANAGEMENT.md), newest day first.
     assert report["by_day"] == [
         {"date": today.isoformat(), "count": 1},
         {"date": (today - timedelta(days=2)).isoformat(), "count": 1},
@@ -414,7 +414,7 @@ def test_search_ranks_the_stored_news(
     fake_base_embedder: FakeEmbedder,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """ROADMAP 7.6: ``search`` runs the hybrid news search and returns typed entities."""
+    """cli-surface: ``search`` runs the hybrid news search and returns typed entities."""
     near = _item("budget deal signed")
     far = _item("weather report published")
     fake_base_embedder.register_axis(news_embedding_text(near), 0)
@@ -529,7 +529,7 @@ def _pattern(
 def test_patterns_filters_by_type_and_strength(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """ROADMAP 7.7: ``--type`` and ``--min-strength`` select through the indexed fields."""
+    """cli-surface: ``--type`` and ``--min-strength`` select through the indexed fields."""
     save_pattern(vector_store, _pattern("strong resonance", strength=0.8))
     save_pattern(vector_store, _pattern("strong repetition", kind="repetition", strength=0.9))
     save_pattern(vector_store, _pattern("weak resonance", strength=0.4))
@@ -640,7 +640,7 @@ def test_every_command_answers_with_one_json_document(
     argv: list[str],
     seed: Callable[[VectorStore], None] | None,
 ) -> None:
-    """ROADMAP 7.9: each command exits 0 and writes exactly one JSON document to stdout.
+    """cli-surface: each command exits 0 and writes exactly one JSON document to stdout.
 
     The store is built per case because a run closes its context; the decoder check is what makes
     "exactly one" precise — nothing may follow the document but the newline ``print_json`` adds.
@@ -662,7 +662,7 @@ def test_every_command_answers_with_one_json_document(
 def test_today_returns_exit_code_zero_and_the_dominant_number(
     settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The phase DoD in test form: ``jq .dominant_number`` has an integer to read."""
+    """The task's verification in test form: ``jq .dominant_number`` has an integer to read."""
     pipeline, _, _ = _pipeline(vector_store)
     _install(monkeypatch, AppContext(settings, pipeline=pipeline))
 

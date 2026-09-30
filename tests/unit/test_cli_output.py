@@ -1,4 +1,4 @@
-"""The CLI's output contract: one JSON document on stdout, nothing else (ROADMAP 7.2).
+"""The CLI's output contract: one JSON document on stdout, nothing else (cli-surface).
 
 ``print_json`` is the single writer, so these tests pin the shape a pipe sees: a model becomes a
 JSON document, pretty by default, compact on request, and non-ASCII text survives unescaped. The

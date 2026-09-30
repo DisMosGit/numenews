@@ -66,7 +66,6 @@ interfaces share a layer, which `docs/ARCHITECTURE.md` records.
 
 ## References
 
-- `ROADMAP.md` phase 7 (7.1–7.10) and phase 6.1 (`AppContext`)
 - [`../USER_FLOW.md`](../USER_FLOW.md) — the commands and their prerequisites
 - [ADR 0005](0005-json-only-output.md) — what those commands write to stdout
 - [ADR 0011](0011-rag-pipeline-orchestration.md) — the pipeline each command calls

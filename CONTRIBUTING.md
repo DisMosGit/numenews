@@ -1,5 +1,38 @@
 # Contributing
 
+It is a pet project, so this is short. The one rule that matters: **work starts as an OpenSpec
+change, not as an edit to the code.**
+
+## The workflow
+
+New behaviour goes through [`openspec/`](openspec/), and the loop has four steps:
+
+1. **Propose** — `/openspec-propose` (or `openspec new change "<name>"`) writes a change under
+   [`openspec/changes/`](openspec/changes/): why it is worth doing, which capabilities it touches,
+   the spec deltas, a design when the approach needs deciding, and a `tasks.md`.
+2. **Review** — read the artifacts, not just the diff, and make `openspec validate "<name>" --strict`
+   pass. If the plan is wrong, fix the plan; do not start coding around it.
+3. **Implement** — one `tasks.md` item per atomic commit, ticked in the same commit. If a task turns
+   out to be bigger than its spec delta describes, stop and update the artifacts rather than widening
+   it silently.
+4. **Archive** — `openspec archive "<name>"` once every box is ticked. That merges the spec deltas
+   into [`openspec/specs/`](openspec/specs/), which is what makes the new behaviour the documented
+   baseline.
+
+Not every thought is a change yet. An idea with no proposal belongs in a GitHub issue, and the issue
+templates route feature requests back to step 1.
+
+The specs in `openspec/specs/` describe *behaviour* — inputs, outputs, error conditions, defaults and
+guarantees, each with testable scenarios. Narrative documentation (how to use a tool, what a JSON
+payload looks like) stays in `docs/`, and the two cross-reference each other rather than duplicating.
+
+### Where the old roadmap went
+
+Until `v0.1.0` the work was sequenced by a root `ROADMAP.md`, phase by phase. It is gone, and not
+archived anywhere on purpose: every commit it sequenced is in `git log`, the `v0.1.0` tag marks the
+end of it, and [`CHANGELOG.md`](CHANGELOG.md) records what each phase shipped. Older entries there
+still use phase numbers — that is history, and it is fine.
+
 ## Branches
 
 `main` is protected. Use short-lived branches:

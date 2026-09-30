@@ -10,7 +10,7 @@
       deliberately no changelog. Verify: `grep -n '^## ' CONTRIBUTING.md` shows `## Releases`, the
       pull-request list reads 1–4 with no gap, and the documented recovery command runs and prints
       the `[0.1.0]` entry.
-- [ ] 1.2 In `docs/agentic/`, remove every changelog instruction: `AGENT_WORKFLOW.md` step 6 (23–25,
+- [x] 1.2 In `docs/agentic/`, remove every changelog instruction: `AGENT_WORKFLOW.md` step 6 (23–25,
       keep the ADR half), `EVAL_OF_AGENT.md` (61 and 116), `PROMPTING_PLAYBOOK.md` (64 and 83) and
       `TOOLING.md` (134). Verify: `git grep -ni changelog -- docs/` returns nothing, and each edited
       sentence still reads as a complete rule — the ADR clause in `AGENT_WORKFLOW.md`, and the

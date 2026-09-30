@@ -131,7 +131,7 @@ make lint && make test                # the gate; test ends with the per-layer c
 make test-eval                        # only when the eval is touched
 make coverage && open docs/coverage.html
 make dev && uv run numenews today     # the live check, when the task needs it
-# 3. tick the checkbox, update CHANGELOG.md and the docs, one atomic commit
+# 3. tick the checkbox, update the docs, one atomic commit
 # 4. openspec archive "<change>" once every box is ticked and the change validates
 ```
 

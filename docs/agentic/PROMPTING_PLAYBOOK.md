@@ -61,8 +61,8 @@ Before reporting done, run and paste the exact output of:
   uv run ruff check . && uv run ruff format --check . && uv run mypy .
   uv run pytest tests/unit tests/integration -v
   <task-specific command, e.g. make test-eval, or make dev plus a health check>
-Then tick the task's checkbox in tasks.md, update CHANGELOG.md under [Unreleased] if
-user-facing, update the docs the task names, and add an ADR if the decision is architectural.
+Then tick the task's checkbox in tasks.md, update the docs the task names, and add an ADR if
+the decision is architectural.
 Report: files changed; each command with observed output; deviations and their reason.
 ```
 
@@ -80,7 +80,7 @@ Read docs/agentic/EVAL_OF_AGENT.md first. For each point, state pass or fail wit
 - every verification the task names, checked by running its command — your own output, not the
   other agent's summary;
 - tests/ diff read line by line for removed, skipped or weakened assertions;
-- docs/, docs/adr/, CHANGELOG.md and the change's own artifacts updated in the same change;
+- docs/, docs/adr/ and the change's own artifacts updated in the same change;
 - failure paths: LLM endpoint down or unset, empty collection, duplicate ingest, 4xx/5xx source;
 - factual claims in new docs checked against the code.
 

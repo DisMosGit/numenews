@@ -58,7 +58,6 @@ the commit message carries the reason and an ADR carries it if the decision was 
 One `tasks.md` item is one atomic commit. That commit is expected to contain:
 
 - the task's checkbox ticked in the change's `tasks.md`, with a deviation note if reality differed;
-- `CHANGELOG.md` under `[Unreleased]` when the change is user-facing;
 - the docs the task names — `docs/MCP_TOOLS.md` for a renamed tool,
   `docs/QDRANT_COLLECTIONS.md` for a payload change, `docs/PROMPTS.md` for a prompt change;
 - an ADR in `docs/adr/` copied from [`../adr/template.md`](../adr/template.md) when the decision is
@@ -113,8 +112,7 @@ correction belongs in the same change that notices it.
 - [ ] `make lint`, `make test`, and `make test-eval` when the eval is touched were re-run by the
       reviewer, with the output read.
 - [ ] `tests/` was diffed for removed, skipped or weakened assertions.
-- [ ] The change's `tasks.md` checkbox, `CHANGELOG.md`, the named docs and any ADR are in the same
-      commit.
+- [ ] The change's `tasks.md` checkbox, the named docs and any ADR are in the same commit.
 - [ ] The failure paths (LLM, Qdrant, news source, empty/duplicate data) were considered and tested.
 - [ ] The evidence is command + observed output + date, not a summary.
 - [ ] Every factual claim in new prose was checked against the code.

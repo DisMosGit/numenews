@@ -21,8 +21,7 @@ build, in what order).
 5. **Tick the task.** Update its checkbox in `tasks.md` in the same commit, and record a deviation
    next to it when reality differed from the plan (with the reason).
 6. **Record decisions.** An architectural choice needs an ADR from
-   [`docs/adr/template.md`](../adr/template.md); a user-visible change updates `CHANGELOG.md`
-   under `[Unreleased]`.
+   [`docs/adr/template.md`](../adr/template.md).
 7. **Archive the change** once every box is ticked and `openspec validate "<name>" --strict` passes:
    `openspec archive "<name>"` merges the spec deltas into `openspec/specs/`, which is what makes
    the new behaviour the documented baseline.

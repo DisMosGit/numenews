@@ -61,6 +61,36 @@ def test_a_blank_text_still_yields_a_non_empty_context() -> None:
     assert context_snippet("   ", 11) == "11"
 
 
+def test_the_context_anchors_on_the_number_itself_not_inside_a_larger_one() -> None:
+    """An activation for `3` must not be evidenced by the `30` that merely contains its digit."""
+    text = "The 30 delegates met. A 3 hour debate followed."
+
+    assert context_snippet(text, 3) == "A 3 hour debate followed."
+
+
+def test_a_number_written_only_inside_a_larger_one_uses_the_opening() -> None:
+    """There is no `3` in a text that only says `30`, and the snippet must not pretend there is."""
+    text = "Thirty delegates met for 30 hours."
+
+    assert context_snippet(text, 3) == text
+
+
+def test_a_decimal_does_not_anchor_the_whole_number_inside_it() -> None:
+    """`\\b` would treat the point in `3.5` as a boundary; a digit boundary does not."""
+    text = "Inflation reached 3.5 percent. A 3 percent target remains."
+
+    # The snippet opens with the decimal's sentence because `3.5` writes no ". " for the splitter
+    # to break on; what matters is that the anchor is the standalone 3 at the end, not the decimal.
+    assert context_snippet(text, 3).endswith("A 3 percent target remains.")
+
+
+def test_a_decimal_is_not_evidence_for_the_whole_number_at_all() -> None:
+    """When `3` appears only as `3.5`, the fallback is the opening rather than the decimal."""
+    text = "Inflation reached 3.5 percent this year."
+
+    assert context_snippet(text, 3) == text
+
+
 def test_the_context_is_cut_to_the_limit() -> None:
     """One long article must not crowd the history window out."""
     text = f"The 11 said. {'x' * (CONTEXT_LIMIT * 2)}"

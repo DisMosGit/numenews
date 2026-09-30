@@ -37,9 +37,9 @@
 
 ## 6. Anchor an activation snippet on a whole number
 
-- [ ] 6.1 Match the number with a digit-boundary pattern in `context_snippet` (`src/numenews/pipeline/steps.py`), anchoring on the first whole-number occurrence and keeping the opening-of-text fallback when there is none. Verify with `uv run mypy .`
-- [ ] 6.2 Add the anchoring tests to `tests/unit/test_pipeline_ingest.py`: `3` in a text that also contains `30` anchors at the standalone `3`, a number only present inside a larger number falls back to the opening, and a decimal such as `3.5` does not anchor `3`. Verify with `uv run pytest tests/unit/test_pipeline_ingest.py -v`
-- [ ] 6.3 Extend `tests/integration/test_pipeline_context.py` so the snippet stored for an activation is the one the semantic `numbers` index carries. Verify with `uv run pytest tests/integration/test_pipeline_context.py -v`
+- [x] 6.1 Match the number with a digit-boundary pattern in `context_snippet` (`src/numenews/pipeline/steps.py`), anchoring on the first whole-number occurrence and keeping the opening-of-text fallback when there is none. Verify with `uv run mypy .`
+- [x] 6.2 Add the anchoring tests to `tests/unit/test_pipeline_ingest.py`: `3` in a text that also contains `30` anchors at the standalone `3`, a number only present inside a larger number falls back to the opening, and a decimal such as `3.5` does not anchor `3`. Verify with `uv run pytest tests/unit/test_pipeline_ingest.py -v`
+- [x] 6.3 Extend `tests/integration/test_pipeline_context.py` so the snippet stored for an activation is the one the semantic `numbers` index carries. Verify with `uv run pytest tests/integration/test_pipeline_context.py -v`
 
 ## 7. Close the smaller contract-drift defects
 

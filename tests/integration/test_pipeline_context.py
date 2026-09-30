@@ -15,12 +15,13 @@ import pytest
 from numenews.agents import SummarizeAgent
 from numenews.models import DateRange, NewsId, NewsItem, Topic
 from numenews.pipeline import Pipeline, PipelineRetryError
-from numenews.vector import DIGESTS_COLLECTION, VectorStore, get_digest
+from numenews.vector import DIGESTS_COLLECTION, VectorStore, get_activations, get_digest
 
 from ..unit.agent_fakes import recording, user_text
 from ..unit.pipeline_fakes import (
     FrozenClock,
     ModelCounter,
+    ScriptedExtract,
     broken_model,
     extract_agent,
     fetcher_returning,
@@ -28,6 +29,7 @@ from ..unit.pipeline_fakes import (
     pattern_agent,
     summarize_agent,
 )
+from .fakes import FakeEmbedder
 
 pytestmark = pytest.mark.integration
 
@@ -204,6 +206,47 @@ async def test_a_period_that_was_never_summarised_answers_nothing(
     assert get_digest(vector_store, date(2026, 9, 1), date(2026, 9, 5)) is None
     assert get_digest(vector_store, date(2026, 9, 3), date(2026, 9, 4)) is None
     assert vector_store.client.count(DIGESTS_COLLECTION, exact=True).count == 1
+
+
+async def test_the_stored_snippet_is_the_text_the_numbers_index_embeds(
+    vector_store: VectorStore,
+    fake_small_embedder: FakeEmbedder,
+) -> None:
+    """The evidence behind an activation is one snippet, not two: what `numbers` embeds is stored.
+
+    An activation for `3` in a text that also says `30` is anchored at the standalone mention, so
+    the payload a semantic search finds and the vector it was ranked by describe the same sentence.
+    """
+    text = "The 30 delegates met. A 3 hour debate followed."
+    item = _item(date(2026, 9, 20), text=text)
+    pipeline, _ = _pipeline(vector_store, [item])
+    pipeline = Pipeline(
+        store=vector_store,
+        # `ScriptedExtract` is a subclass, so it stands in wherever the real class is expected; the
+        # ignore is for the annotation, which mypy cannot narrow to the subclass at this call site.
+        extract=ScriptedExtract({f"{item.title}\n\n{item.text}": (3, 30)}),  # type: ignore[arg-type]
+        patterns=pipeline.patterns,
+        forecast_agent=pipeline.forecast_agent,
+        summarizer=pipeline.summarizer,
+        fetcher=fetcher_returning([item]),
+        clock=FrozenClock(now=NOW),
+    )
+
+    await pipeline.ingest(TOPIC, DateRange(start=date(2026, 9, 20), end=date(2026, 9, 20)))
+
+    # `today` is passed so the read window depends on the fixture's day, not on the wall clock.
+    activations = await pipeline.run_blocking(
+        lambda: get_activations(vector_store, 1, today=date(2026, 9, 20))
+    )
+    by_number = {activation.number: activation for activation in activations}
+    assert by_number[3].context == "A 3 hour debate followed."
+    assert by_number[30].context == "The 30 delegates met. A 3 hour debate followed."
+    # The `numbers` batch embeds exactly the stored contexts, in the order the activations were
+    # built. `upsert_number_patterns` embeds `activation.context` directly, so an equality here is
+    # the whole claim: the index and the payload cannot disagree about the evidence.
+    assert fake_small_embedder.calls == [
+        [by_number[3].context, by_number[30].context],
+    ]
 
 
 async def test_a_failing_summarizer_surfaces_and_stores_nothing(vector_store: VectorStore) -> None:

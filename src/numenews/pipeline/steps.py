@@ -16,6 +16,7 @@ runs are already async. A step that failed logs ``pipeline.step.failed`` and let
 
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import date, timedelta
 from functools import partial
@@ -108,15 +109,32 @@ def timings(*taken: Timing | None) -> tuple[Timing, ...]:
     return tuple(timing for timing in taken if timing is not None)
 
 
+def _whole_number_pattern(number: int) -> re.Pattern[str]:
+    """Return the pattern that matches ``number`` only where it stands as a whole number.
+
+    A digit boundary rather than a token boundary: ``\\b`` treats the decimal point as a boundary,
+    so ``\\b3\\b`` matches the ``3`` in ``3.5`` and a snippet anchored there would claim a mention
+    the article never made. ``(?<!\\d)`` and ``(?!\\d)`` reject exactly the cases where the digits
+    are part of a longer numeral on either side.
+    """
+    return re.compile(rf"(?<!\d){re.escape(str(number))}(?!\d)")
+
+
 def context_snippet(text: str, number: int) -> str:
-    """Return the snippet of ``text`` around the first written form of ``number``.
+    """Return the snippet of ``text`` around the first whole-number occurrence of ``number``.
 
     The ``context`` of a :class:`~numenews.models.NumberActivation` is what the ``numbers``
     collection embeds, so it has to be a phrase about the world — "eleven ministers resigned" — and
     not the whole article or an empty string. The snippet runs from the start of the sentence that
     contains the number, or from the beginning of the text when the number is in its first sentence,
-    and is cut to :data:`CONTEXT_LIMIT` characters. A number that is not written in the text (the
-    model read "eleven" where the regex read nothing) falls back to the opening of the text, which
+    and is cut to :data:`CONTEXT_LIMIT` characters.
+
+    The occurrence has to be the number itself and not the digits of a larger one: an activation for
+    ``3`` in a text that says ``30`` must be anchored at a standalone ``3`` if the text states one,
+    and must not be anchored at all if it does not — a snippet pointing at ``30`` names a mention of
+    a different number, which is evidence the stored memory cannot support. So a number the text
+    writes only inside a larger number falls back to the opening of the text, exactly as a number it
+    does not write at all does (the model read "eleven" where the regex read nothing). The opening
     still says what the article is about.
 
     Args:
@@ -128,9 +146,10 @@ def context_snippet(text: str, number: int) -> str:
     """
     collapsed = " ".join(text.split())
     marker = str(number)
-    position = collapsed.find(marker)
-    if position == -1:
+    match = _whole_number_pattern(number).search(collapsed)
+    if match is None:
         return collapsed[:CONTEXT_LIMIT] or marker
+    position = match.start()
     sentence_break = max(collapsed.rfind(". ", 0, position), collapsed.rfind("! ", 0, position))
     start = 0 if sentence_break == -1 else sentence_break + 2
     return collapsed[start : start + CONTEXT_LIMIT] or marker

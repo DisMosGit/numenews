@@ -129,7 +129,7 @@ and `__pycache__/` and buries a clean result in noise.
 
 ## 5. Delete the roadmap
 
-- [ ] 5.1 `git rm ROADMAP.md` and confirm nothing in the tree points at it. Verify: the file is gone,
+- [x] 5.1 `git rm ROADMAP.md` and confirm nothing in the tree points at it. Verify: the file is gone,
       the group 4 sweep still returns nothing, and `make lint && make test` is green. Land as its own
       commit, with no other change in it.
 
@@ -166,7 +166,7 @@ and `__pycache__/` and buries a clean result in noise.
 
 ## 8. Integration verification
 
-- [ ] 8.1 Confirm the three checks across the whole tree with `git grep` (tracked files only, so the
+- [x] 8.1 Confirm the three checks across the whole tree with `git grep` (tracked files only, so the
       virtualenvs and `__pycache__` cannot mask a result):
       (a) `git grep -n 'ROADMAP' | grep -v '^openspec/' | grep -v '^CHANGELOG.md'
       | grep -v '^CONTRIBUTING.md'` returns nothing — the dead filename is gone everywhere else,
@@ -183,11 +183,11 @@ and `__pycache__/` and buries a clean result in noise.
       `docs/ARCHITECTURE.md` and fixture exclusions in (b) are the phase-vocabulary-only surfaces of
       design D11; confirm each excluded file's remaining matches really are history, decision
       rationale or article data, and not a citation.
-- [ ] 8.2 Check every relative markdown link in the files this change touched resolves to an existing
+- [x] 8.2 Check every relative markdown link in the files this change touched resolves to an existing
       path, with a one-off script over the changed files. Verify: no unresolved target is reported.
-- [ ] 8.3 Run `make lint && make test && make coverage-check` and confirm all three are green with the
+- [x] 8.3 Run `make lint && make test && make coverage-check` and confirm all three are green with the
       per-layer floors unmoved and the test count unchanged from before the change.
-- [ ] 8.4 Archive the change so the two spec deltas land in `openspec/specs/`. Verify:
+- [x] 8.4 Archive the change so the two spec deltas land in `openspec/specs/`. Verify:
       `openspec/specs/mcp-surface/spec.md` and `openspec/specs/cli-surface/spec.md` exist with a
       `## Purpose`, `openspec list` shows no active change, and `openspec list --specs` shows both
       capabilities.

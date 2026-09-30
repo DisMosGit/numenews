@@ -71,6 +71,24 @@ They answer different questions, which is why both exist:
 - `number_history` has **no vector**: it is the exact log, read with `get_history(number, days)`.
   A question about dates should never depend on a similarity score.
 
+### The ingest write order
+
+One ingest writes three collections from the same items, and the order is part of the contract rather
+than an implementation detail:
+
+1. `number_history` — one row per `(article, number)`, by `record_activation`;
+2. `numbers` — the semantic index, in one batch, by `upsert_number_patterns`;
+3. `news` — the articles themselves, last, by `upsert_news`.
+
+`ingest` decides what to skip by asking which of the fetched items already have a `news` point
+(`get_news_items`), so **the `news` point is the commit marker for everything derived from that
+article**. Writing it last means an article is stored only once its patterns and its activations are:
+a run that dies before that final write leaves the article fresh, and the next ingest repeats
+whichever of the three writes it got through. All three are idempotent overwrites, because every
+point id in the table below is derived. The cost of an interruption is therefore a repeated model
+call, never a lost activation — and moving `upsert_news` earlier silently reintroduces the opposite,
+articles that every later run skips while their history stays empty.
+
 ### `patterns`
 
 One point per pattern, written by `save_pattern`:

@@ -30,8 +30,10 @@ payload looks like) stays in `docs/`, and the two cross-reference each other rat
 
 Until `v0.1.0` the work was sequenced by a root `ROADMAP.md`, phase by phase. It is gone, and not
 archived anywhere on purpose: every commit it sequenced is in `git log`, the `v0.1.0` tag marks the
-end of it, and [`CHANGELOG.md`](CHANGELOG.md) records what each phase shipped. Older entries there
-still use phase numbers — that is history, and it is fine.
+end of it, and the archived [`adopt-openspec-workflow`](openspec/changes/archive/) change records how
+each phase was carried over. The ADRs and the "How it was built" narrative in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) still use phase numbers — that is history, and it is
+fine.
 
 ## Branches
 
@@ -92,9 +94,21 @@ make clean      # stop Qdrant, drop volumes
 
 1. Rebase on `main`.
 2. Run `make lint && make test`.
-3. Update `CHANGELOG.md` under `[Unreleased]` if user-facing.
-4. Add an ADR in `docs/adr/` for architectural decisions.
-5. One logical change per PR. Squash-merge.
+3. Add an ADR in `docs/adr/` for architectural decisions.
+4. One logical change per PR. Squash-merge.
+
+## Releases
+
+There is deliberately no `CHANGELOG.md`. A release is a tag, and its content is `git log`;
+`version` in `pyproject.toml` is the version number. The history written before 0.2 lives in that
+file's last committed state, which the `v0.1.0` tag still holds:
+
+```bash
+git show v0.1.0:CHANGELOG.md
+```
+
+Release notes in any other form — annotated tag messages, GitHub Releases, a history page under
+`docs/` — are a new change to propose, not a restore.
 
 ## Code style
 

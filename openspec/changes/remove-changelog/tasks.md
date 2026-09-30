@@ -2,7 +2,7 @@
 
 ## 1. Stop asking contributors to maintain a changelog
 
-- [ ] 1.1 In `CONTRIBUTING.md`, delete pull-request step 3 ("Update `CHANGELOG.md` under
+- [x] 1.1 In `CONTRIBUTING.md`, delete pull-request step 3 ("Update `CHANGELOG.md` under
       `[Unreleased]` if user-facing") and renumber the remaining steps 1–4; re-anchor "Where the old
       roadmap went" (line 33) so it names `git log`, the `v0.1.0` tag and the archived change instead
       of the deleted file; add a short `## Releases` section stating that a release is a tag, its

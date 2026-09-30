@@ -48,6 +48,17 @@ def test_normalize_text_folds_case() -> None:
     assert normalize_text("СОЛНЦЕ") == "солнце"
 
 
+def test_a_casefold_expansion_votes_as_the_letters_it_expands_to() -> None:
+    """Folding runs before the filter, so `ß` is not an unmapped character: it is two `s` letters.
+
+    This is the one case where "everything that is not a mapped letter drops out" reads wrong: the
+    drop-out rule applies to *folded* characters, and `ß` folds to `ss` rather than dropping.
+    """
+    assert normalize_text("ß") == "ss"
+    assert gematria_simple("ß") == 19 + 19
+    assert gematria_simple("ß") == gematria_simple("ss")
+
+
 def test_gematria_simple_sums_latin_letters() -> None:
     """The docs/NUMEROLOGY.md example: `sun` is 19 + 21 + 14 = 54."""
     assert gematria_simple("sun") == 54

@@ -43,10 +43,10 @@
 
 ## 7. Close the smaller contract-drift defects
 
-- [ ] 7.1 Correct the `find_date_resonances` docstring in `src/numenews/numerology/resonance.py` so its stated pair order matches the input order the implementation reports. Verify with `uv run pytest tests/unit/test_resonance.py -v`
-- [ ] 7.2 Make the gematria module docstring state that case folding is applied before the letter filter, so `ß` expanding to `ss` is documented rather than contradicting the "drops out" rule. Verify by reading `src/numenews/numerology/gematria.py` against the `ß` test in `tests/unit/test_gematria.py`
-- [ ] 7.3 Translate a malformed stored payload in `_scroll` (`src/numenews/vector/history.py`) into the documented `VectorStoreError` instead of letting a raw validation error escape. Verify with `uv run pytest tests/unit/test_vector_history.py tests/integration/test_vector_history.py -v`
-- [ ] 7.4 Stop `run_command`'s cleanup in `src/numenews/cli/main.py` from masking the original failure when closing the context itself raises, and add the regression test to `tests/unit/test_cli_main.py`. Verify with `uv run pytest tests/unit/test_cli_main.py -v`
+- [x] 7.1 Correct the `find_date_resonances` docstring in `src/numenews/numerology/resonance.py` so its stated pair order matches the input order the implementation reports. Verify with `uv run pytest tests/unit/test_resonance.py -v`
+- [x] 7.2 Make the gematria module docstring state that case folding is applied before the letter filter, so `ß` expanding to `ss` is documented rather than contradicting the "drops out" rule. Verify by reading `src/numenews/numerology/gematria.py` against the `ß` test in `tests/unit/test_gematria.py`
+- [x] 7.3 Translate a malformed stored payload in `_scroll` (`src/numenews/vector/history.py`) into the documented `VectorStoreError` instead of letting a raw validation error escape. Verify with `uv run pytest tests/unit/test_vector_history.py tests/integration/test_vector_history.py -v`
+- [x] 7.4 Stop `run_command`'s cleanup in `src/numenews/cli/main.py` from masking the original failure when closing the context itself raises, and add the regression test to `tests/unit/test_cli_main.py`. Verify with `uv run pytest tests/unit/test_cli_main.py -v`
 
 ## 8. Integration verification
 

@@ -17,6 +17,7 @@ from collections.abc import Sequence
 from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
+from pydantic import ValidationError
 from qdrant_client.models import (
     Condition,
     DatetimeRange,
@@ -34,6 +35,7 @@ from numenews.vector.collections import (
     create_number_history_collection,
     require_collection,
 )
+from numenews.vector.errors import VectorStoreError
 from numenews.vector.payloads import (
     activation_from_payload,
     activation_payload,
@@ -98,6 +100,7 @@ def get_history(
     Raises:
         ValueError: when ``days`` is less than one — a window with no days is a call-site bug.
         CollectionNotFoundError: when the ``number_history`` collection was never created.
+        VectorStoreError: when a matched point's payload does not rebuild a ``NumberActivation``.
 
     Returns:
         The activations, newest first.
@@ -131,6 +134,7 @@ def get_activations(
     Raises:
         ValueError: when ``days`` is less than one.
         CollectionNotFoundError: when the ``number_history`` collection was never created.
+        VectorStoreError: when a matched point's payload does not rebuild a ``NumberActivation``.
 
     Returns:
         The activations, newest first.
@@ -194,7 +198,16 @@ def _newest_first(activation: NumberActivation) -> tuple[date, str]:
 
 
 def _scroll(store: VectorStore, scroll_filter: Filter) -> list[NumberActivation]:
-    """Return every activation the filter matches, page by page, unsorted."""
+    """Return every activation the filter matches, page by page, unsorted.
+
+    A stored payload that does not rebuild a :class:`~numenews.models.NumberActivation` — a point
+    written by something other than :func:`record_activation` — is reported as the layer's own
+    failure, naming the collection and the point, so a read keeps the contract its callers were
+    promised and an operator can still find the bad point.
+
+    Raises:
+        VectorStoreError: when a matched point carries a payload the model refuses.
+    """
     activations: list[NumberActivation] = []
     offset: int | str | UUID | None = None
     while True:
@@ -205,6 +218,13 @@ def _scroll(store: VectorStore, scroll_filter: Filter) -> list[NumberActivation]
             offset=offset,
             with_payload=True,
         )
-        activations.extend(activation_from_payload(record.payload or {}) for record in records)
+        for record in records:
+            try:
+                activations.append(activation_from_payload(record.payload or {}))
+            except ValidationError as error:
+                raise VectorStoreError(
+                    f"stored activation {record.id} in {NUMBER_HISTORY_COLLECTION!r} is malformed: "
+                    "it was not written by record_activation"
+                ) from error
         if offset is None:
             return activations

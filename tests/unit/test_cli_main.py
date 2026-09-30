@@ -1,23 +1,51 @@
 """The Typer application itself: the entry point, the group callback and its arguments.
 
 These are unit tests: every one exercises the CLI without a store, a model or a network, so a
-failure here is about the parser or the version, never about a service. The command bodies are
-tested in ``tests/integration/test_cli.py``, where an in-memory store can be injected.
+failure here is about the parser, the version or the shutdown, never about a service. The command
+bodies are tested in ``tests/integration/test_cli.py``, where an in-memory store can be injected.
 """
 
 from __future__ import annotations
 
 import json
+from datetime import date
 
 import pytest
 from typer.testing import CliRunner
 
+from numenews.cli import commands
 from numenews.cli import main as cli_main
 from numenews.cli.main import app
 from numenews.config import Settings
 from numenews.mcp.context import AppContext
+from numenews.models import Forecast
+from numenews.news.errors import NewsSourceError
+from numenews.vector.errors import VectorStoreError
 
 runner = CliRunner()
+
+
+class _FailingClose:
+    """A context whose cleanup fails, standing in for a store that cannot be closed."""
+
+    async def aclose(self) -> None:
+        raise VectorStoreError("the cleanup failed")
+
+
+async def _failing_body(context: AppContext, *, topic: str) -> Forecast:
+    """Stand in for ``commands.today`` when the body itself is the failure."""
+    raise NewsSourceError("the body failed")
+
+
+async def _answering_body(context: AppContext, *, topic: str) -> Forecast:
+    """Stand in for ``commands.today`` when the body answers and only the cleanup can fail."""
+    return Forecast(
+        date=date(2026, 9, 21),
+        dominant_number=7,
+        master_active=False,
+        forecast="День под знаком семи.",
+        advice="Смотрите на детали.",
+    )
 
 
 def test_version_prints_json_and_exits() -> None:
@@ -98,3 +126,36 @@ def test_build_context_returns_a_lazy_container(settings: Settings) -> None:
 
     assert isinstance(context, AppContext)
     assert context.settings is settings
+
+
+def test_a_failing_body_outranks_a_failing_cleanup(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The failure a command reports is the body's, even when closing the context also fails."""
+    monkeypatch.setattr(cli_main, "build_context", lambda settings: _FailingClose())
+    monkeypatch.setattr(commands, "today", _failing_body)
+
+    result = runner.invoke(app, ["today"])
+
+    assert result.exit_code == 1
+    report = json.loads(result.stdout)
+    assert report["kind"] == "NewsSourceError"
+    assert "the body failed" in report["error"]
+    assert "the cleanup failed" not in report["error"]
+    assert "cli.command.cleanup_failed" in result.stderr
+
+
+def test_a_cleanup_failure_after_an_answer_is_still_reported(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Closing the context is part of the run, so with nothing else broken its failure is fatal."""
+    monkeypatch.setattr(cli_main, "build_context", lambda settings: _FailingClose())
+    monkeypatch.setattr(commands, "today", _answering_body)
+
+    result = runner.invoke(app, ["today"])
+
+    assert result.exit_code == 1
+    report = json.loads(result.stdout)
+    assert report["kind"] == "VectorStoreError"
+    assert "the cleanup failed" in report["error"]
+    assert "cli.command.complete" not in result.stderr

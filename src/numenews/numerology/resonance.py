@@ -33,16 +33,19 @@ def date_resonance(d1: date, d2: date) -> int:
 def find_date_resonances(dates: Sequence[date]) -> list[tuple[date, date, int]]:
     """Return every resonant pair among ``dates``.
 
-    Pairs are unordered and reported in input order (first the earlier element, then the later), so
-    a date that appears twice forms as many pairs as it has partners and two identical dates always
-    form one. The result is empty for fewer than two dates and for a set with no coinciding values.
+    Pairs are unordered and reported in input order: the first element of a triple is the date that
+    appears earlier in ``dates``, the second is the one that appears later, and the shared reduced
+    value is third. "Earlier" means earlier in ``dates``, not chronologically earlier — the
+    sequence is compared as given and never sorted. A date that appears twice forms as many pairs
+    as it has partners and two identical dates always form one. The result is empty for fewer than
+    two dates and for a set with no coinciding values.
 
     Args:
         dates: The dates to compare, in the order the caller wants the pairs reported.
 
     Returns:
-        ``(earlier, later, shared_value)`` triples, ordered by the first date's position and then
-        the second's.
+        ``(first, second, shared_value)`` triples, where ``first`` is the date earlier in ``dates``
+        and ``second`` the one after it; ordered by the first date's position and then the second's.
     """
     reduced = [(day, reduce_date(day)) for day in dates]
 

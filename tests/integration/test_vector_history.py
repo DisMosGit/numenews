@@ -11,16 +11,19 @@ from datetime import date
 from uuid import NAMESPACE_URL, uuid5
 
 import pytest
+from qdrant_client.models import PointStruct
 
 from numenews.models import NewsId, NumberActivation
 from numenews.vector import (
     NUMBER_HISTORY_COLLECTION,
     CollectionNotFoundError,
     VectorStore,
+    VectorStoreError,
     get_activations,
     get_history,
     record_activation,
 )
+from numenews.vector.payloads import activation_payload, activation_point_id
 
 pytestmark = pytest.mark.integration
 
@@ -106,6 +109,35 @@ def test_recording_the_same_activation_twice_keeps_one_row(vector_store: VectorS
     record_activation(vector_store, activation)
 
     assert vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count == 1
+
+
+def test_a_malformed_stored_payload_is_a_store_error_not_a_validation_error(
+    vector_store: VectorStore,
+) -> None:
+    """A point written by something other than `record_activation` fails as the documented error.
+
+    The corrupted payload keeps the two indexed fields, so the window filter still matches the point
+    and the read reaches the rebuild; only what the model requires is missing.
+    """
+    activation = _activation()
+    record_activation(vector_store, activation)
+    payload = activation_payload(activation)
+    del payload["context"]
+    vector_store.client.upsert(
+        NUMBER_HISTORY_COLLECTION,
+        [PointStruct(id=activation_point_id(activation), vector={}, payload=payload)],
+        wait=True,
+    )
+
+    with pytest.raises(VectorStoreError) as raised:
+        get_history(vector_store, 7, days=7, today=TODAY)
+
+    assert NUMBER_HISTORY_COLLECTION in str(raised.value)
+    assert str(activation_point_id(activation)) in str(raised.value)
+
+    # The whole-window read shares `_scroll`, so it reports the same way.
+    with pytest.raises(VectorStoreError):
+        get_activations(vector_store, days=7, today=TODAY)
 
 
 def test_reading_history_from_an_absent_collection_is_a_setup_error(

@@ -4,8 +4,11 @@ Latin runs ``A=1 … Z=26``. Cyrillic follows the 33-letter Russian alphabet by 
 ``А=1 … Я=33`` with ``Ё=7`` (ADR 0002 records the choice); other Cyrillic letters — ``Ї``, ``Ґ``,
 ``Ђ`` — and every other script are ignored rather than guessed at.
 
-Normalisation is deliberately lossy and one-way: case is folded, and everything that is not a mapped
-letter (spaces, punctuation, digits, emoji) drops out. A reading therefore depends only on the
+Normalisation is deliberately lossy and one-way: case folding runs first over the whole text, and
+the mapped-letter filter runs over its result, so everything the fold leaves unmapped (spaces,
+punctuation, digits, emoji) drops out. That order decides what a character contributes: a character
+whose casefold expansion is one or more mapped letters votes with them instead of dropping, which
+is why ``ß`` — casefolded to ``ss`` — counts as ``s + s``. A reading therefore depends only on the
 letters, and a text without a single one has the sum ``0``. ``gematria_reduce`` returns that ``0``
 unchanged instead of calling :func:`~numenews.numerology.reduction.reduce_number`, whose domain
 starts at ``1``; the sentinel is unambiguous because no positive sum reduces to ``0``.

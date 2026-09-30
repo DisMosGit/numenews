@@ -91,6 +91,11 @@ def run_command[ResultT: BaseModel](
     One event loop per invocation is what "one-shot" means: the process answers one question and
     exits, so ``asyncio.run`` is the right driver rather than a long-lived loop.
 
+    The context is closed whatever the body did, and the body's failure wins: a cleanup that fails
+    while an exception is in flight is logged and dropped, because reporting it instead would
+    replace the real cause with the state the failed run left behind. A cleanup that fails after the
+    body answered is the run's only failure, so it stays fatal and loud.
+
     An expected domain failure (``DOMAIN_ERRORS``: the store is down, the model endpoint is not
     configured, a step spent its retry) is an answer too — it is printed as an ``ErrorReport`` on
     stdout and exits ``1``, so a script can read the failure as JSON. Anything else is a defect in
@@ -103,9 +108,22 @@ def run_command[ResultT: BaseModel](
     async def invoke() -> ResultT:
         context = build_context(state.settings)
         try:
-            return await work(context)
-        finally:
-            await context.aclose()
+            result = await work(context)
+        except BaseException:
+            # The body's failure is what the caller has to see, so a cleanup that fails while it
+            # is in flight is reported to the log only; the bare ``raise`` keeps the original one.
+            try:
+                await context.aclose()
+            except Exception as cleanup_error:
+                logger.warning(
+                    "cli.command.cleanup_failed",
+                    command=command,
+                    kind=type(cleanup_error).__name__,
+                    error=str(cleanup_error),
+                )
+            raise
+        await context.aclose()
+        return result
 
     try:
         result = asyncio.run(invoke())

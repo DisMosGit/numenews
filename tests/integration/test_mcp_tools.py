@@ -24,7 +24,15 @@ from mcp.types import CallToolResult, TextContent
 
 from numenews.config import Settings
 from numenews.mcp import AppContext, build_server
-from numenews.models import NewsId, NewsItem, NumberActivation, Pattern, PatternId
+from numenews.models import (
+    DateRange,
+    NewsId,
+    NewsItem,
+    NumberActivation,
+    Pattern,
+    PatternId,
+    Topic,
+)
 from numenews.news import NewsAggregator
 from numenews.pipeline import Pipeline
 from numenews.vector import (
@@ -518,3 +526,75 @@ async def test_get_history_refuses_a_window_without_days(settings: Settings) -> 
 
     assert result.is_error is True
     assert "greater than or equal to 1" in text_of(result)
+
+
+class InterruptedIngestError(RuntimeError):
+    """Stands in for the store going away before the ingest write phase could commit."""
+
+
+def _fail_the_first_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the ingest write phase fail on its first write, before anything is remembered."""
+
+    def interrupt(*args: object, **kwargs: object) -> None:
+        raise InterruptedIngestError("the store went away")
+
+    monkeypatch.setattr("numenews.pipeline.steps.record_activation", interrupt)
+
+
+async def test_an_interrupted_ingest_is_repaired_before_get_history_answers(
+    settings: Settings,
+    vector_store: VectorStore,
+    news_client: AsyncCacheClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """mcp-surface: the memory tool answers what a completed ingest wrote, and nothing less.
+
+    The reader's view of the defect: ``fetch_news`` has the articles, the ingest that should have
+    remembered them died on its first write, and ``get_history`` reports that it has nothing rather
+    than answering a half-written day. The next run completes the memory, and the same tool call
+    then answers the activations — which is the guarantee ``news-memory`` states.
+    """
+    aggregator = NewsAggregator.from_settings(settings, news_client)
+    pipeline = Pipeline(
+        store=vector_store,
+        extract=extract_agent([11])[0],
+        patterns=pattern_agent([])[0],
+        forecast_agent=forecast_agent()[0],
+        summarizer=summarize_agent()[0],
+        fetcher=aggregator.fetch_all,
+        clock=FrozenClock(),
+    )
+    context = AppContext(settings, pipeline=pipeline, aggregator=aggregator)
+    window = DateRange(start=date(2026, 9, 15), end=date(2026, 9, 21))
+
+    with respx.mock(assert_all_called=False) as router:
+        _gdelt_router(router)
+        async with Client(build_server(context=context), raise_exceptions=True) as client:
+            fetched = await client.call_tool(
+                "fetch_news", {"topic": "politics", "date_range": RANGE}
+            )
+
+            with monkeypatch.context() as interruption:
+                _fail_the_first_write(interruption)
+                with pytest.raises(InterruptedIngestError):
+                    await pipeline.ingest(Topic(query="politics"), window)
+
+            # Nothing was remembered: the tool reports the missing memory instead of a partial day.
+            before = await client.call_tool("get_history", {"number": 11, "days": 365})
+
+            await pipeline.ingest(Topic(query="politics"), window)
+
+            after = await client.call_tool("get_history", {"number": 11, "days": 365})
+
+    assert fetched.is_error is False
+    assert fetched.structured_content is not None
+    assert [item["title"] for item in fetched.structured_content["result"]] == GDELT_TITLES
+    assert before.is_error is True
+    assert "does not exist" in text_of(before)
+    assert after.is_error is False
+    assert after.structured_content is not None
+    activations = after.structured_content["result"]
+    assert [item["number"] for item in activations] == [11, 11]
+    assert [item["news_id"] for item in activations] == [
+        item["id"] for item in fetched.structured_content["result"]
+    ]

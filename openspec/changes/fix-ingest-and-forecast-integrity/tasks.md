@@ -4,7 +4,7 @@
 
 - [x] 1.1 Reorder the ingest write phase in `src/numenews/pipeline/steps.py` so the `news` upsert is the last write, after the number patterns and the activation history, and replace the ordering comment with why `news` is the commit marker the skip check reads. Verify with `uv run ruff check . && uv run mypy .`
 - [x] 1.2 Add the interruption tests to `tests/integration/test_pipeline_ingest.py`: the write phase is interrupted at each of the writes it has (the article's own point is last, so the "after the news upsert" crash point no longer exists), the next run completes the memory, and the re-run reads no article that was already complete. Verify with `uv run pytest tests/integration/test_pipeline_ingest.py -v`
-- [ ] 1.3 Add the same guarantee at the MCP boundary in `tests/integration/test_mcp_tools.py`: `fetch_news` followed by an interrupted ingest, then a re-run, leaves `get_history` answering the activations. Verify with `uv run pytest tests/integration/test_mcp_tools.py -v`
+- [x] 1.3 Add the same guarantee at the MCP boundary in `tests/integration/test_mcp_tools.py`: `fetch_news` followed by an interrupted ingest, then a re-run, leaves `get_history` answering the activations. Verify with `uv run pytest tests/integration/test_mcp_tools.py -v`
 - [ ] 1.4 Record the write order and the commit-marker rule in `docs/QDRANT_COLLECTIONS.md` next to the three collections it spans, and confirm the documented order matches the code. Verify by reading the section against `src/numenews/pipeline/steps.py`
 
 ## 2. Derive the forecast window from the day being read

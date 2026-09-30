@@ -18,19 +18,27 @@
 
 ## 2. Delete the changelog
 
-- [ ] 2.1 Delete `CHANGELOG.md` with `git rm`, in a commit that contains nothing else. Verify:
+- [x] 2.1 Delete `CHANGELOG.md` with `git rm`, in a commit that contains nothing else. Verify:
       `test ! -e CHANGELOG.md` succeeds and `git show --stat HEAD` lists exactly one file, as a
-      deletion.
+      deletion. **Deviation:** the commit holds the deletion alone (`d23042a`), so this box is ticked
+      in the verification commit that follows rather than in the same one — the task's two
+      requirements cannot both hold.
 
 ## 3. Verify the tree
 
-- [ ] 3.1 Sweep tracked files for the dead file name: `git grep -ni changelog` must return hits only
+- [x] 3.1 Sweep tracked files for the dead file name: `git grep -ni changelog` must return hits only
       under `openspec/changes/archive/`, plus the single recovery command in `CONTRIBUTING.md`.
       Verify: the command's full output is read and every hit is attributed to one of those two.
-- [ ] 3.2 Confirm nothing reads the file: no `Changelog` key under `[project.urls]` in
+      **Deviation:** at `d23042a` the sweep returned 61 hits in three places, not two — 22 under
+      `openspec/changes/archive/`, 37 in this change's own artifacts (a change that removes a file
+      has to name it), and 2 in `CONTRIBUTING.md`. The predicate was written as if it ran after
+      archiving, and it counted one `CONTRIBUTING.md` hit where D3 requires two: the `## Releases`
+      section opens by stating there is no changelog, then gives the recovery command. Every hit is
+      accounted for, and none of them tells a contributor to maintain one.
+- [x] 3.2 Confirm nothing reads the file: no `Changelog` key under `[project.urls]` in
       `pyproject.toml`, and no version or release badge in `README.md`. Verify: both files' grep
       output is read, and any hit is classified as unrelated.
-- [ ] 3.3 Run the full gate and confirm a docs-only change left it untouched: `make lint` and
+- [x] 3.3 Run the full gate and confirm a docs-only change left it untouched: `make lint` and
       `make test` pass, `openspec validate "remove-changelog" --strict` passes, and `git status
       --short` is clean. Verify: each command's own output is pasted, and the test count matches the
       677 passed / 8 skipped baseline.

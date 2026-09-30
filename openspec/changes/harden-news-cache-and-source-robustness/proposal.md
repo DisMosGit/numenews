@@ -23,9 +23,12 @@ of redundant round trips and holds the interruption window open for as long as i
 
 ## What Changes
 
-- **The HTTP cache stores no credential.** A request whose query string carries a credential is
-  persisted with that parameter's value replaced by a fixed placeholder. The request that leaves the
-  process is unchanged, the cache key is unchanged, and the credential never reaches the database.
+- **The HTTP cache stores no credential.** A request whose query string carries a credential is not
+  cached at all: no key is computed for it, nothing is looked up and nothing is written. The request
+  that leaves the process is unchanged, so the source still authenticates; it simply does not get a
+  cache entry. A redaction was considered first and rejected — hishel reuses an entry only when the
+  stored request URL equals the live one, so a redacted entry could never be served and the cache
+  would be lost anyway. `design.md` decision 1 records the evidence.
 - **The cache honours the directive that forbids storing.** A response carrying `Cache-Control`
   `no-store` or `no-cache` is not stored, so it cannot be replayed within the TTL without
   revalidation, joining the existing rule that error responses are not stored.
@@ -55,18 +58,23 @@ None.
 
 Affected code:
 
-- `src/numenews/news/http.py` — the storage wrapper that redacts a request before it is written, and
+- `src/numenews/news/http.py` — the request filter that refuses a credentialed request, and
   `_CacheOnlySuccesses`, widened to refuse a response the origin forbade storing.
 - `src/numenews/vector/history.py` — a batched history write alongside the single-activation one.
 - `src/numenews/pipeline/steps.py` — the ingest write phase calls the batched write once.
 
 Behaviour and compatibility:
 
-- No public signature, argument, default or output shape changes; no new dependency. The storage
-  wrapper sits between the client and `AsyncSqliteStorage`, which it delegates to.
+- No public signature, argument, default or output shape changes; no new dependency. The new filter is
+  handed to the same `FilterPolicy` the client already builds.
 - **A one-time privacy action:** cache rows written before this change still hold the credential. The
   change does not delete them, because deleting the cache is the operator's call; `docs/NEWS_SOURCES.md`
   documents the one-line removal of `.cache/hishel/news.db` and the fact that the cache is disposable.
+- **A credentialed source loses its cache**, so a repeat of the same query inside the TTL reaches the
+  origin again. This is the trade-off the change accepts knowingly: the alternative that keeps the
+  cache needs hishel internals, and the TTL still covers every request that carries no credential —
+  including all four sources that authenticate with a header. Request volume against Mediastack's free
+  tier can rise; the aggregator already degrades one source rather than failing the fetch.
 - Honouring `no-store`/`no-cache` means those responses are fetched again within the TTL, so request
   volume against the free-tier quotas can rise. This is the trade-off the change accepts knowingly:
   the cache exists to spare the quotas, and an origin that forbids storing is not the case it was
@@ -74,6 +82,6 @@ Behaviour and compatibility:
 
 Verification impact:
 
-- New integration tests assert a credentialed request is absent from the database after a cached
-  fetch, that a `no-store` response is not replayed, and that the batched write stores exactly the
-  points the per-row loop stored.
+- New integration tests assert a credentialed request leaves no entry in the database at all, that a
+  `no-store` response is not replayed, and that the batched write stores exactly the points the
+  per-row loop stored.

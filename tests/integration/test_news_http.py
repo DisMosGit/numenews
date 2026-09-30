@@ -4,10 +4,19 @@
 the test's temporary directory. Where a test only needs the retry to happen, the backoff is
 patched to zero through the `instant_retries` fixture; the fallback wait itself is covered by the
 503 test, which uses the real policy.
+
+What the cache leaves on disk is asserted by reading the database itself rather than through
+`hishel`, because "the credential is not in the file" is a claim about the file.
 """
 
 from __future__ import annotations
 
+import sqlite3
+from collections.abc import AsyncIterator
+from contextlib import closing
+from pathlib import Path
+
+import hishel
 import httpx
 import pytest
 import respx
@@ -16,6 +25,7 @@ from hishel.httpx import AsyncCacheClient
 from pydantic import BaseModel, ConfigDict
 
 from numenews.config import Settings
+from numenews.logging import configure_logging
 from numenews.news import (
     NewsSourceAuthError,
     NewsSourceError,
@@ -27,6 +37,10 @@ from numenews.news import (
 from numenews.news.http import NEWS_CACHE_TTL_SECONDS, build_news_client, get_response, parse_json
 
 URL = "https://news.test/v1/search"
+
+# Stands in for Mediastack's `access_key`: the one credential of the five that travels in the query
+# string, and so the one that could reach the cache database.
+SECRET = "mediastack-secret"
 
 
 class _Payload(BaseModel):
@@ -40,6 +54,60 @@ class _Payload(BaseModel):
 async def _fetch(client: httpx.AsyncClient, **params: str) -> httpx.Response:
     """Call `get_response` the way an adapter does."""
     return await get_response(client, source="test", url=URL, params=params)
+
+
+def _cache_database(settings: Settings) -> Path:
+    """Return the cache database the client was configured with."""
+    return settings.cache_dir / "news.db"
+
+
+def _cache_bytes(settings: Settings) -> bytes:
+    """Return the bytes of the cache database, or nothing when it was never created.
+
+    A run whose every request was refused by the filter never reaches the storage, so the file
+    may not exist at all — which is itself part of what these tests assert.
+    """
+    database = _cache_database(settings)
+    return database.read_bytes() if database.exists() else b""
+
+
+def _stored_entries(settings: Settings) -> list[bytes]:
+    """Return the serialized entries in the cache database, read directly.
+
+    Read through `sqlite3` rather than the file's bytes so that the write-ahead log is merged
+    into the result: an entry still in the log is stored as surely as one already checkpointed.
+    """
+    database = _cache_database(settings)
+    if not database.exists():
+        return []
+    with closing(sqlite3.connect(database)) as connection:
+        return [row[0] for row in connection.execute("SELECT data FROM entries")]
+
+
+async def _an_empty_body() -> AsyncIterator[bytes]:
+    """Yield no chunks: an entry needs a response stream, and this one keeps no body."""
+    chunks: tuple[bytes, ...] = ()
+    for chunk in chunks:
+        yield chunk
+
+
+async def _store_an_entry(settings: Settings, url: str) -> None:
+    """Write one entry through hishel's own storage, as a version without the filter did.
+
+    Going through the storage rather than hand-written SQL keeps the row in the format hishel
+    really writes, so the check meets the bytes a cache written before the rule would hold.
+    """
+    storage = AsyncSqliteStorage(
+        database_path=_cache_database(settings), default_ttl=NEWS_CACHE_TTL_SECONDS
+    )
+    try:
+        await storage.create_entry(
+            hishel.Request(method="GET", url=url),
+            hishel.Response(status_code=200, stream=_an_empty_body()),
+            key="written-before-the-rule",
+        )
+    finally:
+        await storage.close()
 
 
 @pytest.mark.integration
@@ -72,6 +140,58 @@ async def test_different_query_parameters_are_cached_separately(
         await _fetch(news_client, q="moon")
 
         assert route.call_count == 2
+
+
+@pytest.mark.integration
+async def test_a_request_carrying_a_credential_is_never_cached(settings: Settings) -> None:
+    """The credential costs that request its cache entry: nothing is written for it at all."""
+    upstream: list[str] = []
+    client = build_news_client(settings)
+    try:
+        with respx.mock(assert_all_called=False) as router:
+
+            def answer(request: httpx.Request) -> httpx.Response:
+                upstream.append(str(request.url))
+                return httpx.Response(200, json={"title": "sun"})
+
+            route = router.get(URL).mock(side_effect=answer)
+
+            first = await _fetch(client, q="sun", access_key=SECRET)
+            second = await _fetch(client, q="sun", access_key=SECRET)
+
+            # Nothing was stored, so the second call has nothing to be served from.
+            assert route.call_count == 2
+    finally:
+        await client.aclose()
+
+    # The request itself is untouched: refusing it the cache must not refuse it the key.
+    assert SECRET in upstream[0]
+    assert first.json() == second.json() == {"title": "sun"}
+    assert _stored_entries(settings) == []
+    assert SECRET.encode() not in _cache_bytes(settings)
+
+
+@pytest.mark.integration
+async def test_a_refused_request_leaves_the_cache_working_for_the_next_one(
+    settings: Settings,
+) -> None:
+    """The filter refuses one request, not the client: an ordinary fetch is cached as before."""
+    client = build_news_client(settings)
+    try:
+        with respx.mock(assert_all_called=False) as router:
+            route = router.get(URL).mock(return_value=httpx.Response(200, json={"title": "sun"}))
+
+            await _fetch(client, q="sun", access_key=SECRET)
+            await _fetch(client, q="sun")
+            cached = await _fetch(client, q="sun")
+
+            # One call for the credentialed request, one for the first ordinary one, none for the
+            # second: the plain URL is cached even though it shares an endpoint with a refused one.
+            assert route.call_count == 2
+    finally:
+        await client.aclose()
+
+    assert cached.extensions.get("hishel_from_cache") is True
 
 
 @pytest.mark.integration
@@ -317,6 +437,49 @@ def test_parse_json_rejects_a_body_that_is_not_the_documented_json() -> None:
         )
 
     assert "test" in str(caught.value)
+
+
+@pytest.mark.integration
+async def test_building_the_client_logs_a_warning_for_a_cache_that_holds_a_credential(
+    settings: Settings,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A cache written before the rule is not deleted, but it does announce itself."""
+    await _store_an_entry(settings, f"{URL}?q=sun&access_key={SECRET}")
+    # Configuring inside the test is what points the log at `capsys`'s stream: the autouse fixture
+    # binds the handler before `capsys` replaces `sys.stderr`, so its records go to the real one.
+    configure_logging(settings)
+
+    client = build_news_client(settings)
+    try:
+        assert "news.http.cache_holds_credential" in capsys.readouterr().err
+    finally:
+        await client.aclose()
+
+
+@pytest.mark.integration
+async def test_building_the_client_is_quiet_for_a_cache_that_holds_no_credential(
+    settings: Settings,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The warning is for a real leftover, so an ordinary cache must not produce one.
+
+    Two rows are stored, and neither carries a credential: one ordinary query, and one whose *value*
+    holds the literal text `access_key=` while its parameter names only look similar. A check that
+    reported the bare bytes would flag both, and a warning that fires on every run is one nobody
+    reads.
+    """
+    await _store_an_entry(settings, f"{URL}?q=sun")
+    await _store_an_entry(settings, f"{URL}?q=access_key=notes&access_key_backup=no")
+    configure_logging(settings)
+
+    client = build_news_client(settings)
+    try:
+        captured = capsys.readouterr().err
+    finally:
+        await client.aclose()
+
+    assert "news.http.cache_holds_credential" not in captured
 
 
 @pytest.mark.integration

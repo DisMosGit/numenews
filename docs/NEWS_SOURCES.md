@@ -96,8 +96,9 @@ Nothing in the layer depends on a paid plan, but a paid plan widens the numbers 
 ### Mediastack
 
 - `access_key` is the only documented auth form, so the key necessarily travels in the query string.
-  It is never logged (`get_response` logs the endpoint without parameters), but it does end up inside
-  the *hashed* cache key.
+  It is never logged (`get_response` logs the endpoint without parameters) and never cached: a request
+  whose query string carries a credential is not stored at all — see [the cache](#the-cache). The cost
+  is this source's cache, so a repeat of the same query inside the TTL is fetched again.
 - The free plan is live-only; `date=YYYY-MM-DD,YYYY-MM-DD` and historical queries are documented as
   Standard-plan functions, so a free account may answer with `function_access_restricted`. The range
   is still sent — the documented contract comes first, and the aggregator degrades on the error.
@@ -139,22 +140,40 @@ The client is one `hishel`-backed `httpx.AsyncClient`, configured in
 
 ```python
 AsyncSqliteStorage(database_path=settings.cache_dir / "news.db", default_ttl=900.0)
-FilterPolicy(response_filters=[_CacheOnlySuccesses()])
+FilterPolicy(
+    request_filters=[_CacheOnlyCredentialFreeRequests()], response_filters=[_CacheOnlySuccesses()]
+)
 ```
 
-Two decisions are worth knowing about:
+Three decisions are worth knowing about:
 
 - **`FilterPolicy`, not the RFC 9111 specification policy.** None of the five APIs sends a freshness
   header (`Cache-Control`/`Expires`) that the specification policy could use, so it treats every
   stored response as stale and the cache never answers a request — measured: two identical requests,
   two network calls. `FilterPolicy` plus the storage's `default_ttl` is what makes the
   fifteen-minute TTL real. See [ADR 0009](adr/0009-hishel-caching.md), which records this decision.
+- **A request that authenticates in its query string is not cached.** Mediastack's `access_key` is the
+  one credential of the five that travels in a URL, and `hishel` both derives its cache key from that
+  URL and writes the request itself into the entry, so the request filter refuses such a request
+  before either happens: no key is computed, nothing is looked up and nothing is written. The request
+  that leaves the process is unchanged, key included, so the source still authenticates. **This costs
+  that source its cache**, and that is deliberate: `hishel` serves an entry only when the stored
+  request URL equals the live one, so the alternative — storing the request with the key redacted out
+  of it — would write rows that could never be served and lose the cache anyway.
 - **Only 2xx responses are stored.** `hishel` stores whatever the transport returned, so without
   `_CacheOnlySuccesses` a cached 503 would be replayed for the whole TTL instead of being retried,
   and a 429 would hide the moment the quota reset.
 
 The database lives in `Settings.cache_dir` (default `.cache/hishel`); `hishel` creates the directory
-and drops a `.gitignore` holding `*` into it. The client is **not** a module-level singleton: closing
+and drops a `.gitignore` holding `*` into it. It is **disposable**: it holds public news behind a
+fifteen-minute TTL, so removing `.cache/hishel/news.db` at any time is safe and costs one request per
+source. Doing so is also the one manual step this layer's credential handling asks of anyone who ran an
+older version — `access_key` used to be written into the entry, and that is not retroactive. A leftover
+row is never deleted behind the operator's back, but neither is it silent: building the client logs a
+`news.http.cache_holds_credential` warning naming the database and the parameter, so a cache carrying a
+key announces itself.
+
+The client is **not** a module-level singleton: closing
 it closes the sqlite storage for good, so `fetch_news` creates one per call, and the MCP server may keep a
 long-lived one in its application context.
 

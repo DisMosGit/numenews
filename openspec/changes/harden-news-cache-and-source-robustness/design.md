@@ -12,25 +12,36 @@ is given; the RFC 9111 directive handling lives in `SpecificationPolicy` and is 
 
 **A request filter runs before the cache key is computed, and can bypass the cache.** In
 `hishel._async_cache._handle_request_with_filters`, request filters run first; returning `False` sends
-the request straight upstream without looking in or writing to the cache. That makes "do not cache
-credentialed requests" expressible, but only as a filter outcome — it is not a redaction hook.
+the request straight upstream without looking in the cache, without computing a key and without
+writing anything. A filter is not a redaction hook, but it is the whole mechanism this change needs.
+
+**A stored entry is reused only when its request URL matches the live one exactly.** Both reuse paths
+compare them literally: `IdleClient.next` (`hishel/_core/_spec.py`) drops any entry whose
+`request.url` differs, and the filter path repeats the same comparison before serving one. This is the
+fact that decided decision 1 — a redacted URL can never equal the live one, so an entry written that
+way would be stored and then never reused, which is the loss of caching that redaction was meant to
+avoid, with a dead row left behind as well.
 
 **The cache key is derived from the request URL**, including its query string, and the entry that is
-written holds the request object itself. So the credential reaches storage twice over: once in the key
-(a hash, not recoverable) and once in the serialized request (recoverable, and the actual leak).
+written holds the request object itself. So a credential would reach storage twice over: once in the
+key (a hash, not recoverable) and once in the serialized request (recoverable, and the actual leak).
+Refusing to cache the request removes both, and the key exactly: no key is computed for a request a
+filter has already turned away.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- No credential is recoverable from the cache database, and the request that leaves the process still
-  carries it.
+- No credential is written to the cache database at all — not in the entry, not in the key — and the
+  request that leaves the process still carries it.
 - A response the origin forbade storing does not get replayed from storage.
 - One ingest performs one history write and one collection-existence check, not one per activation.
 - Every one of the three lands with a test that fails against the current code.
 
 **Non-Goals:**
 
+- No cache for a request that carries a credential. Keeping one means reaching into hishel's cache
+  transport; decision 1 records why every alternative was rejected.
 - No encryption of the cache database. The cache is disposable and holds public news; the credential
   is the one thing in it worth protecting, and not writing it is simpler and stronger than encrypting
   it.
@@ -43,28 +54,36 @@ written holds the request object itself. So the credential reaches storage twice
 
 ## Decisions
 
-### 1. Redact the credential in a storage wrapper, not in a filter
+### 1. A request whose query string carries a credential is not cached at all
 
-A storage wrapper sits between the client and `AsyncSqliteStorage`. `create_entry` — the only write
-path `FilterPolicy` reaches, since revalidation belongs to the specification path — replaces the URL
-of the request it is about to persist with the same URL whose credential parameter's value is a fixed
-placeholder. Every other method delegates unchanged.
+`build_news_client` gains a request filter beside the response one. `FilterPolicy` runs request
+filters first, and a filter that returns `False` hands the request straight to the origin: no key is
+computed, no entry is looked up, nothing is written. Mediastack's `access_key` therefore never reaches
+the database — nor the row, nor the key, nor the response stored beside them.
 
-Why a storage wrapper rather than a request filter: a filter can only exclude a request from the
-cache, so protecting the credential that way costs Mediastack its entire cache — the source that most
-needs it, since the audit's own docstring notes the free tier. Redacting at the storage boundary keeps
-the cache working, keeps the request that goes upstream untouched, and puts the redaction at the one
-place where "what is written" is decided.
+The rule is a predicate on the URL rather than on a source, so it covers the query parameter the other
+four APIs document as their alternative authentication form: a source that switches to one does not
+silently start writing its key to disk because nobody revisited a list of names.
 
-The cache key still reflects the real URL, so the key is a hash of a string holding the credential
-rather than the credential itself. That is acceptable — a hash is not recoverable — and it avoids
-blending one key's quota accounting with another's. The placeholder is a fixed string, so a stored
-entry always has one canonical form per cache key.
+Why not redaction, which is what this plan first chose: redacting the stored request does keep the
+value out of the database, but hishel reuses an entry only when the stored request URL equals the live
+one byte for byte (see Context). A redacted URL never does, so the entry would be written and then
+never served — the cache is lost either way, and redaction additionally leaves a row of dead weight
+and depends on a storage wrapper staying in step with hishel's storage interface. Refusing to cache
+says the same thing in one filter, on the extension point hishel documents, and leaves the request
+that goes upstream untouched.
 
 Alternatives considered:
 
-- **Exclude credentialed requests from caching** (a request filter returning `False`). Rejected: safe
-  but expensive, and it silently changes how hard the project leans on Mediastack's quota.
+- **Redact the credential in a storage wrapper.** Rejected on the URL-equality evidence above: it
+  loses the cache anyway, and pays for that with a wrapper that must mirror `AsyncBaseStorage`.
+- **Redact the credential and relax the reuse check.** Rejected: the check lives in hishel's private
+  cache transport — `IdleClient` is constructed inside `AsyncCache.handle_request` — so relaxing it
+  means subclassing internals this project does not otherwise touch.
+- **Take the credential out of the URL and inject it below the cache.** Rejected as the right answer
+  to a different question: it would keep the cache and take the key out of the cache key too, but it
+  moves key handling out of the adapters and into the HTTP layer, against the boundary
+  `docs/NEWS_SOURCES.md` documents, and it deserves its own change and ADR.
 - **Move the Mediastack key into a header.** Rejected as no fix at all: headers are persisted in the
   same entry, so the secret moves rather than disappears.
 - **Encrypt the database.** Rejected: it needs a key management story for a disposable cache holding
@@ -111,16 +130,19 @@ once that change lands, exactly as the per-activation loop did.
 
 ## Risks / Trade-offs
 
-- **Existing cache rows keep the credential.** → The redaction is not retroactive, and the change does
-  not delete a user's cache. `docs/NEWS_SOURCES.md` documents that the cache is disposable and that
+- **Existing cache rows keep the credential.** → The rule is not retroactive, and the change does not
+  delete a user's cache. `docs/NEWS_SOURCES.md` documents that the cache is disposable and that
   removing `.cache/hishel/news.db` clears it. A startup check in the cache path logs a warning when
   the database still holds a request with a credential parameter, so the situation announces itself
   rather than sitting silent.
-- **A credential-redacting wrapper depends on hishel internals.** → It only calls the declared
-  `AsyncBaseStorage` methods and copies the request with `dataclasses.replace`, and `Request` and
-  `Response` are dataclasses by construction. If a hishel upgrade changes the storage interface, the
-  failure is an import or signature error at startup, caught by the existing cache tests rather than
-  by a quiet leak.
+- **A credentialed request is fetched every time, so Mediastack loses its cache.** → Accepted, and
+  recorded here rather than discovered later: the cache only ever spared a repeat of the same query
+  inside the fifteen-minute TTL, and keeping it costs a dependency on hishel internals (decision 1).
+  Mediastack's free tier is the tightest of the five, so the cost is real but bounded, and the
+  aggregator already degrades one source rather than failing the whole fetch.
+- **A blanket request rule could refuse more than it should.** → It keys off a parameter name in the
+  query string, so an ordinary request is untouched: the other four sources authenticate with a
+  header and GDELT needs no key, so their entries are cached exactly as before.
 - **Honouring `no-store`/`no-cache` costs requests against free-tier quotas.** → Accepted knowingly;
   see the proposal's Impact. The TTL still covers every response that does not forbid storing.
 - **`private` treated as not storable is stricter than the RFC requires of a private cache.** → This
@@ -132,11 +154,10 @@ once that change lands, exactly as the per-activation loop did.
 
 ## Migration Plan
 
-No data migration and no configuration change. The redaction, the directive handling and the batching
-take effect on the next run. Rolling back is reverting the change: the storage wrapper and the filter
-write a superset of what they used to, and a cache written by the fixed code is read by the old code
-without complaint — entries simply hold a placeholder where a credential used to be, and are never
-replayed upstream because the requests that produced them are not re-sent from storage.
+No data migration and no configuration change. The request rule, the directive handling and the
+batching take effect on the next run. Rolling back is reverting the change: the old code caches a
+credentialed request again, and it reads a cache written by the new code without complaint, because
+the new code only writes fewer entries of exactly the same shape.
 
 The one operator action is optional and privacy-motivated: removing `.cache/hishel/news.db` clears
 rows written before the fix. It is safe at any time and costs one cache miss per source.

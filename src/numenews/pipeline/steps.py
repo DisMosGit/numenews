@@ -45,7 +45,7 @@ from numenews.vector import (
     get_forecast,
     get_news_items,
     read_news_range,
-    record_activation,
+    record_activations,
     save_forecast,
     save_pattern,
     upsert_news,
@@ -259,8 +259,7 @@ async def ingest(pipeline: Pipeline, topic: Topic, date_range: DateRange) -> Pip
         # history are already stored. A run that dies before it leaves the article fresh, and the
         # next ingest repeats whichever of these writes it got through as idempotent overwrites. A
         # run that reaches it has nothing left to write.
-        for activation in activations:
-            await pipeline.run_blocking(partial(record_activation, pipeline.store, activation))
+        await pipeline.run_blocking(lambda: record_activations(pipeline.store, activations))
         await pipeline.run_blocking(lambda: upsert_number_patterns(pipeline.store, activations))
         stored = await pipeline.run_blocking(lambda: upsert_news(pipeline.store, items))
     log_step(embed_timer, items=stored, activations=len(activations))

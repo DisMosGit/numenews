@@ -538,7 +538,7 @@ def _fail_the_first_write(monkeypatch: pytest.MonkeyPatch) -> None:
     def interrupt(*args: object, **kwargs: object) -> None:
         raise InterruptedIngestError("the store went away")
 
-    monkeypatch.setattr("numenews.pipeline.steps.record_activation", interrupt)
+    monkeypatch.setattr("numenews.pipeline.steps.record_activations", interrupt)
 
 
 async def test_an_interrupted_ingest_is_repaired_before_get_history_answers(

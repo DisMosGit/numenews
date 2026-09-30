@@ -225,7 +225,7 @@ def _interrupt_at(monkeypatch: pytest.MonkeyPatch, write: str) -> None:
     monkeypatch.setattr(f"numenews.pipeline.steps.{write}", failing)
 
 
-@pytest.mark.parametrize("write", ["record_activation", "upsert_number_patterns", "upsert_news"])
+@pytest.mark.parametrize("write", ["record_activations", "upsert_number_patterns", "upsert_news"])
 async def test_an_interrupted_ingest_is_completed_by_the_next_run(
     vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch, write: str
 ) -> None:

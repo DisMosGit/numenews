@@ -34,6 +34,7 @@ from numenews.vector.history import (
     get_activations,
     get_history,
     record_activation,
+    record_activations,
 )
 from numenews.vector.news import (
     READ_PAGE,
@@ -76,6 +77,7 @@ __all__ = [
     "read_news_range",
     "read_patterns",
     "record_activation",
+    "record_activations",
     "require_collection",
     "save_digest",
     "save_forecast",

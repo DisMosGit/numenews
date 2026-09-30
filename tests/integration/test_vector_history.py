@@ -22,6 +22,7 @@ from numenews.vector import (
     get_activations,
     get_history,
     record_activation,
+    record_activations,
 )
 from numenews.vector.payloads import activation_payload, activation_point_id
 
@@ -109,6 +110,28 @@ def test_recording_the_same_activation_twice_keeps_one_row(vector_store: VectorS
     record_activation(vector_store, activation)
 
     assert vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count == 1
+
+
+def test_a_batch_stores_one_point_per_article_and_number(vector_store: VectorStore) -> None:
+    """One batch writes the rows the per-activation loop wrote: one point per `(article, number)`.
+
+    The same batch is written twice, which is what a repeated ingest does. The point id is derived
+    from the pair, so the second run overwrites instead of appending, and every pair stays readable.
+    """
+    activations = [
+        _activation(number=7, news_url="a"),
+        _activation(number=11, news_url="a"),
+        _activation(number=7, news_url="b"),
+    ]
+
+    written = record_activations(vector_store, activations)
+    record_activations(vector_store, activations)
+
+    assert written == 3
+    assert vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count == 3
+    sevens = get_history(vector_store, 7, days=7, today=TODAY)
+    assert set(sevens) == {activations[0], activations[2]}
+    assert get_history(vector_store, 11, days=7, today=TODAY) == [activations[1]]
 
 
 def test_a_malformed_stored_payload_is_a_store_error_not_a_validation_error(

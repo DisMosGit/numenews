@@ -17,11 +17,11 @@
 
 ## 3. Write activation history in one batch
 
-- [ ] 3.1 Add a batched history write to `src/numenews/vector/history.py` that ensures the collection once and upserts every point in one call, and make `record_activation` a single-element delegation to it so the public surface is unchanged. Verify with `uv run mypy .`
-- [ ] 3.2 Replace the per-activation loop in the ingest write phase (`src/numenews/pipeline/steps.py`) with one call to the batched write. Verify with `uv run ruff check .`
-- [ ] 3.3 Add the unit tests to `tests/unit/test_vector_history.py` for the empty batch writing nothing without touching the collection, and for the single-activation path storing the same point id as before. Verify with `uv run pytest tests/unit/test_vector_history.py -v`
-- [ ] 3.4 Add the integration test to `tests/integration/test_vector_history.py` asserting a batch of activations stores exactly one point per `(article, number)` pair and that `get_history` returns them all. Verify with `uv run pytest tests/integration/test_vector_history.py -v`
-- [ ] 3.5 Confirm the existing ingest tests still pass unchanged, since the stored result must be identical: `uv run pytest tests/integration/test_pipeline_ingest.py tests/integration/test_pipeline_e2e.py -v`
+- [x] 3.1 Add a batched history write to `src/numenews/vector/history.py` that ensures the collection once and upserts every point in one call, and make `record_activation` a single-element delegation to it so the public surface is unchanged. Verify with `uv run mypy .`
+- [x] 3.2 Replace the per-activation loop in the ingest write phase (`src/numenews/pipeline/steps.py`) with one call to the batched write. Verify with `uv run ruff check .`
+- [x] 3.3 Add the unit tests to `tests/unit/test_vector_history.py` for the empty batch writing nothing without touching the collection, and for the single-activation path storing the same point id as before. Verify with `uv run pytest tests/unit/test_vector_history.py -v`
+- [x] 3.4 Add the integration test to `tests/integration/test_vector_history.py` asserting a batch of activations stores exactly one point per `(article, number)` pair and that `get_history` returns them all. Verify with `uv run pytest tests/integration/test_vector_history.py -v`
+- [x] 3.5 Confirm the existing ingest tests still pass unchanged, since the stored result must be identical: `uv run pytest tests/integration/test_pipeline_ingest.py tests/integration/test_pipeline_e2e.py -v`
 
 ## 4. Integration verification
 

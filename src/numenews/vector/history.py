@@ -7,7 +7,10 @@ counterpart lives in ``numbers``. A read returns the rows (:func:`get_history`,
 :func:`get_activations`), and :func:`activation_frequency` folds them into the per-day series.
 
 Writes are idempotent: the point id is derived from the news item and the number, so re-ingesting an
-article overwrites its activations rather than appending duplicates.
+article overwrites its activations rather than appending duplicates. An ingest writes its whole page
+in one batch (:func:`record_activations`), which ensures the collection once per run and leaves one
+round trip in the write phase to be interrupted instead of one per activation; the write returns
+early on an empty batch, so a run with nothing to remember touches the store not at all.
 """
 
 from __future__ import annotations
@@ -50,26 +53,51 @@ logger = get_logger(__name__)
 _SCROLL_PAGE = 256
 
 
+def record_activations(store: VectorStore, activations: Sequence[NumberActivation]) -> int:
+    """Record ``activations`` in one batch, returning how many points were written.
+
+    An ingest computes every activation of its page before it writes any of them, so one call per
+    activation bought nothing but round trips: the collection was checked once per activation, and
+    an interrupted run could stop in the middle of a day's memory. One ``upsert(wait=True)`` over
+    points whose ids are derived from the ``(news item, number)`` pair stores exactly the rows the
+    per-activation path produced, in the same places.
+
+    Args:
+        store: The connection. The history has no vectors, so neither embedder is used.
+        activations: One entry per ``(news item, number)`` pair; its order is preserved.
+
+    Returns:
+        The number of points written (``0`` for an empty batch, without touching the collection).
+    """
+    if not activations:
+        return 0
+    create_number_history_collection(store.client)
+    points = [
+        PointStruct(
+            id=activation_point_id(activation),
+            vector={},
+            payload=activation_payload(activation),
+        )
+        for activation in activations
+    ]
+    store.client.upsert(NUMBER_HISTORY_COLLECTION, points, wait=True)
+    logger.info("vector.history.recorded", activations=len(points))
+    return len(points)
+
+
 def record_activation(store: VectorStore, activation: NumberActivation) -> None:
     """Append one activation to the history, overwriting the same pair if it is already there.
+
+    A single-element delegation to :func:`record_activations`, which owns the write path. The name
+    stays because the tests and the MCP tools seed one point with it, and so does its log line,
+    which names the number that went in rather than only how many.
 
     Args:
         store: The connection. The history has no vectors, so neither embedder is used.
         activation: What to remember — the number, the day, the item it was read in, the snippet
             around it and the item's reduced value.
     """
-    create_number_history_collection(store.client)
-    store.client.upsert(
-        NUMBER_HISTORY_COLLECTION,
-        [
-            PointStruct(
-                id=activation_point_id(activation),
-                vector={},
-                payload=activation_payload(activation),
-            )
-        ],
-        wait=True,
-    )
+    record_activations(store, [activation])
     logger.info(
         "vector.history.recorded",
         number=activation.number,

@@ -18,7 +18,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from numenews.logging import get_logger
-from numenews.models import Digest, NewsItem
+from numenews.models import DateRange, Digest, NewsItem
 from numenews.pipeline.pipeline import Pipeline
 from numenews.pipeline.steps import retrying
 from numenews.vector import save_digest
@@ -67,31 +67,48 @@ def partition(
     return recent, older
 
 
-async def build_digest(pipeline: Pipeline, news: list[NewsItem]) -> Digest | None:
+async def build_digest(
+    pipeline: Pipeline,
+    news: list[NewsItem],
+    *,
+    period: DateRange,
+    numbers: tuple[int, ...] = (),
+) -> Digest | None:
     """Summarise ``news`` into a digest and store it, or return ``None`` when there is no summary.
 
     ``None`` is returned for an empty list and for a single item: a digest exists to compress many
-    days into one sentence, and "summarise" of one article is the article. The period is the range
-    of the items' own days, so a stretch with gaps is labelled by its first and last day.
+    days into one sentence, and "summarise" of one article is the article.
+
+    The prompt and the stored digest are deliberately different sizes. ``news`` is what the model is
+    shown, so a caller bounds it with its own prompt limit; ``period`` and ``numbers`` are what the
+    digest claims to cover, so the caller passes the whole stretch the digest stands for — its first
+    and last day and the reduced values read across it. Labelling a digest with a period it only
+    partly read would make the stored memory claim more than it knows, and labelling it with the
+    prompt subset alone would leave the rest of the period covered by nothing.
 
     Args:
         pipeline: The orchestrator whose summarizer, store and clock are used.
-        news: The older items to compress; the order does not matter.
+        news: The items to compress, in the order the prompt should show them.
+        period: The days the stored digest covers — the first and last day of the whole stretch.
+        numbers: The reduced values the period was read under, across the whole stretch.
 
     Returns:
-        The stored digest, or ``None`` when two or more items were not given.
+        The stored digest, or ``None`` when fewer than two items were given.
     """
     if len(news) < 2:
         return None
     digest = await retrying("summarize_news", lambda: pipeline.summarizer.summarize(news))
-    await pipeline.run_blocking(lambda: save_digest(pipeline.store, digest))
+    stored = digest.model_copy(update={"period_start": period.start, "period_end": period.end})
+    if numbers:
+        stored = stored.model_copy(update={"numbers": numbers})
+    await pipeline.run_blocking(lambda: save_digest(pipeline.store, stored))
     logger.info(
         "pipeline.context.digest",
-        period_start=digest.period_start.isoformat(),
-        period_end=digest.period_end.isoformat(),
+        period_start=stored.period_start.isoformat(),
+        period_end=stored.period_end.isoformat(),
         items=len(news),
     )
-    return digest
+    return stored
 
 
 __all__ = ["build_digest", "partition", "window_start"]

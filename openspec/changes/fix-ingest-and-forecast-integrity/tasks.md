@@ -16,10 +16,10 @@
 
 ## 3. Save one digest per period, labelled with the period it read
 
-- [ ] 3.1 Give `build_digest` in `src/numenews/pipeline/context.py` the intended period and item range as inputs, so it stores one digest whose period and numbers cover the older range while the prompt stays bounded by `summary_limit`. Verify with `uv run mypy .`
-- [ ] 3.2 Delete the second digest save and the relabelling block in `summarize` (`src/numenews/pipeline/steps.py`), leaving the summary limit to bound the prompt only. Verify with `uv run ruff check .`
-- [ ] 3.3 Extend `tests/unit/test_pipeline_context.py` and `tests/integration/test_pipeline_context.py` for a range longer than `summary_limit`: exactly one digest point exists, its period covers the range, and asking for a period that was never summarised answers nothing rather than a wider digest. Verify with `uv run pytest tests/unit/test_pipeline_context.py tests/integration/test_pipeline_context.py -v`
-- [ ] 3.4 Confirm the one-summary-per-period rule in `docs/RAG_PIPELINE.md` matches the new behaviour and that `docs/QDRANT_COLLECTIONS.md` still describes the digest point id correctly. Verify by reading both sections against `src/numenews/pipeline/context.py`
+- [x] 3.1 Give `build_digest` in `src/numenews/pipeline/context.py` the intended period and item range as inputs, so it stores one digest whose period and numbers cover the older range while the prompt stays bounded by `summary_limit`. Verify with `uv run mypy .`
+- [x] 3.2 Delete the second digest save and the relabelling block in `summarize` (`src/numenews/pipeline/steps.py`), leaving the summary limit to bound the prompt only. Verify with `uv run ruff check .`
+- [x] 3.3 Extend `tests/unit/test_pipeline_context.py` and `tests/integration/test_pipeline_context.py` for a range longer than `summary_limit`: exactly one digest point exists, its period covers the range, and asking for a period that was never summarised answers nothing rather than a wider digest. Verify with `uv run pytest tests/unit/test_pipeline_context.py tests/integration/test_pipeline_context.py -v`
+- [x] 3.4 Confirm the one-summary-per-period rule in `docs/RAG_PIPELINE.md` matches the new behaviour and that `docs/QDRANT_COLLECTIONS.md` still describes the digest point id correctly. Verify by reading both sections against `src/numenews/pipeline/context.py`
 
 ## 4. Treat an unusable retry hint as one source's failure
 

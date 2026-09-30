@@ -17,6 +17,7 @@ from numenews.models import DateRange, NewsId, NewsItem, Topic
 from numenews.pipeline import Pipeline, PipelineRetryError
 from numenews.vector import DIGESTS_COLLECTION, VectorStore, get_digest
 
+from ..unit.agent_fakes import recording, user_text
 from ..unit.pipeline_fakes import (
     FrozenClock,
     ModelCounter,
@@ -137,8 +138,14 @@ async def test_the_summarizer_limit_bounds_the_prompt_not_the_period(
     vector_store: VectorStore,
 ) -> None:
     """The digest still covers the whole older stretch; only the model's view of it is capped."""
-    items = [_item(date(2026, 9, day)) for day in range(1, 15)]
-    pipeline, counter = _pipeline(vector_store, items)
+    # The newest ten days carry text the first five do not, so the test can tell which of them
+    # reached the model and which only reached the stored period.
+    recent_text = "Eleven ministers resigned today over the budget."
+    items = [
+        _item(date(2026, 9, day), text=recent_text if day > 5 else None) for day in range(1, 15)
+    ]
+    model, recorder = recording(summary="Период прошёл под числом 11.")
+    pipeline, _ = _pipeline(vector_store, items, summarizer=SummarizeAgent(model))
     pipeline = Pipeline(
         store=vector_store,
         extract=pipeline.extract,
@@ -155,10 +162,48 @@ async def test_the_summarizer_limit_bounds_the_prompt_not_the_period(
     )
 
     assert pipeline.summary_limit == 5
-    assert counter.calls == 1
+    assert len(recorder.calls) == 1
     assert digest is not None
+    # The stored period and numbers describe the whole older range, not the five items shown.
     assert digest.period_start == date(2026, 9, 1)
     assert digest.period_end == date(2026, 9, 14)
+    assert digest.numbers == (6, 1)
+    assert get_digest(vector_store, date(2026, 9, 1), date(2026, 9, 14)) == digest
+    assert vector_store.client.count(DIGESTS_COLLECTION, exact=True).count == 1
+    # The prompt really was bounded: the model read the five oldest days and no later one, while
+    # the stored numbers come from a range it never saw in full.
+    prompt = user_text(recorder.calls[0])
+    assert "2026-09-01" in prompt
+    assert "2026-09-05" in prompt
+    assert recent_text not in prompt
+
+
+async def test_a_period_that_was_never_summarised_answers_nothing(
+    vector_store: VectorStore,
+) -> None:
+    """A digest is found by its own two days, so a sub-period does not answer with a wider one."""
+    items = [_item(date(2026, 9, day)) for day in range(1, 15)]
+    pipeline, _ = _pipeline(vector_store, items)
+    pipeline = Pipeline(
+        store=vector_store,
+        extract=pipeline.extract,
+        patterns=pipeline.patterns,
+        forecast_agent=pipeline.forecast_agent,
+        summarizer=pipeline.summarizer,
+        fetcher=fetcher_returning(items),
+        clock=FrozenClock(now=NOW),
+        summary_limit=5,
+    )
+
+    digest = await pipeline.summarize(
+        TOPIC, DateRange(start=date(2026, 9, 1), end=date(2026, 9, 21))
+    )
+
+    assert digest is not None
+    # The sub-period the model actually read is not a digest anyone stored.
+    assert get_digest(vector_store, date(2026, 9, 1), date(2026, 9, 5)) is None
+    assert get_digest(vector_store, date(2026, 9, 3), date(2026, 9, 4)) is None
+    assert vector_store.client.count(DIGESTS_COLLECTION, exact=True).count == 1
 
 
 async def test_a_failing_summarizer_surfaces_and_stores_nothing(vector_store: VectorStore) -> None:

@@ -86,8 +86,11 @@ skips that for a caller that just ran it — and the reading rests on:
   dated after the day being read.
 
 **Summarize is opt-in.** `Pipeline.summarize` ingests a range and compresses everything older than
-the window into one digest. An ingest run never pays for it; see
-[`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md).
+the window into one digest. It writes that digest once, under the period of the older items it
+covers: the `summary_limit` bounds only how many of them the model is shown, so the stored period
+and numbers describe the whole older range while the prompt describes a subset of it. Re-summarising
+the same range overwrites the same point, and no second digest is left behind for a sub-period. An
+ingest run never pays for it; see [`CONTEXT_MANAGEMENT.md`](CONTEXT_MANAGEMENT.md).
 
 ## Degradation and failure
 

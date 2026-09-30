@@ -45,7 +45,6 @@ from numenews.vector import (
     get_news_items,
     read_news_range,
     record_activation,
-    save_digest,
     save_forecast,
     save_pattern,
     upsert_news,
@@ -428,22 +427,23 @@ async def summarize(
     with StepTimer(pipeline.clock, "summarize") as summarize_timer:
         items = await _window_items(pipeline, date_range.start, date_range.end)
         _recent, older = partition(items, end=end, window_days=pipeline.window_days)
-        # The limit bounds the *prompt*, not the period: the digest still covers every older item,
-        # while the model is shown the oldest of them. Labelling a digest with a period it only
-        # partly read would make the stored memory claim more than it knows.
-        digest = await build_digest(pipeline, older[: pipeline.summary_limit])
-        if digest is not None and older:
-            digest = Digest(
-                period_start=older[0].date,
-                period_end=older[-1].date,
-                summary=digest.summary,
+        # The limit bounds the *prompt*, not the period: the digest is stored under the whole older
+        # range and carries that range's numbers, while the model is shown only the newest of them.
+        # A period is identified by its two days, so this is also the one write per summarisation —
+        # a second save relabelled to the subset would leave an orphan point for a period the model
+        # never read, and a reader asking for the sub-period would get a digest covering more.
+        digest: Digest | None = None
+        if older:
+            digest = await build_digest(
+                pipeline,
+                older[: pipeline.summary_limit],
+                period=DateRange(start=older[0].date, end=older[-1].date),
                 numbers=tuple(
                     dict.fromkeys(
                         item.numerology_value for item in older if item.numerology_value is not None
                     )
                 ),
             )
-            await pipeline.run_blocking(lambda: save_digest(pipeline.store, digest))
     log_step(summarize_timer, older=len(older), summarized=digest is not None)
     return digest
 

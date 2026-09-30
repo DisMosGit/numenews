@@ -73,16 +73,21 @@ Digest(
 
 - **The period is the identity.** There is no id of its own; the point id is `uuid5` over
   `(period_start, period_end)`, so re-summarising a range replaces its point instead of adding a
-  second memory (the same idiom `get_forecast` uses for forecasts).
+  second memory (the same idiom `get_forecast` uses for forecasts). A summarisation therefore writes
+  **exactly one** point: the period a caller reads back is the period the digest was stored under,
+  and a sub-period of it was never summarised, so `get_digest` answers `None` for it rather than a
+  wider digest that happens to contain it.
 - **Two items are the minimum.** One article is not a digest, so `build_digest` returns `None` and
   writes nothing. A daily run whose range falls entirely inside the window produces `None`, which is
   the normal case, not an error.
 - **The limit bounds the prompt, not the period.** `Pipeline.summary_limit` (50) caps how many older
   items the model is shown — a busy month is one summarisation call, not many — while the stored
   period and its numbers still describe every older item. Labelling a digest with a period it only
-  partly read would make the memory claim more than it knows.
+  partly read would make the memory claim more than it knows, and storing a second copy under that
+  narrower period would leave an orphan point beside the real one.
 - **The numbers are ours.** The model writes the prose; the period and the reduced values come from
-  the items, because a model asked to list the numbers it saw can list one that was not there.
+  the items — the whole older range, not the prompt subset — because a model asked to list the
+  numbers it saw can list one that was not there.
 - **A digest is never injected.** The pipeline stores it and reads it back through `get_digest`; no
   prompt contains one yet. The prompt snapshots in `docs/PROMPTS.md` change when a change asks
   for a prompt change, and none does. Wiring it into the pattern or forecast prompt is

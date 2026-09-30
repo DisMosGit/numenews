@@ -72,13 +72,18 @@ so the second call for a day returns the stored reading without any agent run. O
 miss, the day's patterns are derived through the same path as `analyze` — `rerun_analysis=False`
 skips that for a caller that just ran it — and the reading rests on:
 
-- `dominant_number` over the window's `numerology_value`s (most frequent, ties to the larger value),
+- the news of the window **ending on the day being read** — `day` itself and the six days before it
+  — rather than on the window the wall clock is standing in, so a past or future day is read from
+  its own evidence and the reading is then stored under that day. `today` is the explicit override
+  for a caller replaying a batch whose window ends elsewhere;
+- `dominant_number` over that window's `numerology_value`s (most frequent, ties to the larger value),
   with `reduce_date(day)` as the fallback for a day with no news, because a reading always has a
   number to rest on;
 - `master_active`, true when that dominant value is a master number;
 - the recent activations of exactly the numbers *this* day's news carries, read over the memory
-  window (`Pipeline.history_days`, thirty days by default), so the memory in the prompt
-  is evidence for this reading and not an unrelated 7 from last week.
+  window (`Pipeline.history_days`, thirty days by default) **ending on the same day**, so the memory
+  in the prompt is evidence for this reading and not an unrelated 7 from last week, nor an activation
+  dated after the day being read.
 
 **Summarize is opt-in.** `Pipeline.summarize` ingests a range and compresses everything older than
 the window into one digest. An ingest run never pays for it; see

@@ -9,10 +9,10 @@
 
 ## 2. Derive the forecast window from the day being read
 
-- [ ] 2.1 Change `forecast`'s window end in `src/numenews/pipeline/steps.py` to default to `day` instead of the clock, keep `today` as the explicit override, and align the `today` argument docstring with the window it now bounds. Verify with `uv run mypy .`
-- [ ] 2.2 Add the window-provenance tests to `tests/integration/test_pipeline_forecast.py`: a reading for a past day draws no item published after it and cites no activation dated after it, a reading for a future day behaves the same way, and a day whose window holds no news still answers from `reduce_date(day)`. Verify with `uv run pytest tests/integration/test_pipeline_forecast.py -v`
-- [ ] 2.3 Add the CLI-level test to `tests/integration/test_cli.py` for `forecast --date` naming a past day, asserting the printed reading is the one stored under that day. Verify with `uv run pytest tests/integration/test_cli.py -v`
-- [ ] 2.4 Document the window rule where the pipeline is described in `docs/RAG_PIPELINE.md`, and note in `docs/USER_FLOW.md` that `forecast --date` reads that day's window. Verify the wording matches the spec scenario by reading both files
+- [x] 2.1 Change `forecast`'s window end in `src/numenews/pipeline/steps.py` to default to `day` instead of the clock, keep `today` as the explicit override, and align the `today` argument docstring with the window it now bounds. Verify with `uv run mypy .`
+- [x] 2.2 Add the window-provenance tests to `tests/integration/test_pipeline_forecast.py`: a reading for a past day draws no item published after it and cites no activation dated after it, a reading for a future day behaves the same way, and a day whose window holds no news still answers from `reduce_date(day)`. Verify with `uv run pytest tests/integration/test_pipeline_forecast.py -v`
+- [x] 2.3 Add the CLI-level test to `tests/integration/test_cli.py` for `forecast --date` naming a past day, asserting the printed reading is the one stored under that day. Verify with `uv run pytest tests/integration/test_cli.py -v`
+- [x] 2.4 Document the window rule where the pipeline is described in `docs/RAG_PIPELINE.md`, and note in `docs/USER_FLOW.md` that `forecast --date` reads that day's window. Verify the wording matches the spec scenario by reading both files
 
 ## 3. Save one digest per period, labelled with the period it read
 

@@ -297,6 +297,98 @@ async def test_a_replayed_day_reads_its_own_window(vector_store: VectorStore) ->
     assert stored == reading
 
 
+async def test_a_past_day_draws_no_item_published_after_it(vector_store: VectorStore) -> None:
+    """The window defaults to the day being read, so the clock cannot leak today's news into it."""
+    # The frozen clock reads DAY while the requested day is four days earlier, and the later item
+    # sits inside the clock's window but outside the requested day's own one.
+    requested = date(2026, 9, 17)
+    before = _item(7, day=date(2026, 9, 16))
+    after = _item(11, day=DAY)
+    upsert_news(vector_store, [before, after])
+    pipeline, pattern_counter, _ = _pipeline(
+        vector_store, patterns=[_draft([before]), _draft([after])]
+    )
+
+    reading = await pipeline.forecast(requested)
+
+    # Only the earlier item votes, so the day is read under 7 rather than the clock window's 11.
+    assert reading.dominant_number == 7
+    assert [pattern.news_ids for pattern in reading.patterns] == [(before.id,)]
+    assert pattern_counter.calls == 1
+
+
+async def test_a_future_day_draws_no_item_published_after_it(vector_store: VectorStore) -> None:
+    """A day ahead of the clock reads the window ending on it, so later items stay out."""
+    requested = date(2026, 9, 25)
+    inside = _item(11, day=date(2026, 9, 24))
+    later = _item(7, day=date(2026, 9, 26))
+    upsert_news(vector_store, [inside, later])
+    pipeline, _, _ = _pipeline(vector_store, patterns=[_draft([inside])])
+
+    reading = await pipeline.forecast(requested)
+
+    assert reading.dominant_number == 11
+    assert [pattern.news_ids for pattern in reading.patterns] == [(inside.id,)]
+
+
+async def test_a_past_day_cites_no_activation_dated_after_it(vector_store: VectorStore) -> None:
+    """The memory window ends on the day read, so a later activation is no evidence for it."""
+    requested = date(2026, 9, 17)
+    item = _item(11, day=requested)
+    upsert_news(vector_store, [item])
+    mine = NumberActivation(
+        number=11,
+        date=requested,
+        news_id=item.id,
+        context="Eleven ministers resigned that day.",
+    )
+    later = NumberActivation(
+        number=11,
+        date=DAY,
+        news_id=NewsId(uuid4()),
+        context="Eleven ministers resigned four days later.",
+    )
+    await asyncio.to_thread(record_activation, vector_store, mine)
+    await asyncio.to_thread(record_activation, vector_store, later)
+    model, recorder = recording(
+        forecast="День под знаком одиннадцати.",
+        advice="Слушайте интуицию.",
+        warnings=[],
+    )
+    pipeline, _, _ = _pipeline(vector_store, patterns=[_draft([item])])
+    pipeline = Pipeline(
+        store=vector_store,
+        extract=pipeline.extract,
+        patterns=pipeline.patterns,
+        forecast_agent=ForecastAgent(model),
+        summarizer=summarize_agent()[0],
+        fetcher=fetcher_returning([]),
+        clock=FrozenClock(now=NOW),
+    )
+
+    await pipeline.forecast(requested)
+
+    prompt = user_text(recorder.calls[0])
+    assert "Eleven ministers resigned that day." in prompt
+    assert "four days later" not in prompt
+
+
+async def test_a_quiet_past_day_still_answers_from_its_date(vector_store: VectorStore) -> None:
+    """A window with no news is not a failure: the day's own date value carries the reading."""
+    requested = date(2026, 9, 17)
+    upsert_news(vector_store, [_item(11, day=DAY)])
+    pipeline, pattern_counter, forecast_counter = _pipeline(vector_store, patterns=[_draft([])])
+
+    reading = await pipeline.forecast(requested)
+
+    assert reading.dominant_number == reduce_date(requested)
+    assert reading.patterns == ()
+    assert pattern_counter.calls == 0
+    assert forecast_counter.calls == 1
+    stored = await pipeline.run_blocking(lambda: get_forecast(vector_store, requested))
+    assert stored == reading
+
+
 def test_the_history_block_of_the_prompt_is_the_agents_own_format() -> None:
     """The step hands over activations; the agent's formatter is what renders them."""
     activation = NumberActivation(

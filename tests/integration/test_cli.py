@@ -263,6 +263,30 @@ def test_forecast_reads_the_requested_day(
     assert reading["dominant_number"] == 11
 
 
+def test_forecast_reads_a_past_day_from_its_own_window(
+    settings: Settings, vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """cli-surface: a past day's reading is built from that day's window and stored under it."""
+    requested = date(2026, 9, 17)
+    before = _item("7th vote failed", day=date(2026, 9, 16)).model_copy(
+        update={"numbers": (7,), "numerology_value": 7}
+    )
+    after = _item("11th hour deal", day=TODAY).model_copy(
+        update={"numbers": (11,), "numerology_value": 11}
+    )
+    upsert_news(vector_store, [before, after])
+    pipeline, _, _ = _pipeline(vector_store)
+    _install(monkeypatch, AppContext(settings, pipeline=pipeline))
+
+    result = runner.invoke(app, ["forecast", "--date", requested.isoformat()])
+
+    assert result.exit_code == 0, result.stderr
+    reading = json.loads(result.stdout)
+    # The clock reads TODAY, so a reading resting on 11 would be the clock's window, not this day's.
+    assert reading["date"] == requested.isoformat()
+    assert reading["dominant_number"] == 7
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [

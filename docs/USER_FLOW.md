@@ -105,9 +105,10 @@ bare command works with no arguments.
 
 ### `forecast`
 
-Prints the reading for a day **without fetching anything**: it reads the stored seven-day window and
-runs the model only when that day has no stored reading yet. This is the command for a day that is not
-today.
+Prints the reading for a day **without fetching anything**: it reads that day's stored seven-day
+window and runs the model only when that day has no stored reading yet. The window ends on the day
+`--date` names rather than on the current one, so a past or future day is read from its own evidence
+and the reading is stored under that day. This is the command for a day that is not today.
 
 ```bash
 uv run numenews forecast --date 2026-09-22

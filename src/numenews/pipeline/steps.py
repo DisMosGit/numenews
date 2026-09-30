@@ -323,7 +323,8 @@ async def forecast(
     point id was built for. Otherwise the reading is assembled from four sources:
 
     * the window of news — ``day`` and the ``window_days - 1`` days before it, read with
-      ``read_news_range``;
+      ``read_news_range``, so a day other than the current one is read from its own evidence
+      instead of the current day's;
     * the patterns among those items, found and stored through the same path as :func:`analyze` —
       skipped when the caller has just run it (``rerun_analysis=False``);
     * the day's ``dominant_number`` and ``master_active`` from the pure rule of
@@ -342,9 +343,9 @@ async def forecast(
         day: The calendar day to read.
         rerun_analysis: Whether to derive the day's patterns again (the default) or to trust that
             the caller already ran :func:`analyze` for the same items.
-        today: The end of the news window. Defaults to the current UTC day read from the injected
-            clock; a caller replaying an old batch passes it explicitly (as ``extract_dates_regex``
-            and ``get_history`` do).
+        today: The end of the news window. Defaults to ``day`` itself, so a reading is always built
+            from the window of the day it is stored under; a caller replaying a batch whose window
+            ends elsewhere passes it explicitly.
 
     Returns:
         The reading, as stored — the same object a later call returns from the cache.
@@ -360,7 +361,7 @@ async def forecast(
         return cached
     log_step(cached_timer, cached=False)
 
-    end = today if today is not None else pipeline.clock.now().date()
+    end = today if today is not None else day
     start = end - timedelta(days=pipeline.window_days - 1)
     with StepTimer(pipeline.clock, "window") as window_timer:
         items = await _window_items(pipeline, start, end)

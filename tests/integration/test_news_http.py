@@ -236,6 +236,48 @@ async def test_an_http_date_retry_after_falls_back_to_the_backoff(
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize("retry_after", ["nan", "-5", "3.5", "Wed, 21 Oct 2026 07:28:00 GMT"])
+async def test_a_retry_after_outside_the_delta_seconds_grammar_is_no_hint_at_all(
+    news_client: AsyncCacheClient,
+    instant_retries: None,
+    retry_after: str,
+) -> None:
+    """Only a whole number of seconds is a hint; every other value falls to the backoff."""
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(URL).mock(
+            return_value=httpx.Response(429, headers={"Retry-After": retry_after}, text="slow down")
+        )
+
+        with pytest.raises(NewsSourceRateLimitError) as caught:
+            await _fetch(news_client, q="sun")
+
+        # Every attempt was answered and the failure that surfaces is still a source error, so the
+        # value never reached tenacity's sleep as a delay it would reject with a `ValueError`.
+        assert route.call_count == 3
+
+    assert caught.value.retry_after is None
+
+
+@pytest.mark.integration
+async def test_a_large_retry_after_is_clamped_to_the_retry_ceiling(
+    news_client: AsyncCacheClient,
+    instant_retries: None,
+) -> None:
+    """A valid hint is capped at fifteen seconds rather than slept in full."""
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(URL).mock(
+            return_value=httpx.Response(429, headers={"Retry-After": "9999"}, text="slow down")
+        )
+
+        with pytest.raises(NewsSourceRateLimitError) as caught:
+            await _fetch(news_client, q="sun")
+
+        assert route.call_count == 3
+
+    assert caught.value.retry_after == 15.0  # `numenews.news.http._MAX_RETRY_WAIT_SECONDS`
+
+
+@pytest.mark.integration
 async def test_a_transport_failure_becomes_a_retryable_source_error(
     news_client: AsyncCacheClient,
     instant_retries: None,

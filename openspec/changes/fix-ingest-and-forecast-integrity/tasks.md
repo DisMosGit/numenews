@@ -23,11 +23,11 @@
 
 ## 4. Treat an unusable retry hint as one source's failure
 
-- [ ] 4.1 Parse `Retry-After` in `src/numenews/news/http.py` as whole seconds only, clamp the result to `[0, _MAX_RETRY_WAIT_SECONDS]`, and fall back to exponential backoff for anything else including an HTTP-date; update the docstring to state the grammar. Verify with `uv run mypy .`
-- [ ] 4.2 Add the parsing tests to `tests/integration/test_news_http.py` for `nan`, a negative value, a fractional value and an HTTP-date, each asserting the error carries no retry hint and the fetch still completes. Verify with `uv run pytest tests/integration/test_news_http.py -v`
-- [ ] 4.3 Make GNews' 403-to-rate-limit translation reachable by the retry loop in `src/numenews/news/gnews.py` by mapping the status inside `get_response`, so the failure is classified before the retry decision rather than after it. Verify with `uv run pytest tests/integration/test_news_gnews.py -v`
-- [ ] 4.4 Extend `tests/unit/test_news_aggregator.py` with the degradation case: one source answering a rate limit with an unusable hint leaves the other sources' items in the combined result. Verify with `uv run pytest tests/unit/test_news_aggregator.py -v`
-- [ ] 4.5 Note the accepted retry-hint grammar and the backoff fallback in `docs/NEWS_SOURCES.md`, and adjust the 2.5-second value in `tests/unit/test_news_protocol.py` if it asserts a hint the parser now rejects. Verify with `uv run pytest tests/unit/test_news_protocol.py -v`
+- [x] 4.1 Parse `Retry-After` in `src/numenews/news/http.py` as whole seconds only, clamp the result to `[0, _MAX_RETRY_WAIT_SECONDS]`, and fall back to exponential backoff for anything else including an HTTP-date; update the docstring to state the grammar. Verify with `uv run mypy .`
+- [x] 4.2 Add the parsing tests to `tests/integration/test_news_http.py` for `nan`, a negative value, a fractional value and an HTTP-date, each asserting the error carries no retry hint and the fetch still completes. Verify with `uv run pytest tests/integration/test_news_http.py -v`
+- [x] 4.3 Make GNews' 403-to-rate-limit translation reachable by the retry loop in `src/numenews/news/gnews.py` by mapping the status inside `get_response`, so the failure is classified before the retry decision rather than after it. Verify with `uv run pytest tests/integration/test_news_gnews.py -v`
+- [x] 4.4 Extend `tests/unit/test_news_aggregator.py` with the degradation case: one source answering a rate limit with an unusable hint leaves the other sources' items in the combined result. Verify with `uv run pytest tests/unit/test_news_aggregator.py -v`
+- [x] 4.5 Note the accepted retry-hint grammar and the backoff fallback in `docs/NEWS_SOURCES.md`, and adjust the 2.5-second value in `tests/unit/test_news_protocol.py` if it asserts a hint the parser now rejects. Verify with `uv run pytest tests/unit/test_news_protocol.py -v`
 
 ## 5. Enforce the reduced-value contract of the dominant number
 

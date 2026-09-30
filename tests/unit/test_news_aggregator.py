@@ -15,7 +15,7 @@ from pydantic import SecretStr
 
 from numenews.config import Settings
 from numenews.models import DateRange, NewsId, NewsItem, Topic
-from numenews.news import NewsAggregator, NewsSourceError, build_sources
+from numenews.news import NewsAggregator, NewsSourceError, NewsSourceRateLimitError, build_sources
 
 TOPIC = Topic(query="politics")
 RANGE = DateRange(start=date(2026, 9, 15), end=date(2026, 9, 21))
@@ -76,6 +76,25 @@ async def test_every_source_failing_returns_an_empty_list() -> None:
     )
 
     assert await aggregator.fetch_all(TOPIC, RANGE) == []
+
+
+async def test_a_rate_limit_without_a_usable_hint_leaves_the_other_sources_in_the_result() -> None:
+    """docs/NEWS_SOURCES.md: an unusable retry hint is one source's failure, never the run's."""
+    aggregator = NewsAggregator(
+        [
+            _FakeSource("a", [_item("from a")]),
+            # `None` is what the parser answers for every `Retry-After` outside the grammar.
+            _FakeSource(
+                "b",
+                NewsSourceRateLimitError("b returned HTTP 429", status_code=429, retry_after=None),
+            ),
+            _FakeSource("c", [_item("from c")]),
+        ]
+    )
+
+    items = await aggregator.fetch_all(TOPIC, RANGE)
+
+    assert [item.title for item in items] == ["from a", "from c"]
 
 
 async def test_items_are_de_duplicated_on_title_source_and_date() -> None:

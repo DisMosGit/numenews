@@ -103,15 +103,19 @@ def test_from_settings_needs_a_key(settings: Settings, news_client: AsyncCacheCl
 @pytest.mark.integration
 async def test_a_spent_daily_quota_is_reported_as_a_rate_limit(
     news_client: AsyncCacheClient,
+    instant_retries: None,
 ) -> None:
-    """GNews answers a spent daily quota with 403, which the central mapping reads as forbidden."""
+    """GNews answers a spent daily quota with 403, which the retry policy reads as a rate limit."""
     body = b'{"errors":["You have reached your daily quota."]}'
 
     with respx.mock(assert_all_called=False) as router:
-        router.get(ENDPOINT).mock(return_value=httpx.Response(403, content=body))
+        route = router.get(ENDPOINT).mock(return_value=httpx.Response(403, content=body))
 
         with pytest.raises(NewsSourceRateLimitError) as caught:
             await _source(news_client).fetch(TOPIC, RANGE)
+
+        # Classified inside the request, so the quota failure spends the whole retry budget.
+        assert route.call_count == 3
 
     assert caught.value.status_code == 403
     assert "daily quota" in str(caught.value)

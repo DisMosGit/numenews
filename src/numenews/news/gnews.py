@@ -3,8 +3,13 @@
 The free plan allows 100 requests a day, caps a response at ten articles (``max`` defaults to ten,
 and the paid plans allow up to 100), delays articles by twelve hours and answers a spent daily quota
 with **403**. That last one is non-standard — HTTP 403 usually means "authenticated but forbidden",
-which is how :func:`~numenews.news.http.get_response` classifies it — so this adapter translates a
-403 into :class:`~numenews.news.errors.NewsSourceRateLimitError`, the failure it actually is.
+which is how :func:`~numenews.news.http.get_response` reads a status unless told otherwise — so this
+adapter names 403 in ``rate_limit_statuses``. The status is then classified as
+:class:`~numenews.news.errors.NewsSourceRateLimitError` while the request is still inside
+:func:`~numenews.news.http.get_response`, before the retry policy asks the failure whether another
+attempt is worth making: a spent quota is retried under the central policy, and any ``Retry-After``
+the answer carries is honoured exactly as it is for a 429. A 401 is deliberately not in that tuple —
+a rejected key stays an auth failure, because another attempt would only spend more quota.
 
 The key travels in the ``X-Api-Key`` header (the ``apikey`` query parameter is the alternative), and
 ``from``/``to`` are RFC 3339 timestamps rather than bare dates.
@@ -19,7 +24,6 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 from numenews.config import Settings
 from numenews.models import DateRange, NewsItem, Topic
-from numenews.news.errors import NewsSourceAuthError, NewsSourceRateLimitError
 from numenews.news.http import get_response, parse_json
 from numenews.news.items import item_text, news_id, publisher_name, utc_date
 
@@ -80,25 +84,21 @@ class GNewsSource:
         Raises:
             NewsSourceError: on a transport failure, a non-2xx status or an unparsable body.
         """
-        try:
-            response = await get_response(
-                self._client,
-                source=self.name,
-                url=_ENDPOINT,
-                params={
-                    "q": topic.query,
-                    "from": _start_stamp(date_range),
-                    "to": _end_stamp(date_range),
-                    "max": _MAX_ARTICLES,
-                    "sortby": "publishedAt",
-                },
-                headers={"X-Api-Key": self._api_key.get_secret_value()},
-            )
-        except NewsSourceAuthError as error:
-            # 403 is GNews' spent daily quota; 401 is the rejected key.
-            if error.status_code == 403:
-                raise NewsSourceRateLimitError(str(error), status_code=403) from error
-            raise
+        response = await get_response(
+            self._client,
+            source=self.name,
+            url=_ENDPOINT,
+            params={
+                "q": topic.query,
+                "from": _start_stamp(date_range),
+                "to": _end_stamp(date_range),
+                "max": _MAX_ARTICLES,
+                "sortby": "publishedAt",
+            },
+            headers={"X-Api-Key": self._api_key.get_secret_value()},
+            # 403 is GNews' spent daily quota, not a refusal; 401 stays an auth failure.
+            rate_limit_statuses=(403,),
+        )
         parsed = parse_json(response, _GNewsResponse, source=self.name)
         if parsed is None:
             return []

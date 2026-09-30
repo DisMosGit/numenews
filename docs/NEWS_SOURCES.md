@@ -87,8 +87,10 @@ Nothing in the layer depends on a paid plan, but a paid plan widens the numbers 
 ### GNews v4
 
 - The key travels in the `X-Api-Key` header.
-- `403` is GNews' **spent daily quota** rather than a permission problem; the adapter translates it
-  into `NewsSourceRateLimitError` so callers are not misled (a 401 stays an auth failure).
+- `403` is GNews' **spent daily quota** rather than a permission problem; it is named in
+  `rate_limit_statuses`, so it is classified as a rate limit *during* the request — before the retry
+  policy decides — and is retried with its `Retry-After` honoured like a 429's. A 401 stays an auth
+  failure and is not retried.
 - `from`/`to` are RFC 3339 timestamps; the free plan caps a response at ten articles.
 
 ### Mediastack
@@ -165,12 +167,23 @@ long-lived one in its application context.
 | timeout, DNS, connection reset | `NewsSourceTransportError` | yes |
 | 5xx | `NewsSourceHTTPError` | yes |
 | 429 | `NewsSourceRateLimitError` | yes, waiting for `Retry-After` when present |
-| 401, 403 | `NewsSourceAuthError` | no |
+| 401, 403 | `NewsSourceAuthError` | no, except GNews' 403 — see the per-source note above |
 | other 4xx | `NewsSourceHTTPError` | no |
 | body that is not the documented JSON | `NewsSourceParseError` | no |
 
 The backoff is exponential with jitter, capped at fifteen seconds; a numeric `Retry-After` wins when
 the source sends one. `tenacity` 9 no longer ships `wait_retry_after`, so the wait is ours.
+
+A `Retry-After` is honoured **only as a whole number of seconds** — the RFC 9110 `delta-seconds`
+grammar, one or more ASCII digits with optional surrounding whitespace — and the accepted value is
+clamped to **fifteen seconds**, so a source asking for an hour delays the next attempt by the ceiling
+and no further. Every other value is **no hint at all**, which leaves the exponential backoff above to
+decide the wait: an HTTP-date (legal in the header, but turning it into a delay means clock arithmetic
+against the response's own `Date`, which a hint is not worth), a negative, a fractional such as `3.5`,
+a non-finite `nan` or `inf`, and anything else the grammar rejects. Rejecting them at parse time rather
+than at sleep time is what keeps an unusable hint from failing the fetch: `nan` reaching `tenacity`'s
+sleep raises a `ValueError`, which is outside `NewsSourceError` and so degrades nothing — the whole run
+fails instead.
 
 ## What this layer deliberately does not do
 

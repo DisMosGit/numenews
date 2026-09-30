@@ -51,7 +51,10 @@ NEWS_CACHE_TTL_SECONDS = 900.0
 _REQUEST_TIMEOUT_SECONDS = 10.0
 
 # A retry either waits for `Retry-After` or backs off on its own; both are capped, so a source that
-# asks for an hour does not stall the run.
+# asks for an hour does not stall the run. The cap is applied twice on purpose —
+# `_retry_after_seconds` clamps the header into it as the hint enters the system, and `_wait` clamps
+# whatever the exception carries — so no path, including a `retry_after` set by hand, reaches
+# tenacity's sleep unbounded.
 _MAX_RETRY_WAIT_SECONDS = 15.0
 
 _RETRY_ATTEMPTS = 3
@@ -140,11 +143,18 @@ async def get_response(
     url: str,
     params: Mapping[str, str | int],
     headers: Mapping[str, str] | None = None,
+    rate_limit_statuses: tuple[int, ...] = (),
 ) -> httpx.Response:
     """Fetch ``url`` with retries and return the successful response.
 
     Only the URL without its query string is logged: Mediastack takes its key as a query parameter,
     so the full URL would put a credential in the logs.
+
+    The failure is classified inside the attempt, before the retry policy decides anything:
+    ``_request_once`` translates a non-2xx response into our exception hierarchy, and tenacity then
+    asks that exception whether another attempt is worth making. A status named in
+    ``rate_limit_statuses`` is therefore a rate limit for the whole of that decision, not a
+    translation applied once the attempts are already spent.
 
     Args:
         client: The shared client from :func:`build_news_client`.
@@ -152,6 +162,10 @@ async def get_response(
         url: Endpoint, without query parameters.
         params: Query parameters, passed to ``httpx`` as a mapping.
         headers: Per-source headers, such as an API key or an authorization scheme.
+        rate_limit_statuses: Statuses this source spends on an exhausted quota although HTTP
+            reserves them for something else — GNews answers a spent daily quota with 403. They are
+            read as :class:`~numenews.news.errors.NewsSourceRateLimitError` during the request, so
+            the central policy retries them and honours their ``Retry-After``.
 
     Raises:
         NewsSourceError: on a transport failure, a timeout, or a non-2xx status.
@@ -165,7 +179,12 @@ async def get_response(
     ):
         with attempt:
             return await _request_once(
-                client, source=source, url=url, params=params, headers=headers
+                client,
+                source=source,
+                url=url,
+                params=params,
+                headers=headers,
+                rate_limit_statuses=rate_limit_statuses,
             )
     raise AssertionError("unreachable: tenacity re-raises the last failure")
 
@@ -177,13 +196,14 @@ async def _request_once(
     url: str,
     params: Mapping[str, str | int],
     headers: Mapping[str, str] | None,
+    rate_limit_statuses: tuple[int, ...],
 ) -> httpx.Response:
     """Send one request and translate its failure modes into our exception hierarchy."""
     try:
         response = await client.get(url, params=params, headers=headers)
     except httpx.TransportError as error:
         raise NewsSourceTransportError(f"{source} is unreachable: {error}") from error
-    _raise_for_status(response, source=source)
+    _raise_for_status(response, source=source, rate_limit_statuses=rate_limit_statuses)
     return response
 
 
@@ -201,31 +221,71 @@ def _wait(retry_state: RetryCallState) -> float:
     return wait_exponential_jitter(initial=1.0, max=_MAX_RETRY_WAIT_SECONDS)(retry_state)
 
 
-def _raise_for_status(response: httpx.Response, *, source: str) -> None:
-    """Raise the failure that matches the status code, and return for a 2xx."""
+def _raise_for_status(
+    response: httpx.Response, *, source: str, rate_limit_statuses: tuple[int, ...] = ()
+) -> None:
+    """Raise the failure that matches the status code, and return for a 2xx.
+
+    Classification happens here, inside the attempt, because the retry policy reads the exception's
+    class and its ``retryable`` flag: a status this source spends on its quota must already be a
+    rate limit when the attempt ends, or tenacity decides on the wrong failure.
+    ``rate_limit_statuses`` is consulted before the generic 401/403 branch for exactly that reason —
+    a status named there reaches :func:`_wait` with whatever ``Retry-After`` the answer carried. A
+    2xx is a success even when named in the tuple: turning one into a failure would report a
+    caller's mistake as a source failure.
+
+    Args:
+        response: The response whose status decides the failure.
+        source: Source name, used in the error message.
+        rate_limit_statuses: Extra statuses to read as an exhausted quota beyond 429.
+    """
     status = response.status_code
     if 200 <= status < 300:
         return
     message = f"{source} returned HTTP {status}: {_body_snippet(response)}"
-    if status in (401, 403):
-        raise NewsSourceAuthError(message, status_code=status)
-    if status == 429:
+    if status in rate_limit_statuses or status == 429:
         raise NewsSourceRateLimitError(
             message, status_code=status, retry_after=_retry_after_seconds(response)
         )
+    if status in (401, 403):
+        raise NewsSourceAuthError(message, status_code=status)
     raise NewsSourceHTTPError(message, status_code=status)
 
 
 def _retry_after_seconds(response: httpx.Response) -> float | None:
-    """Return the ``Retry-After`` header in seconds when it holds a number."""
+    """Return the ``Retry-After`` hint in whole seconds, clamped, or ``None`` when unusable.
+
+    RFC 9110 gives the header two forms, and only one of them is a wait this client can use:
+    ``delta-seconds`` is one or more ASCII digits with optional surrounding whitespace, and that is
+    the whole accepted grammar. The other form, an HTTP-date, becomes a delay only by comparing it
+    with the response's own ``Date``, which is more clock arithmetic than a retry hint is worth, so
+    it falls to the exponential backoff like every other value the grammar rejects. Rejecting them
+    here rather than guarding at sleep time is deliberate: ``nan``, ``inf``, ``-5``, ``3.5`` and
+    ``1e9`` all satisfy ``float()`` but none is delta-seconds, and a ``nan`` reaching :func:`_wait`
+    is a ``ValueError`` escaping the ``NewsSourceError`` hierarchy, which the aggregator re-raises
+    and fails the whole fetch over. ``None`` stays the single answer for "no usable hint" — not a
+    new sentinel — so :func:`_wait` reads it as "back off on your own".
+
+    The accepted value is clamped to ``_MAX_RETRY_WAIT_SECONDS`` as it enters the system, so "a
+    retry hint is finite, non-negative and bounded" holds for everything that reads the exception
+    later; the clamp in :func:`_wait` is then a second line of defence rather than the only one.
+
+    Args:
+        response: The response whose ``Retry-After`` header is read.
+
+    Returns:
+        The hint in whole seconds, clamped to ``[0, _MAX_RETRY_WAIT_SECONDS]``, or ``None`` when the
+        header is absent or outside the delta-seconds grammar.
+    """
     value = response.headers.get("retry-after")
     if value is None:
         return None
-    try:
-        return float(value)
-    except ValueError:
-        # An HTTP-date is legal in `Retry-After`; the exponential backoff is a fine stand-in.
+    seconds = value.strip()
+    # `str.isdigit` is true for non-ASCII digits such as "٣" (U+0663), which delta-seconds does not
+    # allow, so the ASCII check is part of the grammar rather than a nicety.
+    if not (seconds.isascii() and seconds.isdigit()):
         return None
+    return min(float(seconds), _MAX_RETRY_WAIT_SECONDS)
 
 
 def _body_snippet(response: httpx.Response) -> str:

@@ -205,6 +205,99 @@ async def test_a_partly_known_page_still_adds_the_new_articles(
     assert vector_store.client.count(NEWS_COLLECTION, exact=True).count == 2
 
 
+class IngestInterruptedError(RuntimeError):
+    """Stands in for the store going away between two writes of the ingest phase."""
+
+
+def _interrupt_at(monkeypatch: pytest.MonkeyPatch, write: str) -> None:
+    """Make the named write of the ingest write phase fail, as an interrupted run would.
+
+    The name is resolved on ``numenews.pipeline.steps`` because that is where the step looks its
+    write functions up, so the failure lands *between* two writes: everything the run wrote before
+    the failing one stays in the store, which is the state a Qdrant restart or a dropped connection
+    leaves behind. Every write of the phase is reachable this way; there is deliberately no way to
+    fail *after* ``upsert_news``, because nothing follows it.
+    """
+
+    def failing(*args: object, **kwargs: object) -> None:
+        raise IngestInterruptedError(write)
+
+    monkeypatch.setattr(f"numenews.pipeline.steps.{write}", failing)
+
+
+@pytest.mark.parametrize("write", ["record_activation", "upsert_number_patterns", "upsert_news"])
+async def test_an_interrupted_ingest_is_completed_by_the_next_run(
+    vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch, write: str
+) -> None:
+    """An interruption anywhere in the write phase is recoverable, not just at one point.
+
+    Whichever write fails, the article's own point was not committed, so the next ingest reads the
+    item as fresh and finishes the memory. ``upsert_news`` is the strongest case: the patterns and
+    the activations of the interrupted attempt are already stored when the run dies, so a skip
+    based on any of them would have lost that article's memory for good.
+    """
+    item = _item(11, title=FIRST_TITLE, text=FIRST_TEXT)
+    pipeline, _ = _pipeline(vector_store, [item], [11])
+
+    with monkeypatch.context() as interruption:
+        _interrupt_at(interruption, write)
+        with pytest.raises(IngestInterruptedError):
+            await pipeline.ingest(TOPIC, RANGE)
+
+    # Nothing was committed: the article is absent, so no later run can skip it.
+    assert vector_store.client.count(NEWS_COLLECTION, exact=True).count == 0
+
+    run = await pipeline.ingest(TOPIC, RANGE)
+
+    assert [stored.title for stored in run.news] == [FIRST_TITLE]
+    assert run.activations == 1
+    assert vector_store.client.count(NEWS_COLLECTION, exact=True).count == 1
+    assert vector_store.client.count(NUMBERS_COLLECTION, exact=True).count == 1
+    assert vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count == 1
+    activations = await pipeline.run_blocking(
+        lambda: get_activations(vector_store, 30, today=RANGE.end)
+    )
+    assert [activation.number for activation in activations] == [11]
+
+
+async def test_the_re_run_reads_only_the_article_the_interruption_left_fresh(
+    vector_store: VectorStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The recovery is per article: a completed item stays skipped, so no extraction is repeated."""
+    complete = _item(11, title=FIRST_TITLE, text=FIRST_TEXT)
+    interrupted = _item(7, title=SECOND_TITLE, text=SECOND_TEXT)
+    first, _ = _pipeline(vector_store, [complete], [11])
+    await first.ingest(TOPIC, RANGE)
+
+    extract = ScriptedExtract(
+        {
+            f"{FIRST_TITLE}\n\n{FIRST_TEXT}": (11,),
+            f"{SECOND_TITLE}\n\n{SECOND_TEXT}": (7,),
+        }
+    )
+    pipeline = Pipeline(
+        store=vector_store,
+        extract=extract,  # type: ignore[arg-type]
+        patterns=pattern_agent([])[0],
+        forecast_agent=forecast_agent()[0],
+        summarizer=summarize_agent()[0],
+        fetcher=fetcher_returning([complete, interrupted]),
+        clock=FrozenClock(),
+    )
+    with monkeypatch.context() as interruption:
+        _interrupt_at(interruption, "upsert_news")
+        with pytest.raises(IngestInterruptedError):
+            await pipeline.ingest(TOPIC, RANGE)
+
+    extract.texts.clear()
+    run = await pipeline.ingest(TOPIC, RANGE)
+
+    assert extract.texts == [f"{SECOND_TITLE}\n\n{SECOND_TEXT}"]
+    assert [stored.title for stored in run.news] == [SECOND_TITLE]
+    assert vector_store.client.count(NEWS_COLLECTION, exact=True).count == 2
+    assert vector_store.client.count(NUMBER_HISTORY_COLLECTION, exact=True).count == 2
+
+
 async def test_the_engine_embeds_into_the_collections_they_were_built_for(
     vector_store: VectorStore,
 ) -> None:

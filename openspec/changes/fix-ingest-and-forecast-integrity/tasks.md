@@ -50,5 +50,5 @@
 
 ## 8. Integration verification
 
-- [ ] 8.1 Run the full suite and the strict validator: `uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest tests/unit tests/integration -v` and `openspec validate "fix-ingest-and-forecast-integrity" --strict`
-- [ ] 8.2 Re-read `proposal.md`'s Impact list against the diff and confirm every named file was either changed or consciously left alone, recording any deviation in the change before archiving
+- [x] 8.1 Run the full suite and the strict validator: `uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest tests/unit tests/integration -v` and `openspec validate "fix-ingest-and-forecast-integrity" --strict`
+- [x] 8.2 Re-read `proposal.md`'s Impact list against the diff and confirm every named file was either changed or consciously left alone, recording any deviation in the change before archiving

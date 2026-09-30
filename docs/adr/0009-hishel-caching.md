@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted (phase 2)
+Accepted, narrowed by [ADR 0014](0014-cache-only-what-may-be-kept.md)
+
+Points 2 and 5 stand only as far as that ADR leaves them: a request carrying a credential in its query
+string is no longer cached at all, and a response the origin forbade storing is no longer kept.
 
 ## Date
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from numenews.news.http import _carries_credential
+from numenews.news.http import _carries_credential, _forbids_storing
 
 BASE = "https://news.test/v1/search"
 
@@ -62,3 +62,44 @@ def test_a_parameter_that_merely_ends_in_a_credential_name_is_not_a_credential()
 def test_a_credential_name_in_a_value_is_not_a_credential() -> None:
     """A query *about* credentials is not a query *carrying* one, so the value is never searched."""
     assert _carries_credential(f"{BASE}?q=access_key%3Dsecret") is False
+
+
+@pytest.mark.parametrize("directive", ["no-store", "no-cache", "private"])
+def test_each_directive_that_forbids_storing_is_refused(directive: str) -> None:
+    """The three the cache honours: two about storing, one about a shared cache keeping it."""
+    assert _forbids_storing(directive) is True
+
+
+@pytest.mark.parametrize("directive", ["NO-STORE", "No-Cache", "PRIVATE"])
+def test_a_directive_name_is_matched_case_insensitively(directive: str) -> None:
+    """Names are case-insensitive in the header, so a lower-cased comparison is the correct one."""
+    assert _forbids_storing(directive) is True
+
+
+@pytest.mark.parametrize("directive", ['no-cache="set-cookie"', "private=Set-Cookie", "no-store=1"])
+def test_a_directive_with_a_value_is_refused_by_its_name(directive: str) -> None:
+    """None of the three takes an argument that could permit storing, so the name alone decides."""
+    assert _forbids_storing(directive) is True
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "no-store, max-age=60",
+        "public, max-age=300, no-cache",
+        "max-age=0, private, must-revalidate",
+    ],
+)
+def test_a_refused_directive_is_found_among_the_others(header: str) -> None:
+    """Real headers carry several directives, and the refused one is rarely alone or first."""
+    assert _forbids_storing(header) is True
+
+
+@pytest.mark.parametrize(
+    "header",
+    [None, "", "public, max-age=300", "max-age=60, must-revalidate", "no-storey, no-caching"],
+)
+def test_an_ordinary_cache_header_permits_storing(header: str | None) -> None:
+    """Nothing refused is nothing to refuse, and a directive that merely looks similar is another
+    directive — a filter that refused those would silently empty the cache."""
+    assert _forbids_storing(header) is False

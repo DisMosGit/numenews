@@ -255,6 +255,58 @@ async def test_an_error_response_is_never_cached(
 
 
 @pytest.mark.integration
+@pytest.mark.parametrize("directive", ["no-store", "no-cache", "private"])
+async def test_a_response_that_forbids_storing_is_fetched_again(
+    news_client: AsyncCacheClient,
+    directive: str,
+) -> None:
+    """The fifteen-minute TTL is not allowed to outlast the origin's own refusal."""
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(URL).mock(
+            return_value=httpx.Response(
+                200, headers={"Cache-Control": directive}, json={"title": "sun"}
+            )
+        )
+
+        first = await _fetch(news_client, q="sun")
+        second = await _fetch(news_client, q="sun")
+
+        # Nothing was stored, so the second call has nothing to be served from.
+        assert route.call_count == 2
+
+    assert first.json() == second.json() == {"title": "sun"}
+    # `is not True` rather than `is False`: a request the filter turns away never reaches the code
+    # that marks a response, so the flag is absent rather than set — what matters is that it is not
+    # claiming a cache hit.
+    assert second.extensions.get("hishel_from_cache") is not True
+
+
+@pytest.mark.integration
+async def test_a_cacheable_response_is_still_served_from_the_cache(
+    news_client: AsyncCacheClient,
+) -> None:
+    """An ordinary freshness header is ignored, exactly as before: the TTL remains the rule.
+
+    This is the half that keeps the narrowed policy narrow. The five APIs send no usable freshness
+    metadata, so a cache that honoured `max-age` would answer nothing; what is honoured is the three
+    directives that forbid keeping a response at all.
+    """
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(URL).mock(
+            return_value=httpx.Response(
+                200, headers={"Cache-Control": "public, max-age=300"}, json={"title": "sun"}
+            )
+        )
+
+        await _fetch(news_client, q="sun")
+        cached = await _fetch(news_client, q="sun")
+
+        assert route.call_count == 1
+
+    assert cached.extensions.get("hishel_from_cache") is True
+
+
+@pytest.mark.integration
 async def test_a_503_that_keeps_failing_is_reported_after_three_attempts(
     news_client: AsyncCacheClient,
     instant_retries: None,

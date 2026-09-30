@@ -10,10 +10,10 @@
 
 ## 2. Refuse to store what the origin forbade storing
 
-- [ ] 2.1 Widen the response filter in `src/numenews/news/http.py` so a response whose `Cache-Control` carries `no-store`, `no-cache` or `private` is not stored, alongside the existing 2xx rule, and rename it and its docstring to describe the storage decision it now makes. Verify with `uv run mypy .`
-- [ ] 2.2 Add the directive-parsing unit tests to `tests/unit/test_news_http.py`: each refused directive is detected in its plain, upper-case and `=value` forms, and a response with an ordinary cache header is still stored. Verify with `uv run pytest tests/unit/test_news_http.py -v`
-- [ ] 2.3 Add the integration tests to `tests/integration/test_news_http.py` showing a `no-store` response is fetched from upstream on the next call while a cacheable response is not, using `respx` to count requests. Verify with `uv run pytest tests/integration/test_news_http.py -v`
-- [ ] 2.4 Record the narrowed policy in `docs/NEWS_SOURCES.md`: the TTL remains the freshness mechanism for responses that permit storing, and the three refused directives are the deliberate exception to it. Verify by reading the section against the filter in `src/numenews/news/http.py`
+- [x] 2.1 Widen the response filter in `src/numenews/news/http.py` so a response whose `Cache-Control` carries `no-store`, `no-cache` or `private` is not stored, alongside the existing 2xx rule, and rename it and its docstring to describe the storage decision it now makes. Verify with `uv run mypy .`
+- [x] 2.2 Add the directive-parsing unit tests to `tests/unit/test_news_http.py`: each refused directive is detected in its plain, upper-case and `=value` forms, and a response with an ordinary cache header is still stored. Verify with `uv run pytest tests/unit/test_news_http.py -v`
+- [x] 2.3 Add the integration tests to `tests/integration/test_news_http.py` showing a `no-store` response is fetched from upstream on the next call while a cacheable response is not, using `respx` to count requests. Verify with `uv run pytest tests/integration/test_news_http.py -v`
+- [x] 2.4 Record the narrowed policy in `docs/NEWS_SOURCES.md`: the TTL remains the freshness mechanism for responses that permit storing, and the three refused directives are the deliberate exception to it. Verify by reading the section against the filter in `src/numenews/news/http.py`
 
 ## 3. Write activation history in one batch
 

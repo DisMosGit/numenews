@@ -98,6 +98,38 @@ _CREDENTIAL_PARAM_PATTERN = (
 _CREDENTIAL_IN_URL = re.compile(_CREDENTIAL_PARAM_PATTERN, re.IGNORECASE)
 _CREDENTIAL_IN_STORED_ENTRY = re.compile(_CREDENTIAL_PARAM_PATTERN.encode(), re.IGNORECASE)
 
+# The `Cache-Control` directives that mean this cache may not keep the response. `no-store` is the
+# explicit refusal. `no-cache` is the subtler one: it permits storing but forbids reuse without
+# revalidation, and this cache has no specification path to revalidate through, so keeping it would
+# silently serve a response the origin asked to have checked first. `private` is about *shared*
+# caches, and this one is a file on disk rather than a per-user cache, so the conservative reading
+# is the right one; it costs nothing today and stops a future credentialed source being cached by
+# omission.
+_REFUSED_DIRECTIVES = frozenset({"no-store", "no-cache", "private"})
+
+
+def _forbids_storing(cache_control: str | None) -> bool:
+    """Return whether a ``Cache-Control`` header refuses this cache the response.
+
+    The header is a comma-separated list of directives, each a case-insensitive name with an
+    optional ``=value``, which may be quoted as in ``no-cache="set-cookie"``. Only the name decides
+    anything here: the directives that matter take no argument, or take one that says nothing about
+    whether the response may be kept. A directive that merely contains a refused name is a different
+    directive, so the match is on the whole name.
+
+    Args:
+        cache_control: The header's value, or ``None`` when the response carried no such header.
+
+    Returns:
+        ``True`` when the response must not be stored.
+    """
+    if cache_control is None:
+        return False
+    return any(
+        directive.split("=", 1)[0].strip().lower() in _REFUSED_DIRECTIVES
+        for directive in cache_control.split(",")
+    )
+
 
 def _carries_credential(url: str) -> bool:
     """Return whether ``url`` authenticates with a query parameter.
@@ -140,20 +172,30 @@ class _CacheOnlyCredentialFreeRequests(BaseFilter[Request]):
         return not _carries_credential(item.url)
 
 
-class _CacheOnlySuccesses(BaseFilter[Response]):
-    """Keep error responses out of the cache.
+class _CacheWhatMayBeStored(BaseFilter[Response]):
+    """Keep out of the cache anything that is not the origin's to give.
 
     hishel stores whatever the transport returned, so without this filter a cached 503 would be
-    replayed for the whole TTL instead of being retried, and a 429 would hide the quota reset.
+    replayed for the whole TTL instead of being retried, and a 429 would hide the quota reset. The
+    origin's own refusal is the same kind of mistake in the other direction: a response carrying
+    ``no-store``, ``no-cache`` or ``private`` is not one this cache may answer with later, and
+    staying inside the TTL is exactly what would make it do so.
+
+    The rule is narrower than RFC 9111 on purpose. Freshness metadata is ignored — the five APIs do
+    not send any that could be used, which is why the storage's ``default_ttl`` exists at all — so
+    what is honoured here is not the specification's caching rules but the three directives that
+    forbid keeping a response whatever the freshness lifetime says.
     """
 
     def needs_body(self) -> bool:
-        """Decide from the status line alone, without reading the body."""
+        """Decide from the status line and the headers, without reading the body."""
         return False
 
     def apply(self, item: Response, body: bytes | None) -> bool:
         """Return whether this response may be stored."""
-        return 200 <= item.status_code < 300
+        return 200 <= item.status_code < 300 and not _forbids_storing(
+            item.headers.get("cache-control")
+        )
 
 
 def build_news_client(settings: Settings | None = None) -> AsyncCacheClient:
@@ -184,7 +226,7 @@ def build_news_client(settings: Settings | None = None) -> AsyncCacheClient:
         storage=storage,
         policy=FilterPolicy(
             request_filters=[_CacheOnlyCredentialFreeRequests()],
-            response_filters=[_CacheOnlySuccesses()],
+            response_filters=[_CacheWhatMayBeStored()],
         ),
         timeout=httpx.Timeout(_REQUEST_TIMEOUT_SECONDS),
         headers={"user-agent": _USER_AGENT},

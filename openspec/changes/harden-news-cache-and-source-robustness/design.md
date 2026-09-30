@@ -100,9 +100,14 @@ marked for a single user is not one to keep, even though the current upstreams a
 costs nothing today and stops a future credentialed source from being cached because nobody revisited
 this filter.
 
-The name `_CacheOnlySuccesses` stops describing what it does; it becomes something like
-`_CacheWhatMayBeStored`, and its docstring records why the TTL policy is deliberately narrower than
-the specification rather than wider.
+The name `_CacheOnlySuccesses` stops describing what it does; it becomes `_CacheWhatMayBeStored`, and
+its docstring records why the TTL policy is deliberately narrower than the specification rather than
+wider.
+
+Both decisions are recorded durably in [ADR 0014](../../../docs/adr/0014-cache-only-what-may-be-kept.md),
+which also narrows [ADR 0009](../../../docs/adr/0009-hishel-caching.md) — the caching ADR whose point 5
+assumed the key would simply sit inside a hashed cache key, and whose non-goals ruled out parsing
+`Cache-Control` at all.
 
 Alternatives considered:
 

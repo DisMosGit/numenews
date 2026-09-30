@@ -141,7 +141,7 @@ The client is one `hishel`-backed `httpx.AsyncClient`, configured in
 ```python
 AsyncSqliteStorage(database_path=settings.cache_dir / "news.db", default_ttl=900.0)
 FilterPolicy(
-    request_filters=[_CacheOnlyCredentialFreeRequests()], response_filters=[_CacheOnlySuccesses()]
+    request_filters=[_CacheOnlyCredentialFreeRequests()], response_filters=[_CacheWhatMayBeStored()]
 )
 ```
 
@@ -160,9 +160,14 @@ Three decisions are worth knowing about:
   that source its cache**, and that is deliberate: `hishel` serves an entry only when the stored
   request URL equals the live one, so the alternative — storing the request with the key redacted out
   of it — would write rows that could never be served and lose the cache anyway.
-- **Only 2xx responses are stored.** `hishel` stores whatever the transport returned, so without
-  `_CacheOnlySuccesses` a cached 503 would be replayed for the whole TTL instead of being retried,
-  and a 429 would hide the moment the quota reset.
+- **Only what the origin allows is stored.** Two rules, both narrowing the same decision. A non-2xx
+  response is never kept, so a cached 503 is retried rather than replayed for the whole TTL, and a 429
+  cannot hide the quota reset. And a response whose `Cache-Control` carries **`no-store`, `no-cache` or
+  `private`** is not kept either: the TTL is a rule about freshness, and it is not allowed to outlast an
+  origin that refused to have its response stored — or asked for it to be revalidated first, which this
+  cache has no path to do. Those three are the *whole* of the `Cache-Control` handling: `max-age`,
+  `Expires` and the rest are still ignored, because honouring them is what the TTL exists to replace.
+  See [ADR 0014](adr/0014-cache-only-what-may-be-kept.md).
 
 The database lives in `Settings.cache_dir` (default `.cache/hishel`); `hishel` creates the directory
 and drops a `.gitignore` holding `*` into it. It is **disposable**: it holds public news behind a

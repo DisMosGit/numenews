@@ -155,8 +155,13 @@ dominant_number([])  # 0, votes 0, considered 0
 
 `0` is again the sentinel, because no reduced value is ever `0`; a day with no news has no dominant
 number, and the pipeline falls back to `reduce_date(day)` — a reading always has a number to rest
-on. A value below `1` raises `ValueError`: `compute_numerology` reports a text without letters as
-`0`, which means "not computed" and must not vote.
+on. **The input contract is reduced values only**: every value must be a member of `REDUCED_NUMBERS`
+(`1`-`9` and the master numbers `11`, `22`, `33`), and anything else raises `ValueError` naming the
+offending value. That is wider than rejecting `0` alone, and deliberately so: `compute_numerology`
+reports a text without letters as `0`, which means "not computed" and must not vote, but a raw
+gematria sum such as `15` or a partially reduced value is just as unfit to be a day's dominant
+number while looking like one. The empty sequence stays valid and answers the `0` sentinel — it is
+the one way to say that nothing was counted.
 
 ## Regex extraction
 

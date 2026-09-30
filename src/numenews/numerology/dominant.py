@@ -20,6 +20,7 @@ from collections import Counter
 from collections.abc import Sequence
 
 from numenews.models import DominantResult
+from numenews.numerology.constants import REDUCED_NUMBERS
 from numenews.numerology.master import is_master
 
 
@@ -34,12 +35,13 @@ def dominant_number(values: Sequence[int]) -> DominantResult:
         The dominant value with its vote count and the size of the set that was counted.
 
     Raises:
-        ValueError: when a value is not a reduced number (``1-9``, ``11``, ``22``, ``33``). A ``0``
-            from a text without letters is "not computed", and letting it vote would make the
-            sentinel an answer.
+        ValueError: when a value is not a reduced number (``1-9``, ``11``, ``22``, ``33``). A raw
+            sum or a partially reduced value would otherwise be reported as a day's dominant number
+            while not being one the reading can rest on, and a ``0`` from a text without letters is
+            "not computed" — letting it vote would make the sentinel an answer.
     """
     for value in values:
-        if value < 1:
+        if value not in REDUCED_NUMBERS:
             raise ValueError(f"dominant_number expects reduced values, got {value}")
     if not values:
         return DominantResult(dominant_number=0, is_master=False, votes=0, considered=0)

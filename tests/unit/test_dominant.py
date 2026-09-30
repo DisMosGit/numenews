@@ -47,7 +47,7 @@ def test_a_single_value_is_its_own_dominant_number() -> None:
 
 
 def test_an_empty_set_answers_the_sentinel_not_a_guess() -> None:
-    """No news at all is `0`; the caller falls back to the date, because a reading needs one."""
+    """No news at all is `0`; the guard must leave that the one way to say nothing was counted."""
     assert dominant_number([]) == DominantResult(
         dominant_number=0, is_master=False, votes=0, considered=0
     )
@@ -63,6 +63,18 @@ def test_a_not_computed_value_is_refused() -> None:
     """`0` means "no letters to sum"; letting it vote would make the sentinel an answer."""
     with pytest.raises(ValueError, match="reduced values"):
         dominant_number([7, 0])
+
+
+def test_an_unreduced_value_is_refused() -> None:
+    """`15` reduces to `6`; counting it would report a raw sum as the day's number."""
+    with pytest.raises(ValueError, match="got 15"):
+        dominant_number([11, 15])
+
+
+def test_a_negative_value_is_refused() -> None:
+    """A negative value is outside the reduced set, so the guard names it, not counts it."""
+    with pytest.raises(ValueError, match="got -3"):
+        dominant_number([-3])
 
 
 @given(st.lists(st.sampled_from(sorted(REDUCED_NUMBERS)), min_size=1, max_size=50))

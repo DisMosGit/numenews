@@ -31,9 +31,9 @@
 
 ## 5. Enforce the reduced-value contract of the dominant number
 
-- [ ] 5.1 Replace the `value < 1` guard in `src/numenews/numerology/dominant.py` with membership in `REDUCED_NUMBERS`, keeping `0` rejected. Verify with `uv run mypy .`
-- [ ] 5.2 Add the guard tests to `tests/unit/test_dominant.py` for an unreduced value such as `15`, for a negative value, and for the empty set still answering the `0` sentinel. Verify with `uv run pytest tests/unit/test_dominant.py -v`
-- [ ] 5.3 State the reduced-values-only input rule in `docs/NUMEROLOGY.md` where the dominant rule is explained. Verify the documented rule matches the guard in `src/numenews/numerology/dominant.py`
+- [x] 5.1 Replace the `value < 1` guard in `src/numenews/numerology/dominant.py` with membership in `REDUCED_NUMBERS`, keeping `0` rejected. Verify with `uv run mypy .`
+- [x] 5.2 Add the guard tests to `tests/unit/test_dominant.py` for an unreduced value such as `15`, for a negative value, and for the empty set still answering the `0` sentinel. Verify with `uv run pytest tests/unit/test_dominant.py -v`
+- [x] 5.3 State the reduced-values-only input rule in `docs/NUMEROLOGY.md` where the dominant rule is explained. Verify the documented rule matches the guard in `src/numenews/numerology/dominant.py`
 
 ## 6. Anchor an activation snippet on a whole number
 

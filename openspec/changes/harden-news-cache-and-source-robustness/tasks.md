@@ -25,5 +25,5 @@
 
 ## 4. Integration verification
 
-- [ ] 4.1 Run the full suite and the strict validator: `uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest tests/unit tests/integration -v` and `openspec validate "harden-news-cache-and-source-robustness" --strict`
-- [ ] 4.2 Confirm the two changes compose: whichever is applied second, the phase must still end with the `news` upsert as its last write (3.2 changes the statement immediately before it in `fix-ingest-and-forecast-integrity`), and the ingest tests from both changes must pass with both applied
+- [x] 4.1 Run the full suite and the strict validator: `uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run pytest tests/unit tests/integration -v` and `openspec validate "harden-news-cache-and-source-robustness" --strict`
+- [x] 4.2 Confirm the two changes compose: whichever is applied second, the phase must still end with the `news` upsert as its last write (3.2 changes the statement immediately before it in `fix-ingest-and-forecast-integrity`), and the ingest tests from both changes must pass with both applied

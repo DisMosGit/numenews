@@ -184,7 +184,10 @@ async def ingest(pipeline: Pipeline, topic: Topic, date_range: DateRange) -> Pip
 
     Idempotency is by ``news_id``: an item whose point is already stored is skipped before its
     extraction, so a repeated ingest costs no model call and writes nothing while a run whose page
-    is only partly known still adds the new articles.
+    is only partly known still adds the new articles. Because that check reads the ``news``
+    collection and nothing else, the write phase below is ordered so the article's own point is the
+    last thing written: an article is stored only once its patterns and its activations are, so an
+    interrupted run leaves work the next ingest completes instead of memory no run will ever write.
 
     Args:
         pipeline: The orchestrator whose store, agents and clock the step uses.
@@ -232,10 +235,16 @@ async def ingest(pipeline: Pipeline, topic: Topic, date_range: DateRange) -> Pip
     log_step(compute_timer, items=len(items), activations=len(activations))
 
     with StepTimer(pipeline.clock, "embed") as embed_timer:
-        stored = await pipeline.run_blocking(lambda: upsert_news(pipeline.store, items))
-        await pipeline.run_blocking(lambda: upsert_number_patterns(pipeline.store, activations))
+        # The order of these three writes is the crash-safety mechanism, not a preference. The skip
+        # check above reads the ``news`` collection, so an article's own point is the commit marker
+        # for everything derived from it: it is written last, once its patterns and its activation
+        # history are already stored. A run that dies before it leaves the article fresh, and the
+        # next ingest repeats whichever of these writes it got through as idempotent overwrites. A
+        # run that reaches it has nothing left to write.
         for activation in activations:
             await pipeline.run_blocking(partial(record_activation, pipeline.store, activation))
+        await pipeline.run_blocking(lambda: upsert_number_patterns(pipeline.store, activations))
+        stored = await pipeline.run_blocking(lambda: upsert_news(pipeline.store, items))
     log_step(embed_timer, items=stored, activations=len(activations))
 
     logger.info(

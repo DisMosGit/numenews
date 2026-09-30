@@ -12,9 +12,9 @@ New behaviour goes through [`openspec/`](openspec/), and the loop has four steps
    the spec deltas, a design when the approach needs deciding, and a `tasks.md`.
 2. **Review** — read the artifacts, not just the diff, and make `openspec validate "<name>" --strict`
    pass. If the plan is wrong, fix the plan; do not start coding around it.
-3. **Implement** — one `tasks.md` item per atomic commit, ticked in the same commit. If a task turns
-   out to be bigger than its spec delta describes, stop and update the artifacts rather than widening
-   it silently.
+3. **Implement** — one `tasks.md` item per atomic task, its checkbox ticked as part of that task. If a
+   task turns out to be bigger than its spec delta describes, stop and update the artifacts rather
+   than widening it silently.
 4. **Archive** — `openspec archive "<name>"` once every box is ticked. That merges the spec deltas
    into [`openspec/specs/`](openspec/specs/), which is what makes the new behaviour the documented
    baseline.
@@ -65,6 +65,9 @@ feat(numerology): add master number 33 reduction
 fix(vector): apply payload filter inside Prefetch for hybrid search
 docs(adr): add ADR-0004 qdrant hybrid search
 ```
+
+The subject is the whole message: no body. Write one only when explicitly asked for it — the reason
+belongs in the change's artifacts or an ADR, not in `git log`.
 
 ## Local development
 

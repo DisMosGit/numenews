@@ -80,16 +80,16 @@ in your report. Do not add a workflow file, a chart or a `.tf` file to "help".
 stays honest about what the code actually imports and `uv.lock` stays resolvable. *Owner:* `AGENTS.md`
 (`Stack`), `pyproject.toml`'s dependency comment, ADR 0013. *Instead:* add the dependency in the task
 that first imports it, put it in `[project]` only if the package imports it (otherwise the `dev`
-group), and update the dependency comment in `pyproject.toml` in the same commit. If it conflicts with
+group), and update the dependency comment in `pyproject.toml` in the same change. If it conflicts with
 the lock, isolate it the way ragas is isolated.
 
 **Never weaken, skip or delete a test to make a check pass.**
 *Why:* a green suite that no longer asserts anything is worse than a red one; the tests are the
 evidence that a task's stated verification holds. *Owner:* `AGENTS.md` (a task is not done until its
 verification passes), [`EVAL_OF_AGENT.md`](EVAL_OF_AGENT.md). *Instead:* fix the code, or if the test encodes a
-superseded decision, change it deliberately in its own task with the reason in the commit message and
-an ADR when the decision was architectural. Deleting an assertion and reporting "tests pass" is the
-single most common way an agent's work is rejected here.
+superseded decision, change it deliberately in its own task, with the reason recorded in an ADR when
+the decision was architectural and beside the task's checkbox in `tasks.md` either way. Deleting an
+assertion and reporting "tests pass" is the single most common way an agent's work is rejected here.
 
 **`numerology/` stays pure — no I/O, and no imports from the layers above it.**
 *Why:* the layer's invariants are checked without infrastructure only while it imports nothing but
@@ -107,17 +107,17 @@ and flaky. *Owner:* `CONTRIBUTING.md` (`No time.sleep() — use freezegun or any
 `:memory:` or the `FakeStore` doubles, and inject the clock. Mark anything that needs a real service
 `@pytest.mark.integration` and let it skip when the service is absent.
 
-**Do not commit `.env` or `.cache/`.**
+**`.env` and `.cache/` are never published.**
 *Why:* `.env` holds optional API keys and a personal endpoint; `.cache/` holds the hishel responses,
 the downloaded `fastembed` weights and the hypothesis database. *Owner:* `.gitignore`,
-`AGENTS.md` (`No API keys required for the default demo path`). *Instead:* commit `.env.example` when
-a variable is added and leave the real `.env` local. `git status` is clean of both before a task is
-reported done.
+`AGENTS.md` (`No API keys required for the default demo path`). *Instead:* keep both out of anything
+you stage or publish, and change `.env.example` — never `.env` — when a variable is added, so the
+real one stays local. `git status` shows neither before a task is reported done.
 
 **Do not invent work outside a change, or widen one silently.**
 *Why:* `openspec/specs/` is the single source of truth for what is built and `openspec/changes/` for
 what is next; unplanned work makes status unreadable and lets a task skip its verification. *Owner:*
 `AGENTS.md` (`OpenSpec`), [`AGENT_WORKFLOW.md`](AGENT_WORKFLOW.md) (the loop). *Instead:* add the item
-to the change's `tasks.md` in the same commit that does the work. For anything the change does not
+to the change's `tasks.md` in the same change as the work. For anything the change does not
 cover, propose a change of its own (`/openspec-propose`) or open a GitHub issue — and archive the
 change once its boxes are ticked, so the spec delta becomes the new baseline.

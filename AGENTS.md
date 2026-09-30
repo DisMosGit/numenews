@@ -52,7 +52,7 @@ Guidance for AI coding agents working in this repository.
 - `openspec/changes/` — work in flight. Each change holds a `proposal.md`, spec deltas under `specs/`, a `design.md` when the approach needs deciding, and a `tasks.md`.
 - The loop is **propose → review → implement → archive**. `openspec list` shows active changes and `openspec validate "<name>" --strict` checks one; archiving merges a change's spec deltas into `openspec/specs/`.
 - New work starts as a change, never as an edit. An idea that is not yet a change belongs in a GitHub issue.
-- One atomic commit per `tasks.md` item, with its checkbox ticked in the same commit.
+- One atomic task per `tasks.md` item, with its checkbox ticked as part of that task.
 - Architectural decisions get an ADR in `docs/adr/` (`template.md`); the reason is recorded, never only the change.
 - `.docs/plan.md` is the private design brief (gitignored). Where it disagrees with this file or `openspec/specs/`, those win: the package is `numenews`, the CLI is `numenews`, not `numerology_news`/`nn`.
 
@@ -82,12 +82,11 @@ make install lint test run mcp # shortcut targets
 ## When changing code
 
 - Add an ADR in `docs/adr/` for any architectural decision.
-- Change behaviour through an OpenSpec change: update the owning requirement in the change's spec delta, and tick the `tasks.md` item in the same commit.
+- Change behaviour through an OpenSpec change: update the owning requirement in the change's spec delta, and tick the `tasks.md` item as part of the work.
 - Update `docs/MCP_TOOLS.md` when adding or renaming an MCP tool.
 - Update `docs/QDRANT_COLLECTIONS.md` when changing a collection or payload schema.
 - Update `docs/PROMPTS.md` when changing extract, pattern, or forecast prompts.
 - Write a unit test for numerology logic; an integration test for I/O (respx + Qdrant `:memory:`).
-- Keep commits conventional: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`.
 
 ## Do not
 

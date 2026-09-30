@@ -11,12 +11,12 @@
   that item says it verifies. A prompt without a change is a request for unsupervised refactoring.
 - **Work only inside the change.** If the work is not covered by the change's spec deltas, stop and
   update the artifacts — do not widen the change to fit, and do not fold a second change into the
-  same commit.
+  same task.
 - **Require the exact commands and their observed output**, and **forbid weakening a test** in the
   prompt itself: "it should pass" is not evidence, and deleting an assertion or adding a `skip` to
   get green is a rejected change. An intentional test change states its reason.
-- **Keep the commit atomic.** One `tasks.md` item is one conventional commit with the code, its tests,
-  the docs and the ticked box; if the agent is not the committer, ask for a tree ready to commit once.
+- **Keep the task atomic.** One `tasks.md` item is one coherent unit of work with the code, its tests,
+  the docs and the ticked box; ask for a tree that stands alone once the task is done.
 - **Treat `.docs/plan.md` as context only.** Where it disagrees with `AGENTS.md` or
   `openspec/specs/`, those win.
 
@@ -39,8 +39,8 @@ Produce a plan with, in order:
 2. every file to create or change, one line of why each;
 3. the exact verification commands, and the output you expect from each;
 4. risks: which boundary or invariant this touches, and what could break silently;
-5. the conventional commit message, including the scope.
-If the work is larger than one atomic commit, propose the split in tasks.md instead.
+5. the scope the task belongs to, checked against the scope list in CONTRIBUTING.md.
+If the work is larger than one atomic task, propose the split in tasks.md instead.
 ```
 
 *Expected:* plan text only — no edits. Approve it before running prompt 2.
@@ -55,8 +55,8 @@ If the work is larger than one atomic commit, propose the split in tasks.md inst
 Implement task <n> of openspec/changes/<change-name>/ exactly as planned. Do not change scope.
 
 Follow docs/agentic/CONVENTIONS.md and docs/agentic/GUARDRAILS.md. Do not weaken, skip or
-delete a test. Do not add a dependency the task does not need. Keep the change ready as
-one atomic commit (commit nothing unless the task says so).
+delete a test. Do not add a dependency the task does not need. Leave the tree standing
+alone once the task is done, with nothing unrelated in the diff.
 Before reporting done, run and paste the exact output of:
   uv run ruff check . && uv run ruff format --check . && uv run mypy .
   uv run pytest tests/unit tests/integration -v
@@ -140,7 +140,7 @@ no LLM endpoint, no model weights) with the command that proves it.
 - **Letting the agent re-scope the change.** Moving the verification, dropping a task or merging two
   changes to make the work fit changes the plan, not an implementation detail.
 - **Asking for improvements instead of a task.** "Also refactor this while you're there" turns one
-  atomic commit into three unrelated ones and makes the diff unreviewable.
+  task into three unrelated ones and makes the diff unreviewable.
 - **Letting the agent mark its own homework.** Self-review is not review; the verdict comes from
   re-running the commands the task names, and a traceback pasted without its command hides the
   invocation that produced it.

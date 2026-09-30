@@ -33,7 +33,7 @@ Turn the current uncommitted work into a sequence of self-contained conventional
    - A module's tests ride with the code they test (`tests/unit/test_<module>.py` with `src/numenews/<pkg>/`). A separate `test(<scope>)` commit is for standalone test infrastructure only (`tests/conftest.py`, shared fixtures).
    - Config settings ride with the feature that consumes them; a Pydantic model that crosses a boundary rides with the tool or command that returns it.
    - Docs describing changed behavior ride with the change; substantial prose becomes its own `docs(<scope>)` commit.
-   - OpenSpec artifacts follow repo precedent: the change plan first, then the spec delta with the code, and the task tick-off in the same commit as the work it completes — AGENTS.md pins one atomic commit per `tasks.md` item.
+   - OpenSpec artifacts follow repo precedent: the change plan first, then the spec delta with the code, and the task tick-off in the same commit as the work it completes — `AGENTS.md` pins one atomic task per `tasks.md` item.
    - Formatting-only churn in files unrelated to a change is never mixed into it — leave it out, or ask (step 8). A repo-wide `make format` pass produces exactly this churn.
 
 3. **Order foundational to dependent**
@@ -51,7 +51,7 @@ Turn the current uncommitted work into a sequence of self-contained conventional
    - **Types**: `feat`, `fix`, `docs`, `test`, `chore`, `build` are in use here; `refactor`, `perf`, `ci` are allowed when none of those fit.
    - **Scopes**: pick from the ones in use — `numerology`, `models`, `news`, `embeddings`, `vector`, `agents` (`src/numenews/agents/`), `pipeline`, `mcp`, `cli`, `config`, `logging`, `memory`, `eval`, `extraction`, `integration`, `docs`, `adr`, `openspec`, `deps` (`uv.lock`, `pyproject.toml`), `infra` (Makefile, `docker-compose.yml`), `repo` (repo-wide chores). Fall back to the package directory name; do not invent a new scope without a reason. Note that `agents` is overloaded: it names both `src/numenews/agents/` and `.agents/skills/`, so spell the skill definitions `skills` in the subject when the distinction matters (`chore(agents)` in `9d2a5a9` is the one precedent for the skills).
    - Imperative mood, lowercase, no trailing period, subject at most 72 characters.
-   - A body only when the *why* is non-obvious; wrap it at 72.
+   - **No body.** The subject is the whole message: this repo's commits do not carry explanatory prose, and `CONTRIBUTING.md` states the rule. Write a body only when the user explicitly asks for one, wrapped at 72.
    - No `Co-Authored-By` or "Generated with" trailers unless the user asks for them — this repo's history has none.
 
 5. **Stage explicitly**

@@ -317,7 +317,7 @@ Write in Russian:
 ## Changing a prompt
 
 1. Edit the constant or builder in `src/numenews/agents/prompts.py`.
-2. Update the matching section here — AGENTS.md requires the doc to change in the same commit.
+2. Update the matching section here — `AGENTS.md` requires this doc to change with the prompt.
 3. Update the literal in `tests/unit/test_agents_prompts.py`. A few-shot example is parsed and
    validated against its draft schema there, so an example the model could not legally answer fails
    the suite.

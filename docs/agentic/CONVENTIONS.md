@@ -127,8 +127,8 @@ vector layer is synchronous, and the two are bridged only by `asyncio.to_thread`
 
 Commits follow [Conventional Commits](../../CONTRIBUTING.md) — `feat(scope): …`, `fix(scope): …`,
 `docs: …`, `test: …` — with the scopes `numerology`, `news`, `embeddings`, `vector`, `agents`,
-`pipeline`, `mcp`, `cli`, `models`, `docs`, `deps`. One atomic commit per `tasks.md` item: the code,
-its tests, its docs and the ticked checkbox land together, and the subject names the task. A
+`pipeline`, `mcp`, `cli`, `models`, `docs`, `deps`. One `tasks.md` item is one atomic task: the code,
+its tests, its docs and the ticked checkbox land together, and the task is finished in one pass. A
 change that needs two subjects is two tasks, split in the change's `tasks.md` first.
 
 Tests are part of the task, not a follow-up: a unit test for pure logic, an integration test for I/O.

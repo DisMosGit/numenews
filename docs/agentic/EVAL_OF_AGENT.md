@@ -50,12 +50,12 @@ Diff `tests/` line by line; this is where a green suite can hide a broken change
 - A coverage `# pragma: no cover` added to a branch that used to be tested.
 
 An intentional change to a test is allowed only when the decision it encoded was superseded, and then
-the commit message carries the reason and an ADR carries it if the decision was architectural.
-`AGENTS.md` is explicit: never weaken or delete a test to make a check pass.
+the reason is recorded — in an ADR when the decision was architectural, and beside the task's checkbox
+in `tasks.md` either way. `AGENTS.md` is explicit: never weaken or delete a test to make a check pass.
 
-## Check the paperwork landed in the same change
+## Check the paperwork landed with the work
 
-One `tasks.md` item is one atomic commit. That commit is expected to contain:
+One `tasks.md` item is one atomic task, whose deliverable contains:
 
 - the task's checkbox ticked in the change's `tasks.md`, with a deviation note if reality differed;
 - the docs the task names — `docs/MCP_TOOLS.md` for a renamed tool,
@@ -112,8 +112,8 @@ correction belongs in the same change that notices it.
 - [ ] `make lint`, `make test`, and `make test-eval` when the eval is touched were re-run by the
       reviewer, with the output read.
 - [ ] `tests/` was diffed for removed, skipped or weakened assertions.
-- [ ] The change's `tasks.md` checkbox, the named docs and any ADR are in the same commit.
+- [ ] The change's `tasks.md` checkbox, the named docs and any ADR landed with the work.
 - [ ] The failure paths (LLM, Qdrant, news source, empty/duplicate data) were considered and tested.
 - [ ] The evidence is command + observed output + date, not a summary.
 - [ ] Every factual claim in new prose was checked against the code.
-- [ ] The change is one atomic commit, ready to land, with nothing unrelated in the diff.
+- [ ] The task is one atomic unit, finished in one pass, with nothing unrelated in the diff.

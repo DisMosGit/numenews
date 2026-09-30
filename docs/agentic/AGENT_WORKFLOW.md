@@ -12,13 +12,13 @@ build, in what order).
    idea becomes a change of its own (`/openspec-propose`) or a GitHub issue.
 2. **Plan before writing.** For anything larger than a task, write down the goal, the files to
    touch, the verification commands and the risks; get the plan approved before editing.
-3. **Implement one task at a time.** A `tasks.md` item is one conventional commit
-   (`feat(scope): …`, `chore: …`, `test: …`, `docs: …`). If an item grows past what its spec delta
-   describes, stop and update the change's artifacts instead of widening it silently.
+3. **Implement one task at a time.** A `tasks.md` item is one atomic task, finished in one pass with
+   its code, tests and docs together. If an item grows past what its spec delta describes, stop and
+   update the change's artifacts instead of widening it silently.
 4. **Verify with the real commands**, not by reading code: `make lint`, `make test`, and for
    infrastructure `make dev` + a health check. A task's verification is a command that must pass,
    not a sentence that says it should.
-5. **Tick the task.** Update its checkbox in `tasks.md` in the same commit, and record a deviation
+5. **Tick the task.** Update its checkbox in `tasks.md` as part of the task, and record a deviation
    next to it when reality differed from the plan (with the reason).
 6. **Record decisions.** An architectural choice needs an ADR from
    [`docs/adr/template.md`](../adr/template.md).

@@ -202,7 +202,7 @@ dated coverage snapshot are in [`docs/TESTING.md`](docs/TESTING.md).
 
 It is a solo pet project, so there is no ceremony — but there is a workflow, and
 [`CONTRIBUTING.md`](CONTRIBUTING.md) spells it out. The short version: work starts as an OpenSpec
-change rather than a direct edit, one `tasks.md` item is one atomic commit, and `make lint && make
+change rather than a direct edit, one `tasks.md` item is one atomic task, and `make lint && make
 test` has to be green. Issues and ideas are welcome; there is no CI, on purpose, which is why the
 commands are the gate.
 

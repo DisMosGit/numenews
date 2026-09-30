@@ -46,7 +46,7 @@ verified against the `Makefile`:
 | `run` | `uv run numenews today` (silenced; needs Qdrant and an LLM endpoint) |
 | `clean` | `docker compose down -v --remove-orphans`, then removes `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.cache`, `htmlcov`, `.coverage`, `docs/coverage.html` and `.venv-eval` |
 
-`make lint && make test` is the gate every commit has to pass. `mcp` and `run` are prefixed with `@`
+`make lint && make test` is the gate every task has to pass. `mcp` and `run` are prefixed with `@`
 on purpose: make would otherwise echo its recipe into stdout and break the "stdout carries JSON (or
 JSON-RPC) and nothing else" contract. `make test` ends with `make coverage-check`, which enforces the
 per-layer floors recorded in [`../coverage_report.md`](../coverage_report.md); `pyproject.toml` keeps
@@ -131,7 +131,7 @@ make lint && make test                # the gate; test ends with the per-layer c
 make test-eval                        # only when the eval is touched
 make coverage && open docs/coverage.html
 make dev && uv run numenews today     # the live check, when the task needs it
-# 3. tick the checkbox, update the docs, one atomic commit
+# 3. tick the checkbox and update the docs the task names
 # 4. openspec archive "<change>" once every box is ticked and the change validates
 ```
 
